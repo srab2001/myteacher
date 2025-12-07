@@ -37,7 +37,8 @@ export function DictationModal({ goalName, onClose, onSave }: DictationModalProp
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognitionRef.current.onresult = (event: any) => {
         let finalTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -49,7 +50,8 @@ export function DictationModal({ goalName, onClose, onSave }: DictationModalProp
         setTranscript(prev => prev + finalTranscript);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsRecording(false);
         if (event.error === 'not-allowed') {
