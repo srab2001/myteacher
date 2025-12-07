@@ -1,0 +1,146 @@
+.container {
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.header {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userName {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.pageHeader {
+  margin-bottom: 2rem;
+}
+
+.pageHeader h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.pageHeader p {
+  color: var(--muted);
+}
+
+.section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionHeader h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.count {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.studentGrid {
+  display: flex;
+  flex-direction: column;
+}
+
+.studentCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.studentCard:last-child {
+  border-bottom: none;
+}
+
+.studentCard:hover {
+  background: var(--background);
+}
+
+.studentInfo h4 {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.studentInfo p {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.studentId {
+  font-family: monospace;
+  font-size: 0.75rem !important;
+}
+
+.studentStatus {
+  flex-shrink: 0;
+}
+
+.noStatus {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.emptyState {
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.emptyState p {
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--muted) !important;
+}
