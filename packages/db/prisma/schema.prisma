@@ -124,6 +124,8 @@ model AppUser {
   workSamples    WorkSample[]   @relation("WorkSampleUploadedBy")
   serviceLogs    ServiceLog[]   @relation("ServiceProvider")
   priorPlanUploads PriorPlanDocument[] @relation("PriorPlanUploadedBy")
+  bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
+  formTemplateUploads FormTemplate[] @relation("FormTemplateUploadedBy")
 
   @@index([googleId])
   @@index([email])
@@ -147,6 +149,8 @@ model Jurisdiction {
   users     AppUser[]
   planTypes PlanType[]
   students  Student[]
+  bestPracticeDocs BestPracticeDocument[] @relation("BestPracticeJurisdiction")
+  formTemplates    FormTemplate[]         @relation("FormTemplateJurisdiction")
 
   @@unique([stateCode, districtCode])
   @@index([stateCode])
@@ -224,6 +228,8 @@ model PlanType {
   schemas        PlanSchema[]
   instances      PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
+  bestPracticeDocs   BestPracticeDocument[] @relation("BestPracticeDocs")
+  formTemplates      FormTemplate[]         @relation("FormTemplates")
 
   @@unique([jurisdictionId, code])
   @@index([code])
@@ -424,4 +430,57 @@ model PriorPlanDocument {
   @@index([studentId])
   @@index([studentId, planTypeId])
   @@index([uploadedById])
+}
+
+// ============================================
+// BEST PRACTICE DOCUMENT MODEL (Example IEPs, 504s, etc.)
+// ============================================
+
+model BestPracticeDocument {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?   @db.Text
+  fileUrl        String    // Storage path or URL
+  gradeBand      String?   // e.g., "K-2", "3-5", "6-8", "9-12"
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  planTypeId     String
+  planType       PlanType      @relation("BestPracticeDocs", fields: [planTypeId], references: [id])
+  jurisdictionId String?
+  jurisdiction   Jurisdiction? @relation("BestPracticeJurisdiction", fields: [jurisdictionId], references: [id])
+  uploadedById   String
+  uploadedBy     AppUser       @relation("BestPracticeUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([planTypeId])
+  @@index([jurisdictionId])
+  @@index([isActive])
+}
+
+// ============================================
+// FORM TEMPLATE MODEL (Blank printable forms)
+// ============================================
+
+model FormTemplate {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?   @db.Text
+  fileUrl        String    // Storage path or URL
+  isDefault      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  planTypeId     String
+  planType       PlanType      @relation("FormTemplates", fields: [planTypeId], references: [id])
+  jurisdictionId String?
+  jurisdiction   Jurisdiction? @relation("FormTemplateJurisdiction", fields: [jurisdictionId], references: [id])
+  uploadedById   String
+  uploadedBy     AppUser       @relation("FormTemplateUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([planTypeId])
+  @@index([jurisdictionId])
+  @@index([planTypeId, jurisdictionId, isDefault])
 }
