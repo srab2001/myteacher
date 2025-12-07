@@ -208,3 +208,108 @@
   margin-bottom: 1rem;
   color: var(--muted);
 }
+
+/* Prior Plans Section */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionHeader h3 {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.priorPlansList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.priorPlanItem {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--background);
+}
+
+.priorPlanMain {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.priorPlanType {
+  background: var(--primary);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.priorPlanFile {
+  font-weight: 500;
+  color: var(--foreground);
+  word-break: break-all;
+}
+
+.priorPlanMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.priorPlanDate,
+.priorPlanUploaded {
+  display: inline;
+}
+
+.priorPlanNotes {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 0.25rem;
+  line-height: 1.4;
+}
+
+.priorPlanActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.downloadLink {
+  font-size: 0.875rem;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.downloadLink:hover {
+  text-decoration: underline;
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 0;
+}
+
+.deleteBtn:hover {
+  text-decoration: underline;
+}

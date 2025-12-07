@@ -90,6 +90,11 @@ enum ServiceSetting {
   OTHER
 }
 
+enum PriorPlanSource {
+  UPLOADED
+  SIS_IMPORT
+}
+
 // ============================================
 // USER MODEL
 // ============================================
@@ -118,6 +123,7 @@ model AppUser {
   progressRecords GoalProgress[] @relation("ProgressRecordedBy")
   workSamples    WorkSample[]   @relation("WorkSampleUploadedBy")
   serviceLogs    ServiceLog[]   @relation("ServiceProvider")
+  priorPlanUploads PriorPlanDocument[] @relation("PriorPlanUploadedBy")
 
   @@index([googleId])
   @@index([email])
@@ -169,6 +175,7 @@ model Student {
   teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
+  priorPlanDocuments PriorPlanDocument[]
 
   @@index([studentIdNum])
   @@index([lastName, firstName])
@@ -214,6 +221,7 @@ model PlanType {
   jurisdiction   Jurisdiction   @relation(fields: [jurisdictionId], references: [id])
   schemas        PlanSchema[]
   instances      PlanInstance[]
+  priorPlanDocuments PriorPlanDocument[]
 
   @@unique([jurisdictionId, code])
   @@index([code])
@@ -388,4 +396,30 @@ model ServiceLog {
   @@index([planInstanceId, date])
   @@index([planInstanceId, serviceType])
   @@index([providerId])
+}
+
+// ============================================
+// PRIOR PLAN DOCUMENT MODEL (Uploaded Prior Plans)
+// ============================================
+
+model PriorPlanDocument {
+  id           String          @id @default(uuid())
+  fileName     String
+  storageKey   String          // Path or key in storage (local/S3)
+  planDate     DateTime?       // Date of the prior plan (optional)
+  source       PriorPlanSource @default(UPLOADED)
+  notes        String?         @db.Text
+  createdAt    DateTime        @default(now())
+
+  // Relations
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planTypeId   String
+  planType     PlanType @relation(fields: [planTypeId], references: [id])
+  uploadedById String
+  uploadedBy   AppUser  @relation("PriorPlanUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([studentId])
+  @@index([studentId, planTypeId])
+  @@index([uploadedById])
 }

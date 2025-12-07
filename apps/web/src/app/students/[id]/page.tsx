@@ -4,10 +4,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, Student, StudentStatus } from '@/lib/api';
+import { api, Student, StudentStatus, PriorPlanDocument, PlanTypeCode } from '@/lib/api';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatusModal } from '@/components/StatusModal';
+import { PriorPlanUploadModal } from '@/components/PriorPlanUploadModal';
 import styles from './page.module.css';
+
+const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
+  IEP: 'IEP',
+  FIVE_OH_FOUR: '504 Plan',
+  BEHAVIOR_PLAN: 'Behavior Plan',
+};
 
 export default function StudentDetailPage() {
   const { user, loading } = useAuth();
@@ -20,8 +27,10 @@ export default function StudentDetailPage() {
     current: StudentStatus[];
     history: StudentStatus[];
   } | null>(null);
+  const [priorPlans, setPriorPlans] = useState<PriorPlanDocument[]>([]);
   const [loadingStudent, setLoadingStudent] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,12 +40,14 @@ export default function StudentDetailPage() {
 
   const loadStudent = useCallback(async () => {
     try {
-      const [studentRes, statusRes] = await Promise.all([
+      const [studentRes, statusRes, priorPlansRes] = await Promise.all([
         api.getStudent(studentId),
         api.getStudentStatus(studentId),
+        api.getStudentPriorPlans(studentId),
       ]);
       setStudent(studentRes.student);
       setStatusData(statusRes);
+      setPriorPlans(priorPlansRes.priorPlans);
     } catch (err) {
       console.error('Failed to load student:', err);
     } finally {
@@ -57,6 +68,22 @@ export default function StudentDetailPage() {
     effectiveDate: string;
   }) => {
     await api.createStudentStatus(studentId, data);
+    await loadStudent();
+  };
+
+  const handlePriorPlanUpload = async (
+    file: File,
+    planType: PlanTypeCode,
+    planDate?: string,
+    notes?: string
+  ) => {
+    await api.uploadPriorPlan(studentId, file, planType, planDate, notes);
+    await loadStudent();
+  };
+
+  const handlePriorPlanDelete = async (priorPlanId: string) => {
+    if (!confirm('Are you sure you want to delete this prior plan document?')) return;
+    await api.deletePriorPlan(priorPlanId);
     await loadStudent();
   };
 
@@ -189,6 +216,67 @@ export default function StudentDetailPage() {
               </div>
             </section>
           )}
+
+          {/* Prior Plans Section */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3>Prior Plans & Documents</h3>
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setShowUploadModal(true)}
+              >
+                + Upload Prior Plan
+              </button>
+            </div>
+            {priorPlans.length > 0 ? (
+              <div className={styles.priorPlansList}>
+                {priorPlans.map(plan => (
+                  <div key={plan.id} className={styles.priorPlanItem}>
+                    <div className={styles.priorPlanMain}>
+                      <span className={styles.priorPlanType}>
+                        {PLAN_TYPE_LABELS[plan.planType]}
+                      </span>
+                      <span className={styles.priorPlanFile}>{plan.fileName}</span>
+                    </div>
+                    <div className={styles.priorPlanMeta}>
+                      {plan.planDate && (
+                        <span className={styles.priorPlanDate}>
+                          Plan Date: {format(new Date(plan.planDate), 'MMM d, yyyy')}
+                        </span>
+                      )}
+                      <span className={styles.priorPlanUploaded}>
+                        Uploaded: {format(new Date(plan.createdAt), 'MMM d, yyyy')}
+                        {' by '}{plan.uploadedBy}
+                      </span>
+                    </div>
+                    {plan.notes && (
+                      <p className={styles.priorPlanNotes}>{plan.notes}</p>
+                    )}
+                    <div className={styles.priorPlanActions}>
+                      <a
+                        href={api.getPriorPlanDownloadUrl(plan.id)}
+                        className={styles.downloadLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Download
+                      </a>
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => handlePriorPlanDelete(plan.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.emptyMessage}>
+                No prior plans uploaded yet. Upload previous IEP, 504, or behavior plans to use them when creating new plans.
+              </p>
+            )}
+          </section>
         </div>
       </main>
 
@@ -197,6 +285,13 @@ export default function StudentDetailPage() {
           studentName={`${student.firstName} ${student.lastName}`}
           onClose={() => setShowStatusModal(false)}
           onSubmit={handleStatusSubmit}
+        />
+      )}
+
+      {showUploadModal && (
+        <PriorPlanUploadModal
+          onClose={() => setShowUploadModal(false)}
+          onUpload={handlePriorPlanUpload}
         />
       )}
     </div>

@@ -145,6 +145,22 @@ export interface ServiceSummary {
   logCount: number;
 }
 
+// Prior Plan Types
+export type PlanTypeCode = 'IEP' | 'FIVE_OH_FOUR' | 'BEHAVIOR_PLAN';
+export type PriorPlanSource = 'UPLOADED' | 'SIS_IMPORT';
+
+export interface PriorPlanDocument {
+  id: string;
+  planType: PlanTypeCode;
+  planTypeName: string;
+  fileName: string;
+  planDate: string | null;
+  notes: string | null;
+  source: PriorPlanSource;
+  uploadedBy: string;
+  createdAt: string;
+}
+
 class ApiClient {
   private async fetch<T>(url: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${url}`, {
@@ -396,6 +412,48 @@ class ApiClient {
 
   async deleteWorkSample(sampleId: string): Promise<{ success: boolean }> {
     return this.fetch(`/api/goals/work-samples/${sampleId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Prior Plan Documents API
+  async getStudentPriorPlans(studentId: string): Promise<{ priorPlans: PriorPlanDocument[] }> {
+    return this.fetch(`/api/students/${studentId}/prior-plans`);
+  }
+
+  async uploadPriorPlan(
+    studentId: string,
+    file: File,
+    planType: PlanTypeCode,
+    planDate?: string,
+    notes?: string
+  ): Promise<{ priorPlan: PriorPlanDocument }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('planType', planType);
+    if (planDate) formData.append('planDate', planDate);
+    if (notes) formData.append('notes', notes);
+
+    const response = await fetch(`${API_BASE}/api/students/${studentId}/prior-plans`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
+  getPriorPlanDownloadUrl(priorPlanId: string): string {
+    return `${API_BASE}/api/prior-plans/${priorPlanId}/download`;
+  }
+
+  async deletePriorPlan(priorPlanId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/prior-plans/${priorPlanId}`, {
       method: 'DELETE',
     });
   }
