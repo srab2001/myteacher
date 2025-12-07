@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { prisma, PlanTypeCode } from '@myteacher/db';
 import { requireAdmin } from '../middleware/auth.js';
+import { ingestBestPracticeDocument, getDocumentChunkStats } from '../services/ingestion.js';
 
 const router = Router();
 
@@ -74,6 +75,7 @@ router.get('/best-practice-docs', requireAdmin, async (req, res) => {
         planType: { select: { code: true, name: true } },
         jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
         uploadedBy: { select: { displayName: true } },
+        _count: { select: { chunks: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -89,6 +91,10 @@ router.get('/best-practice-docs', requireAdmin, async (req, res) => {
         jurisdictionId: d.jurisdictionId,
         jurisdictionName: d.jurisdiction?.districtName || null,
         isActive: d.isActive,
+        ingestionStatus: d.ingestionStatus,
+        ingestionMessage: d.ingestionMessage,
+        ingestionAt: d.ingestionAt,
+        chunkCount: d._count.chunks,
         uploadedBy: d.uploadedBy.displayName,
         createdAt: d.createdAt,
         updatedAt: d.updatedAt,
@@ -154,12 +160,18 @@ router.post(
           gradeBand: data.gradeBand,
           jurisdictionId: data.jurisdictionId || null,
           uploadedById: req.user!.id,
+          ingestionStatus: 'PENDING',
         },
         include: {
           planType: { select: { code: true, name: true } },
           jurisdiction: { select: { id: true, districtName: true } },
           uploadedBy: { select: { displayName: true } },
         },
+      });
+
+      // Trigger ingestion asynchronously (don't await)
+      ingestBestPracticeDocument(doc.id).catch(err => {
+        console.error('Background ingestion error:', err);
       });
 
       res.status(201).json({
@@ -173,6 +185,10 @@ router.post(
           jurisdictionId: doc.jurisdictionId,
           jurisdictionName: doc.jurisdiction?.districtName || null,
           isActive: doc.isActive,
+          ingestionStatus: doc.ingestionStatus,
+          ingestionMessage: doc.ingestionMessage,
+          ingestionAt: doc.ingestionAt,
+          chunkCount: 0,
           uploadedBy: doc.uploadedBy.displayName,
           createdAt: doc.createdAt,
           updatedAt: doc.updatedAt,
@@ -227,6 +243,11 @@ router.patch('/best-practice-docs/:id', requireAdmin, async (req, res) => {
       },
     });
 
+    // Get chunk count
+    const chunkCount = await prisma.bestPracticeChunk.count({
+      where: { bestPracticeDocumentId: updated.id },
+    });
+
     res.json({
       document: {
         id: updated.id,
@@ -238,6 +259,10 @@ router.patch('/best-practice-docs/:id', requireAdmin, async (req, res) => {
         jurisdictionId: updated.jurisdictionId,
         jurisdictionName: updated.jurisdiction?.districtName || null,
         isActive: updated.isActive,
+        ingestionStatus: updated.ingestionStatus,
+        ingestionMessage: updated.ingestionMessage,
+        ingestionAt: updated.ingestionAt,
+        chunkCount,
         uploadedBy: updated.uploadedBy.displayName,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
@@ -249,6 +274,53 @@ router.patch('/best-practice-docs/:id', requireAdmin, async (req, res) => {
     }
     console.error('Best practice doc update error:', error);
     res.status(500).json({ error: 'Failed to update best practice document' });
+  }
+});
+
+// POST /admin/best-practice-docs/:id/reingest - Re-run ingestion for a document
+router.post('/best-practice-docs/:id/reingest', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const doc = await prisma.bestPracticeDocument.findUnique({
+      where: { id },
+    });
+
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // Trigger ingestion asynchronously
+    ingestBestPracticeDocument(id).catch(err => {
+      console.error('Re-ingestion error:', err);
+    });
+
+    res.json({ success: true, message: 'Ingestion started' });
+  } catch (error) {
+    console.error('Re-ingestion trigger error:', error);
+    res.status(500).json({ error: 'Failed to start re-ingestion' });
+  }
+});
+
+// GET /admin/best-practice-docs/:id/chunks - Get chunk statistics for a document
+router.get('/best-practice-docs/:id/chunks', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const doc = await prisma.bestPracticeDocument.findUnique({
+      where: { id },
+    });
+
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const stats = await getDocumentChunkStats(id);
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Chunk stats error:', error);
+    res.status(500).json({ error: 'Failed to get chunk statistics' });
   }
 });
 

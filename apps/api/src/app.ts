@@ -19,6 +19,7 @@ import serviceRoutes from './routes/services.js';
 import workSampleRoutes from './routes/worksamples.js';
 import priorPlanRoutes from './routes/priorplans.js';
 import adminRoutes from './routes/admin.js';
+import generationRoutes from './routes/generation.js';
 
 export function createApp(): Express {
   const app = express();
@@ -80,6 +81,7 @@ export function createApp(): Express {
   app.use('/api/prior-plans', priorPlanRoutes); // For /api/prior-plans/:id/download
   app.use('/api', priorPlanRoutes); // For /api/students/:id/prior-plans routes
   app.use('/api/admin', adminRoutes); // Admin routes
+  app.use('/api', generationRoutes); // Content generation routes
 
   // 404 handler
   app.use((_req, res) => {

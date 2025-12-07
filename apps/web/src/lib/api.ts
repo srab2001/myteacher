@@ -163,6 +163,8 @@ export interface PriorPlanDocument {
 }
 
 // Admin Types
+export type IngestionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETE' | 'ERROR';
+
 export interface BestPracticeDocument {
   id: string;
   title: string;
@@ -173,9 +175,24 @@ export interface BestPracticeDocument {
   jurisdictionId: string | null;
   jurisdictionName: string | null;
   isActive: boolean;
+  ingestionStatus: IngestionStatus;
+  ingestionMessage: string | null;
+  ingestionAt: string | null;
+  chunkCount: number;
   uploadedBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ChunkStats {
+  totalChunks: number;
+  bySection: Record<string, number>;
+}
+
+export interface GeneratedDraft {
+  text: string;
+  sectionTag: string;
+  sourceCount: number;
 }
 
 export interface FormTemplate {
@@ -546,6 +563,37 @@ class ApiClient {
 
   getBestPracticeDocDownloadUrl(docId: string): string {
     return `${API_BASE}/api/admin/best-practice-docs/${docId}/download`;
+  }
+
+  async reingestBestPracticeDoc(docId: string): Promise<{ success: boolean; message: string }> {
+    return this.fetch(`/api/admin/best-practice-docs/${docId}/reingest`, {
+      method: 'POST',
+    });
+  }
+
+  async getBestPracticeDocChunks(docId: string): Promise<ChunkStats> {
+    return this.fetch(`/api/admin/best-practice-docs/${docId}/chunks`);
+  }
+
+  // Content Generation
+  async generateDraft(
+    planId: string,
+    sectionKey: string,
+    fieldKey: string,
+    userPrompt?: string
+  ): Promise<GeneratedDraft> {
+    return this.fetch(`/api/plans/${planId}/generate-draft`, {
+      method: 'POST',
+      body: JSON.stringify({ sectionKey, fieldKey, userPrompt }),
+    });
+  }
+
+  async getGenerationAvailability(planId: string): Promise<{
+    available: boolean;
+    sections: string[];
+    planTypeCode: string;
+  }> {
+    return this.fetch(`/api/plans/${planId}/generation-availability`);
   }
 
   // Admin: Form Templates

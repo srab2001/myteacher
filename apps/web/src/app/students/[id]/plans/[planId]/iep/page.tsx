@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan, PlanSchema } from '@/lib/api';
+import { api, Plan } from '@/lib/api';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -20,6 +19,9 @@ export default function IEPInterviewPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
+  const [generationAvailable, setGenerationAvailable] = useState(false);
+  const [generatingSections, setGeneratingSections] = useState<string[]>([]);
+  const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && !user) {
@@ -45,6 +47,43 @@ export default function IEPInterviewPage() {
       loadPlan();
     }
   }, [user, planId, loadPlan]);
+
+  // Check generation availability
+  useEffect(() => {
+    const checkGeneration = async () => {
+      try {
+        const result = await api.getGenerationAvailability(planId);
+        setGenerationAvailable(result.available);
+        setGeneratingSections(result.sections);
+      } catch (err) {
+        // Generation not available - silently fail
+        setGenerationAvailable(false);
+      }
+    };
+
+    if (planId) {
+      checkGeneration();
+    }
+  }, [planId]);
+
+  const handleGenerateDraft = async (sectionKey: string, fieldKey: string) => {
+    setGeneratingFields(prev => new Set(prev).add(fieldKey));
+
+    try {
+      const result = await api.generateDraft(planId, sectionKey, fieldKey);
+      if (result.text) {
+        setFormData(prev => ({ ...prev, [fieldKey]: result.text }));
+      }
+    } catch (err) {
+      console.error('Generation failed:', err);
+    } finally {
+      setGeneratingFields(prev => {
+        const next = new Set(prev);
+        next.delete(fieldKey);
+        return next;
+      });
+    }
+  };
 
   const sections = plan?.schema?.fields?.sections || [];
   const currentSectionData = sections[currentSection];
@@ -203,13 +242,37 @@ export default function IEPInterviewPage() {
                       )}
 
                       {field.type === 'textarea' && (
-                        <textarea
-                          className="form-textarea"
-                          rows={5}
-                          value={(formData[field.key] as string) || ''}
-                          onChange={e => handleFieldChange(field.key, e.target.value)}
-                          placeholder={field.placeholder}
-                        />
+                        <div className={styles.textareaWrapper}>
+                          {generationAvailable && (
+                            <div className={styles.textareaHeader}>
+                              <button
+                                type="button"
+                                className={styles.generateBtn}
+                                onClick={() => handleGenerateDraft(currentSectionData.key, field.key)}
+                                disabled={generatingFields.has(field.key)}
+                              >
+                                {generatingFields.has(field.key) ? (
+                                  <>
+                                    <span className={styles.generateSpinner} />
+                                    Generating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className={styles.sparkle}>&#10024;</span>
+                                    Generate Draft
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                          <textarea
+                            className="form-textarea"
+                            rows={5}
+                            value={(formData[field.key] as string) || ''}
+                            onChange={e => handleFieldChange(field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                          />
+                        </div>
                       )}
 
                       {field.type === 'boolean' && (

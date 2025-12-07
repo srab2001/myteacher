@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
-import { api, BestPracticeDocument, PlanTypeCode, Jurisdiction } from '@/lib/api';
+import { api, BestPracticeDocument, PlanTypeCode, Jurisdiction, IngestionStatus } from '@/lib/api';
 import styles from './page.module.css';
 
 const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
@@ -13,12 +13,21 @@ const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
 
 const GRADE_BANDS = ['K-2', '3-5', '6-8', '9-12'];
 
+const INGESTION_STATUS_LABELS: Record<IngestionStatus, string> = {
+  PENDING: 'Pending',
+  PROCESSING: 'Processing',
+  COMPLETE: 'Complete',
+  ERROR: 'Error',
+};
+
 export default function BestPracticeDocsPage() {
   const [documents, setDocuments] = useState<BestPracticeDocument[]>([]);
   const [jurisdictions, setJurisdictions] = useState<Jurisdiction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editingDoc, setEditingDoc] = useState<BestPracticeDocument | null>(null);
+  const [reingesting, setReingesting] = useState<string | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -38,6 +47,39 @@ export default function BestPracticeDocsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Poll for processing documents
+  useEffect(() => {
+    const hasProcessing = documents.some(d => d.ingestionStatus === 'PROCESSING');
+
+    if (hasProcessing && !pollIntervalRef.current) {
+      pollIntervalRef.current = setInterval(() => {
+        loadData();
+      }, 3000);
+    } else if (!hasProcessing && pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [documents, loadData]);
+
+  const handleReingest = async (docId: string) => {
+    setReingesting(docId);
+    try {
+      await api.reingestBestPracticeDoc(docId);
+      await loadData();
+    } catch (err) {
+      console.error('Re-ingest failed:', err);
+    } finally {
+      setReingesting(null);
+    }
+  };
 
   const handleUploadComplete = () => {
     setShowUploadModal(false);
@@ -88,6 +130,7 @@ export default function BestPracticeDocsPage() {
                 <th>Grade Band</th>
                 <th>Jurisdiction</th>
                 <th>Status</th>
+                <th>Ingestion</th>
                 <th>Uploaded By</th>
                 <th>Date</th>
                 <th>Actions</th>
@@ -116,6 +159,26 @@ export default function BestPracticeDocsPage() {
                       {doc.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
+                  <td>
+                    <div className={styles.ingestionCell}>
+                      <span className={`${styles.ingestionBadge} ${styles[doc.ingestionStatus.toLowerCase()]}`}>
+                        {doc.ingestionStatus === 'PROCESSING' && (
+                          <span className={styles.spinner} />
+                        )}
+                        {INGESTION_STATUS_LABELS[doc.ingestionStatus]}
+                      </span>
+                      {doc.ingestionStatus === 'COMPLETE' && (
+                        <span className={styles.chunkCount}>
+                          {doc.chunkCount} chunks
+                        </span>
+                      )}
+                      {doc.ingestionStatus === 'ERROR' && doc.ingestionMessage && (
+                        <span className={styles.chunkCount} title={doc.ingestionMessage}>
+                          {doc.ingestionMessage.slice(0, 30)}...
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td>{doc.uploadedBy}</td>
                   <td>{format(new Date(doc.createdAt), 'MMM d, yyyy')}</td>
                   <td>
@@ -134,6 +197,15 @@ export default function BestPracticeDocsPage() {
                       >
                         Edit
                       </button>
+                      {(doc.ingestionStatus === 'ERROR' || doc.ingestionStatus === 'COMPLETE') && (
+                        <button
+                          className={styles.actionBtn}
+                          onClick={() => handleReingest(doc.id)}
+                          disabled={reingesting === doc.id}
+                        >
+                          {reingesting === doc.id ? 'Re-ingesting...' : 'Re-ingest'}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

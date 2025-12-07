@@ -95,6 +95,13 @@ enum PriorPlanSource {
   SIS_IMPORT
 }
 
+enum IngestionStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  ERROR
+}
+
 // ============================================
 // USER MODEL
 // ============================================
@@ -437,14 +444,17 @@ model PriorPlanDocument {
 // ============================================
 
 model BestPracticeDocument {
-  id             String    @id @default(uuid())
-  title          String
-  description    String?   @db.Text
-  fileUrl        String    // Storage path or URL
-  gradeBand      String?   // e.g., "K-2", "3-5", "6-8", "9-12"
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id               String          @id @default(uuid())
+  title            String
+  description      String?         @db.Text
+  fileUrl          String          // Storage path or URL
+  gradeBand        String?         // e.g., "K-2", "3-5", "6-8", "9-12"
+  isActive         Boolean         @default(true)
+  ingestionStatus  IngestionStatus @default(PENDING)
+  ingestionMessage String?         // Error message if ingestion failed
+  ingestionAt      DateTime?       // Last ingestion timestamp
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   // Relations
   planTypeId     String
@@ -453,10 +463,12 @@ model BestPracticeDocument {
   jurisdiction   Jurisdiction? @relation("BestPracticeJurisdiction", fields: [jurisdictionId], references: [id])
   uploadedById   String
   uploadedBy     AppUser       @relation("BestPracticeUploadedBy", fields: [uploadedById], references: [id])
+  chunks         BestPracticeChunk[]
 
   @@index([planTypeId])
   @@index([jurisdictionId])
   @@index([isActive])
+  @@index([ingestionStatus])
 }
 
 // ============================================
@@ -483,4 +495,30 @@ model FormTemplate {
   @@index([planTypeId])
   @@index([jurisdictionId])
   @@index([planTypeId, jurisdictionId, isDefault])
+}
+
+// ============================================
+// BEST PRACTICE CHUNK MODEL (Extracted text for content generation)
+// ============================================
+
+model BestPracticeChunk {
+  id                     String    @id @default(uuid())
+  sequence               Int       // Order within the document
+  sectionTag             String?   // e.g., "goals_reading", "accommodations", "present_levels"
+  text                   String    @db.Text
+  embedding              Bytes?    // Optional vector embedding for semantic search
+  createdAt              DateTime  @default(now())
+
+  // Denormalized fields for efficient querying
+  planTypeCode           String    // IEP, FIVE_OH_FOUR, BEHAVIOR_PLAN
+  jurisdictionId         String?
+  gradeBand              String?
+
+  // Relations
+  bestPracticeDocumentId String
+  document               BestPracticeDocument @relation(fields: [bestPracticeDocumentId], references: [id], onDelete: Cascade)
+
+  @@index([bestPracticeDocumentId])
+  @@index([planTypeCode, jurisdictionId, gradeBand, sectionTag])
+  @@index([sectionTag])
 }
