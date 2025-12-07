@@ -1,6 +1,12 @@
-import { PrismaClient, PlanTypeCode } from '@prisma/client';
+import { PrismaClient, PlanTypeCode, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+// Default admin credentials
+const ADMIN_USERNAME = 'stuadmin';
+const ADMIN_PASSWORD = 'stuteacher1125';
+const ADMIN_EMAIL = 'admin@myteacher.local';
 
 async function main() {
   console.log('🌱 Starting database seed...');
@@ -91,6 +97,90 @@ async function main() {
       },
     });
     console.log('✅ Created IEP schema');
+  }
+
+  // Create default admin user with local auth
+  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+
+  const adminUser = await prisma.appUser.upsert({
+    where: { username: ADMIN_USERNAME },
+    update: {
+      passwordHash, // Update password on re-seed
+    },
+    create: {
+      username: ADMIN_USERNAME,
+      passwordHash,
+      email: ADMIN_EMAIL,
+      displayName: 'System Administrator',
+      role: UserRole.ADMIN,
+      stateCode: 'MD',
+      districtName: 'Howard County Public School System',
+      schoolName: 'District Office',
+      jurisdictionId: mdHcpss.id,
+      isOnboarded: true,
+    },
+  });
+
+  console.log('✅ Created admin user:', adminUser.username);
+
+  // Create sample students for testing
+  const sampleStudents = [
+    {
+      studentIdNum: 'STU-001',
+      firstName: 'Alex',
+      lastName: 'Johnson',
+      dateOfBirth: new Date('2015-03-15'),
+      grade: '4',
+      schoolName: 'Centennial Elementary',
+    },
+    {
+      studentIdNum: 'STU-002',
+      firstName: 'Maria',
+      lastName: 'Garcia',
+      dateOfBirth: new Date('2014-07-22'),
+      grade: '5',
+      schoolName: 'Centennial Elementary',
+    },
+    {
+      studentIdNum: 'STU-003',
+      firstName: 'James',
+      lastName: 'Williams',
+      dateOfBirth: new Date('2013-11-08'),
+      grade: '6',
+      schoolName: 'Wilde Lake Middle',
+    },
+  ];
+
+  for (const studentData of sampleStudents) {
+    const student = await prisma.student.upsert({
+      where: { studentIdNum: studentData.studentIdNum },
+      update: {},
+      create: {
+        ...studentData,
+        jurisdictionId: mdHcpss.id,
+        teacherId: adminUser.id,
+      },
+    });
+
+    // Add initial overall status for each student
+    const existingStatus = await prisma.studentStatus.findFirst({
+      where: { studentId: student.id, scope: 'OVERALL' },
+    });
+
+    if (!existingStatus) {
+      await prisma.studentStatus.create({
+        data: {
+          studentId: student.id,
+          scope: 'OVERALL',
+          code: 'ON_TRACK',
+          summary: 'Initial status - student is meeting expectations',
+          effectiveDate: new Date(),
+          updatedById: adminUser.id,
+        },
+      });
+    }
+
+    console.log('✅ Created sample student:', student.firstName, student.lastName);
   }
 
   console.log('🎉 Seed completed successfully!');
