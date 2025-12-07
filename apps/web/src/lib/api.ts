@@ -162,6 +162,44 @@ export interface PriorPlanDocument {
   createdAt: string;
 }
 
+// Admin Types
+export interface BestPracticeDocument {
+  id: string;
+  title: string;
+  description: string | null;
+  planType: PlanTypeCode;
+  planTypeName: string;
+  gradeBand: string | null;
+  jurisdictionId: string | null;
+  jurisdictionName: string | null;
+  isActive: boolean;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FormTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  planType: PlanTypeCode;
+  planTypeName: string;
+  jurisdictionId: string | null;
+  jurisdictionName: string | null;
+  isDefault: boolean;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Jurisdiction {
+  id: string;
+  stateCode: string;
+  stateName: string;
+  districtCode: string;
+  districtName: string;
+}
+
 class ApiClient {
   private async fetch<T>(url: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${url}`, {
@@ -457,6 +495,113 @@ class ApiClient {
     return this.fetch(`/api/prior-plans/${priorPlanId}`, {
       method: 'DELETE',
     });
+  }
+
+  // Admin: Best Practice Documents
+  async getBestPracticeDocs(): Promise<{ documents: BestPracticeDocument[] }> {
+    return this.fetch('/api/admin/best-practice-docs');
+  }
+
+  async uploadBestPracticeDoc(
+    file: File,
+    data: {
+      title: string;
+      description?: string;
+      planType: PlanTypeCode;
+      gradeBand?: string;
+      jurisdictionId?: string;
+    }
+  ): Promise<{ document: BestPracticeDocument }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', data.title);
+    formData.append('planType', data.planType);
+    if (data.description) formData.append('description', data.description);
+    if (data.gradeBand) formData.append('gradeBand', data.gradeBand);
+    if (data.jurisdictionId) formData.append('jurisdictionId', data.jurisdictionId);
+
+    const response = await fetch(`${API_BASE}/api/admin/best-practice-docs`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
+  async updateBestPracticeDoc(
+    docId: string,
+    data: { title?: string; description?: string | null; isActive?: boolean }
+  ): Promise<{ document: BestPracticeDocument }> {
+    return this.fetch(`/api/admin/best-practice-docs/${docId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  getBestPracticeDocDownloadUrl(docId: string): string {
+    return `${API_BASE}/api/admin/best-practice-docs/${docId}/download`;
+  }
+
+  // Admin: Form Templates
+  async getFormTemplates(): Promise<{ templates: FormTemplate[] }> {
+    return this.fetch('/api/admin/form-templates');
+  }
+
+  async uploadFormTemplate(
+    file: File,
+    data: {
+      title: string;
+      description?: string;
+      planType: PlanTypeCode;
+      jurisdictionId?: string;
+      isDefault?: boolean;
+    }
+  ): Promise<{ template: FormTemplate }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', data.title);
+    formData.append('planType', data.planType);
+    if (data.description) formData.append('description', data.description);
+    if (data.jurisdictionId) formData.append('jurisdictionId', data.jurisdictionId);
+    if (data.isDefault !== undefined) formData.append('isDefault', String(data.isDefault));
+
+    const response = await fetch(`${API_BASE}/api/admin/form-templates`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
+  async updateFormTemplate(
+    templateId: string,
+    data: { title?: string; description?: string | null; isDefault?: boolean }
+  ): Promise<{ template: FormTemplate }> {
+    return this.fetch(`/api/admin/form-templates/${templateId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  getFormTemplateDownloadUrl(templateId: string): string {
+    return `${API_BASE}/api/admin/form-templates/${templateId}/download`;
+  }
+
+  // Admin: Jurisdictions
+  async getAdminJurisdictions(): Promise<{ jurisdictions: Jurisdiction[] }> {
+    return this.fetch('/api/admin/jurisdictions');
   }
 }
 
