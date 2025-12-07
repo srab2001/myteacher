@@ -1,9 +1,0 @@
-{
-  "buildCommand": "cd ../.. && pnpm install && pnpm --filter @myteacher/web build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@api_url"
-  }
-}
