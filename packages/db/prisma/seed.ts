@@ -346,8 +346,8 @@ async function main() {
             await prisma.goalProgress.create({
               data: {
                 goalId: goal.id,
-                date: progressDates[i],
-                quickSelect: progressLevels[i],
+                date: progressDates[i]!,
+                quickSelect: progressLevels[i]!,
                 comment: `Progress check ${i + 1} - Student showing ${i === 2 ? 'good' : 'steady'} improvement.`,
                 recordedById: adminUser.id,
               },
