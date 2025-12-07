@@ -1,5 +1,7 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
+import { Strategy as LocalStrategy } from 'passport-local';
+import bcrypt from 'bcryptjs';
 import { prisma, AppUser } from '@myteacher/db';
 import { env } from './env.js';
 
@@ -27,6 +29,44 @@ passport.deserializeUser(async (id: string, done) => {
   }
 });
 
+// Local Strategy (username/password)
+passport.use(
+  new LocalStrategy(
+    {
+      usernameField: 'username',
+      passwordField: 'password',
+    },
+    async (username, password, done) => {
+      try {
+        // Find user by username
+        const user = await prisma.appUser.findUnique({
+          where: { username },
+        });
+
+        if (!user) {
+          return done(null, false, { message: 'Invalid username or password' });
+        }
+
+        if (!user.passwordHash) {
+          return done(null, false, { message: 'This account does not support password login' });
+        }
+
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+
+        if (!isValidPassword) {
+          return done(null, false, { message: 'Invalid username or password' });
+        }
+
+        return done(null, user);
+      } catch (error) {
+        return done(error);
+      }
+    }
+  )
+);
+
+// Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
     {
