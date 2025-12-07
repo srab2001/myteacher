@@ -18,6 +18,7 @@ import goalRoutes from './routes/goals.js';
 import serviceRoutes from './routes/services.js';
 import workSampleRoutes from './routes/worksamples.js';
 import priorPlanRoutes from './routes/priorplans.js';
+import adminRoutes from './routes/admin.js';
 
 export function createApp(): Express {
   const app = express();
@@ -78,6 +79,7 @@ export function createApp(): Express {
   app.use('/api/goals', workSampleRoutes); // For /api/goals/:id/work-samples
   app.use('/api/prior-plans', priorPlanRoutes); // For /api/prior-plans/:id/download
   app.use('/api', priorPlanRoutes); // For /api/students/:id/prior-plans routes
+  app.use('/api/admin', adminRoutes); // Admin routes
 
   // 404 handler
   app.use((_req, res) => {
