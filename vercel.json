@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "projects": [
+    {
+      "name": "myteacher-web",
+      "directory": "apps/web"
+    },
+    {
+      "name": "myteacher-api",
+      "directory": "apps/api"
+    }
+  ]
+}
