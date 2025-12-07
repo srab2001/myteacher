@@ -1,0 +1,232 @@
+// Prisma schema for MyTeacher - Special Education Portal
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  TEACHER
+  CASE_MANAGER
+  ADMIN
+}
+
+enum PlanTypeCode {
+  IEP
+  FIVE_OH_FOUR // 504 Plan
+  BEHAVIOR_PLAN
+}
+
+enum StatusScope {
+  OVERALL
+  ACADEMIC
+  BEHAVIOR
+  SERVICES
+}
+
+enum StatusCode {
+  ON_TRACK
+  WATCH
+  CONCERN
+  URGENT
+}
+
+// ============================================
+// USER MODEL
+// ============================================
+
+model AppUser {
+  id            String    @id @default(uuid())
+  googleId      String    @unique
+  email         String    @unique
+  displayName   String
+  avatarUrl     String?
+  role          UserRole?
+  stateCode     String?
+  districtName  String?
+  schoolName    String?
+  isOnboarded   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  jurisdictionId String?
+  jurisdiction   Jurisdiction? @relation(fields: [jurisdictionId], references: [id])
+  students       Student[]     @relation("TeacherStudents")
+  statusUpdates  StudentStatus[] @relation("StatusUpdatedBy")
+
+  @@index([googleId])
+  @@index([email])
+}
+
+// ============================================
+// JURISDICTION MODEL
+// ============================================
+
+model Jurisdiction {
+  id           String   @id @default(uuid())
+  stateCode    String
+  stateName    String
+  districtCode String
+  districtName String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  users     AppUser[]
+  planTypes PlanType[]
+  students  Student[]
+
+  @@unique([stateCode, districtCode])
+  @@index([stateCode])
+}
+
+// ============================================
+// STUDENT MODEL
+// ============================================
+
+model Student {
+  id            String    @id @default(uuid())
+  studentIdNum  String    @unique // School-assigned ID
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime
+  grade         String
+  schoolName    String
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  jurisdictionId String
+  jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
+  teacherId      String
+  teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
+  statuses       StudentStatus[]
+  planInstances  PlanInstance[]
+
+  @@index([studentIdNum])
+  @@index([lastName, firstName])
+  @@index([teacherId])
+}
+
+// ============================================
+// STUDENT STATUS MODEL
+// ============================================
+
+model StudentStatus {
+  id            String      @id @default(uuid())
+  scope         StatusScope
+  code          StatusCode
+  summary       String?
+  effectiveDate DateTime
+  createdAt     DateTime    @default(now())
+
+  // Relations
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  updatedById String
+  updatedBy   AppUser  @relation("StatusUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([studentId, scope])
+  @@index([studentId, effectiveDate])
+}
+
+// ============================================
+// PLAN TYPE MODEL
+// ============================================
+
+model PlanType {
+  id          String       @id @default(uuid())
+  code        PlanTypeCode
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  jurisdictionId String
+  jurisdiction   Jurisdiction   @relation(fields: [jurisdictionId], references: [id])
+  schemas        PlanSchema[]
+  instances      PlanInstance[]
+
+  @@unique([jurisdictionId, code])
+  @@index([code])
+}
+
+// ============================================
+// PLAN SCHEMA MODEL (Template for Plans)
+// ============================================
+
+model PlanSchema {
+  id           String   @id @default(uuid())
+  version      Int      @default(1)
+  name         String
+  description  String?
+  fields       Json     // Array of field definitions
+  isActive     Boolean  @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  planTypeId String
+  planType   PlanType       @relation(fields: [planTypeId], references: [id])
+  instances  PlanInstance[]
+
+  @@index([planTypeId, isActive])
+}
+
+// ============================================
+// PLAN INSTANCE MODEL (Actual Student Plans)
+// ============================================
+
+model PlanInstance {
+  id            String    @id @default(uuid())
+  startDate     DateTime
+  endDate       DateTime?
+  status        String    @default("DRAFT") // DRAFT, ACTIVE, EXPIRED, SUPERSEDED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  studentId    String
+  student      Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planTypeId   String
+  planType     PlanType        @relation(fields: [planTypeId], references: [id])
+  schemaId     String
+  schema       PlanSchema      @relation(fields: [schemaId], references: [id])
+  fieldValues  PlanFieldValue[]
+
+  @@index([studentId, planTypeId])
+  @@index([status])
+}
+
+// ============================================
+// PLAN FIELD VALUE MODEL (Data for Each Plan Field)
+// ============================================
+
+model PlanFieldValue {
+  id         String   @id @default(uuid())
+  fieldKey   String   // References field key in PlanSchema.fields
+  value      Json     // Flexible value storage
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  planInstanceId String
+  planInstance   PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+
+  @@unique([planInstanceId, fieldKey])
+  @@index([planInstanceId])
+}
