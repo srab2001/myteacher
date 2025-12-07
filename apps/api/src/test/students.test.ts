@@ -162,7 +162,8 @@ describe('Student Status System', () => {
       const mockStudents = [
         {
           id: 'student-1',
-          studentIdNum: 'STU001',
+          recordId: 'HCPSS-000001',
+          externalId: null,
           firstName: 'John',
           lastName: 'Doe',
           grade: '5',
@@ -179,7 +180,8 @@ describe('Student Status System', () => {
         },
         {
           id: 'student-2',
-          studentIdNum: 'STU002',
+          recordId: 'HCPSS-000002',
+          externalId: null,
           firstName: 'Jane',
           lastName: 'Smith',
           grade: '5',

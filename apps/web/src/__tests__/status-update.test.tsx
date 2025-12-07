@@ -34,7 +34,8 @@ const mockUser = {
 
 const mockStudent = {
   id: 'student-1',
-  studentIdNum: 'STU-001',
+  recordId: 'HCPSS-000001',
+  externalId: null,
   firstName: 'Alex',
   lastName: 'Johnson',
   dateOfBirth: '2015-03-15',

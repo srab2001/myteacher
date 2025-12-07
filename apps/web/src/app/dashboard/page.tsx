@@ -93,7 +93,7 @@ export default function DashboardPage() {
                   <div className={styles.studentInfo}>
                     <h4>{student.lastName}, {student.firstName}</h4>
                     <p>Grade {student.grade} • {student.schoolName}</p>
-                    <p className={styles.studentId}>ID: {student.studentIdNum}</p>
+                    <p className={styles.studentId}>{student.recordId}</p>
                   </div>
                   <div className={styles.studentStatus}>
                     {student.overallStatus ? (

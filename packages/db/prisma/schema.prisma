@@ -158,7 +158,8 @@ model Jurisdiction {
 
 model Student {
   id            String    @id @default(uuid())
-  studentIdNum  String    @unique // School-assigned ID
+  recordId      String    @unique  // Stable, human-readable ID (e.g., "HCPSS-000123")
+  externalId    String?             // External SIS ID if used
   firstName     String
   lastName      String
   dateOfBirth   DateTime
@@ -177,7 +178,8 @@ model Student {
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
 
-  @@index([studentIdNum])
+  @@index([recordId])
+  @@index([externalId])
   @@index([lastName, firstName])
   @@index([teacherId])
 }

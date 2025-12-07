@@ -128,7 +128,7 @@ export default function StudentDetailPage() {
             <h1>{student.lastName}, {student.firstName}</h1>
             <p>Grade {student.grade} • {student.schoolName}</p>
             <p className={styles.studentMeta}>
-              ID: {student.studentIdNum}
+              {student.recordId}
               {student.dateOfBirth && (
                 <> • DOB: {format(new Date(student.dateOfBirth), 'MMM d, yyyy')}</>
               )}

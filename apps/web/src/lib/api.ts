@@ -23,7 +23,8 @@ export interface StudentStatus {
 
 export interface Student {
   id: string;
-  studentIdNum: string;
+  recordId: string;
+  externalId?: string | null;
   firstName: string;
   lastName: string;
   grade: string;

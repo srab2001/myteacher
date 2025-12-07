@@ -34,7 +34,8 @@ const mockOnboardedUser = {
 const mockStudents = [
   {
     id: 'student-1',
-    studentIdNum: 'STU-001',
+    recordId: 'HCPSS-000001',
+    externalId: null,
     firstName: 'Alex',
     lastName: 'Johnson',
     grade: '4',
@@ -50,7 +51,8 @@ const mockStudents = [
   },
   {
     id: 'student-2',
-    studentIdNum: 'STU-002',
+    recordId: 'HCPSS-000002',
+    externalId: null,
     firstName: 'Maria',
     lastName: 'Garcia',
     grade: '5',

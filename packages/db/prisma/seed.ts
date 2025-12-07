@@ -199,7 +199,8 @@ async function main() {
   // Create sample students for testing
   const sampleStudents = [
     {
-      studentIdNum: 'STU-001',
+      recordId: 'HCPSS-000001',
+      externalId: 'SIS-12345',
       firstName: 'Alex',
       lastName: 'Johnson',
       dateOfBirth: new Date('2015-03-15'),
@@ -207,7 +208,8 @@ async function main() {
       schoolName: 'Centennial Elementary',
     },
     {
-      studentIdNum: 'STU-002',
+      recordId: 'HCPSS-000002',
+      externalId: 'SIS-12346',
       firstName: 'Maria',
       lastName: 'Garcia',
       dateOfBirth: new Date('2014-07-22'),
@@ -215,7 +217,8 @@ async function main() {
       schoolName: 'Centennial Elementary',
     },
     {
-      studentIdNum: 'STU-003',
+      recordId: 'HCPSS-000003',
+      externalId: null,
       firstName: 'James',
       lastName: 'Williams',
       dateOfBirth: new Date('2013-11-08'),
@@ -226,7 +229,7 @@ async function main() {
 
   for (const studentData of sampleStudents) {
     const student = await prisma.student.upsert({
-      where: { studentIdNum: studentData.studentIdNum },
+      where: { recordId: studentData.recordId },
       update: {},
       create: {
         ...studentData,
@@ -264,7 +267,7 @@ async function main() {
 
     if (iepSchema) {
       const firstStudent = await prisma.student.findFirst({
-        where: { studentIdNum: 'STU-001' },
+        where: { recordId: 'HCPSS-000001' },
       });
 
       if (firstStudent) {

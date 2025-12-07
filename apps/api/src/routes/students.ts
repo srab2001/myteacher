@@ -25,7 +25,8 @@ router.get('/', requireAuth, requireOnboarded, async (req, res) => {
 
     const studentsWithStatus = students.map(s => ({
       id: s.id,
-      studentIdNum: s.studentIdNum,
+      recordId: s.recordId,
+      externalId: s.externalId,
       firstName: s.firstName,
       lastName: s.lastName,
       grade: s.grade,
@@ -70,7 +71,8 @@ router.get('/:id', requireAuth, requireOnboarded, async (req, res) => {
     res.json({
       student: {
         id: student.id,
-        studentIdNum: student.studentIdNum,
+        recordId: student.recordId,
+        externalId: student.externalId,
         firstName: student.firstName,
         lastName: student.lastName,
         dateOfBirth: student.dateOfBirth,
