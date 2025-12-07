@@ -1,0 +1,130 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.progressBtn {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--btn-color);
+  border-radius: 0.375rem;
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 90px;
+  text-align: center;
+}
+
+.progressBtn:hover:not(:disabled) {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+.progressBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.progressBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hint {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.commentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--background);
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+}
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selectedLevel {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.commentInput {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  resize: none;
+  font-family: inherit;
+}
+
+.commentInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.commentActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.cancelBtn {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: white;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.saveBtn {
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: var(--primary);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.saveBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

@@ -46,6 +46,105 @@ export interface State {
   districts: Array<{ code: string; name: string }>;
 }
 
+// Phase 2 Types
+export type GoalArea = 'READING' | 'WRITING' | 'MATH' | 'COMMUNICATION' | 'SOCIAL_EMOTIONAL' | 'BEHAVIOR' | 'MOTOR_SKILLS' | 'DAILY_LIVING' | 'VOCATIONAL' | 'OTHER';
+export type ProgressLevel = 'NOT_ADDRESSED' | 'FULL_SUPPORT' | 'SOME_SUPPORT' | 'LOW_SUPPORT' | 'MET_TARGET';
+export type WorkSampleRating = 'BELOW_TARGET' | 'NEAR_TARGET' | 'MEETS_TARGET' | 'ABOVE_TARGET';
+export type ServiceType = 'SPECIAL_EDUCATION' | 'SPEECH_LANGUAGE' | 'OCCUPATIONAL_THERAPY' | 'PHYSICAL_THERAPY' | 'COUNSELING' | 'BEHAVIORAL_SUPPORT' | 'READING_SPECIALIST' | 'PARAPROFESSIONAL' | 'OTHER';
+export type ServiceSetting = 'GENERAL_EDUCATION' | 'SPECIAL_EDUCATION' | 'RESOURCE_ROOM' | 'THERAPY_ROOM' | 'COMMUNITY' | 'HOME' | 'OTHER';
+
+export interface PlanSchema {
+  id: string;
+  version: number;
+  name: string;
+  description: string | null;
+  fields: {
+    sections: Array<{
+      key: string;
+      title: string;
+      order: number;
+      isGoalsSection?: boolean;
+      fields: Array<{
+        key: string;
+        type: string;
+        label: string;
+        required: boolean;
+        placeholder?: string;
+        options?: string[];
+        description?: string;
+      }>;
+    }>;
+  };
+}
+
+export interface Plan {
+  id: string;
+  status: string;
+  startDate: string;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  planType: { code: string; name: string };
+  schema: PlanSchema;
+  student: { id: string; firstName: string; lastName: string; dateOfBirth?: string; grade?: string };
+  fieldValues: Record<string, unknown>;
+  goals: Goal[];
+  serviceLogs: ServiceLog[];
+}
+
+export interface Goal {
+  id: string;
+  goalCode: string;
+  area: GoalArea;
+  annualGoalText: string;
+  baselineJson: Record<string, unknown>;
+  shortTermObjectives?: string[];
+  progressSchedule: string | null;
+  targetDate: string | null;
+  isActive: boolean;
+  progressRecords: GoalProgress[];
+  workSamples: WorkSample[];
+}
+
+export interface GoalProgress {
+  id: string;
+  date: string;
+  quickSelect: ProgressLevel;
+  measureJson?: Record<string, unknown>;
+  comment: string | null;
+  isDictated: boolean;
+  recordedBy?: { displayName: string };
+}
+
+export interface WorkSample {
+  id: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  rating: WorkSampleRating;
+  comment: string | null;
+  capturedAt: string;
+  uploadedBy?: { displayName: string };
+}
+
+export interface ServiceLog {
+  id: string;
+  date: string;
+  minutes: number;
+  serviceType: ServiceType;
+  setting: ServiceSetting;
+  notes: string | null;
+  provider?: { displayName: string };
+}
+
+export interface ServiceSummary {
+  totalMinutes: number;
+  weeklyMinutes: number;
+  totalsByType: Record<string, number>;
+  logCount: number;
+}
+
 class ApiClient {
   private async fetch<T>(url: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${url}`, {
@@ -120,6 +219,184 @@ class ApiClient {
     return this.fetch(`/api/students/${studentId}/status`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Phase 2: Schema API
+  async getSchema(planTypeCode: string): Promise<{ schema: PlanSchema }> {
+    return this.fetch(`/api/schemas/${planTypeCode}`);
+  }
+
+  // Phase 2: Plan API
+  async getStudentPlans(studentId: string): Promise<{ plans: Array<{ id: string; status: string; startDate: string; endDate: string | null; planType: string; planTypeCode: string; schemaName: string; createdAt: string }> }> {
+    return this.fetch(`/api/students/${studentId}/plans`);
+  }
+
+  async createPlan(studentId: string, planTypeCode: string): Promise<{ plan: Plan }> {
+    return this.fetch(`/api/students/${studentId}/plans/${planTypeCode}`, {
+      method: 'POST',
+    });
+  }
+
+  async getPlan(planId: string): Promise<{ plan: Plan }> {
+    return this.fetch(`/api/plans/${planId}`);
+  }
+
+  async updatePlanFields(planId: string, fields: Record<string, unknown>): Promise<{ success: boolean }> {
+    return this.fetch(`/api/plans/${planId}/fields`, {
+      method: 'PATCH',
+      body: JSON.stringify({ fields }),
+    });
+  }
+
+  async finalizePlan(planId: string): Promise<{ plan: { id: string; status: string } }> {
+    return this.fetch(`/api/plans/${planId}/finalize`, {
+      method: 'POST',
+    });
+  }
+
+  // Phase 2: Goal API
+  async getPlanGoals(planId: string): Promise<{ goals: Goal[] }> {
+    return this.fetch(`/api/plans/${planId}/goals`);
+  }
+
+  async createGoal(planId: string, data: {
+    goalCode: string;
+    area: GoalArea;
+    annualGoalText: string;
+    baselineJson?: Record<string, unknown>;
+    shortTermObjectives?: string[];
+    progressSchedule?: string;
+    targetDate?: string;
+  }): Promise<{ goal: Goal }> {
+    return this.fetch(`/api/plans/${planId}/goals`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getGoal(goalId: string): Promise<{ goal: Goal }> {
+    return this.fetch(`/api/goals/${goalId}`);
+  }
+
+  async updateGoal(goalId: string, data: Partial<{
+    area: GoalArea;
+    annualGoalText: string;
+    baselineJson: Record<string, unknown>;
+    shortTermObjectives: string[];
+    progressSchedule: string;
+    targetDate: string;
+  }>): Promise<{ goal: Goal }> {
+    return this.fetch(`/api/goals/${goalId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Phase 2: Quick Progress (One-Tap)
+  async createQuickProgress(goalId: string, data: {
+    quickSelect: ProgressLevel;
+    comment?: string;
+    date?: string;
+  }): Promise<{ progress: GoalProgress }> {
+    return this.fetch(`/api/goals/${goalId}/progress/quick`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Phase 2: Dictation Progress
+  async createDictationProgress(goalId: string, data: {
+    quickSelect: ProgressLevel;
+    comment: string;
+    measureJson?: Record<string, unknown>;
+    date?: string;
+  }): Promise<{ progress: GoalProgress }> {
+    return this.fetch(`/api/goals/${goalId}/progress/dictation`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getGoalProgress(goalId: string): Promise<{ progress: GoalProgress[] }> {
+    return this.fetch(`/api/goals/${goalId}/progress`);
+  }
+
+  // Phase 2: Service Logs
+  async getPlanServices(planId: string): Promise<{ serviceLogs: ServiceLog[]; summary: ServiceSummary }> {
+    return this.fetch(`/api/plans/${planId}/services`);
+  }
+
+  async createServiceLog(planId: string, data: {
+    date: string;
+    minutes: number;
+    serviceType: ServiceType;
+    setting: ServiceSetting;
+    notes?: string;
+  }): Promise<{ serviceLog: ServiceLog }> {
+    return this.fetch(`/api/plans/${planId}/services`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateServiceLog(serviceId: string, data: Partial<{
+    date: string;
+    minutes: number;
+    serviceType: ServiceType;
+    setting: ServiceSetting;
+    notes: string;
+  }>): Promise<{ serviceLog: ServiceLog }> {
+    return this.fetch(`/api/services/${serviceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteServiceLog(serviceId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/services/${serviceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Phase 2: Work Samples
+  async getGoalWorkSamples(goalId: string): Promise<{ workSamples: WorkSample[] }> {
+    return this.fetch(`/api/goals/${goalId}/work-samples`);
+  }
+
+  async uploadWorkSample(goalId: string, file: File, rating: WorkSampleRating, comment?: string): Promise<{ workSample: WorkSample }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('rating', rating);
+    if (comment) formData.append('comment', comment);
+
+    const response = await fetch(`${API_BASE}/api/goals/${goalId}/work-samples`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
+  async updateWorkSample(sampleId: string, data: {
+    rating?: WorkSampleRating;
+    comment?: string;
+  }): Promise<{ workSample: WorkSample }> {
+    return this.fetch(`/api/goals/work-samples/${sampleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWorkSample(sampleId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/goals/work-samples/${sampleId}`, {
+      method: 'DELETE',
     });
   }
 }

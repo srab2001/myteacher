@@ -1,0 +1,243 @@
+.container {
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.header {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.backBtn:hover {
+  text-decoration: underline;
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.empty p {
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.goalsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.goalCard {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.goalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+
+.goalInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.goalCode {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.goalArea {
+  background: var(--background);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.expandIcon {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.goalText {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+}
+
+.quickProgress {
+  margin-bottom: 1rem;
+}
+
+.goalActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.goalExpanded {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.progressSection,
+.samplesSection {
+  margin-bottom: 1.5rem;
+}
+
+.progressSection h4,
+.samplesSection h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.noData {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.progressList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progressItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: var(--background);
+  border-radius: 0.25rem;
+}
+
+.progressMain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.progressLevel {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.progressLevel.not-addressed {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.progressLevel.full-support {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.progressLevel.some-support {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.progressLevel.low-support {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.progressLevel.met-target {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.dictatedBadge {
+  font-size: 0.75rem;
+}
+
+.progressComment {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.progressDate {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.samplesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.75rem;
+}
+
+.sampleCard {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.sampleImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sampleFile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--background);
+  font-size: 2rem;
+}
+
+.sampleRating {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.25rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 0.625rem;
+  text-align: center;
+  text-transform: uppercase;
+}

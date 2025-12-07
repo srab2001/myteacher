@@ -6,10 +6,17 @@ import session from 'express-session';
 import passport from './config/passport.js';
 import { env } from './config/env.js';
 
+import path from 'path';
+
 // Routes
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import studentRoutes from './routes/students.js';
+import schemaRoutes from './routes/schemas.js';
+import planRoutes from './routes/plans.js';
+import goalRoutes from './routes/goals.js';
+import serviceRoutes from './routes/services.js';
+import workSampleRoutes from './routes/worksamples.js';
 
 export function createApp(): Express {
   const app = express();
@@ -52,10 +59,22 @@ export function createApp(): Express {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Static file serving for uploads
+  const uploadDir = process.env.UPLOAD_DIR || './uploads';
+  app.use('/uploads', express.static(path.resolve(uploadDir)));
+
   // API routes
   app.use('/auth', authRoutes);
   app.use('/api/user', userRoutes);
   app.use('/api/students', studentRoutes);
+  app.use('/api/schemas', schemaRoutes);
+  app.use('/api/plans', planRoutes);
+  app.use('/api', planRoutes); // For /api/students/:id/plans routes
+  app.use('/api/goals', goalRoutes);
+  app.use('/api', goalRoutes); // For /api/plans/:id/goals routes
+  app.use('/api/services', serviceRoutes);
+  app.use('/api', serviceRoutes); // For /api/plans/:id/services routes
+  app.use('/api/goals', workSampleRoutes); // For /api/goals/:id/work-samples
 
   // 404 handler
   app.use((_req, res) => {

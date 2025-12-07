@@ -1,0 +1,324 @@
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.loadingContainer,
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 1rem;
+}
+
+/* Print Controls */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+@media print {
+  .controls {
+    display: none;
+  }
+}
+
+/* Document Styles */
+.document {
+  max-width: 8.5in;
+  margin: 2rem auto;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 1in;
+}
+
+@media print {
+  .document {
+    margin: 0;
+    box-shadow: none;
+    padding: 0.5in;
+  }
+}
+
+/* Header */
+.docHeader {
+  text-align: center;
+  border-bottom: 2px solid #333;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.docHeader h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.docMeta {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 1.5rem;
+  page-break-inside: avoid;
+}
+
+.section h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.subheading {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+}
+
+/* Info Grid */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 2rem;
+}
+
+.infoItem {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.infoLabel {
+  font-weight: 500;
+  color: #666;
+  min-width: 100px;
+}
+
+.infoLabel::after {
+  content: ':';
+}
+
+.infoValue {
+  font-weight: 500;
+}
+
+/* Fields List */
+.fieldsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fieldItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fieldLabel {
+  font-weight: 500;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.fieldValue {
+  padding: 0.5rem;
+  background: #f9f9f9;
+  border-radius: 0.25rem;
+  min-height: 1.5rem;
+}
+
+/* Goals */
+.goalsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.goalItem {
+  border: 1px solid #ddd;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  page-break-inside: avoid;
+}
+
+.goalHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.goalNumber {
+  font-weight: 700;
+  color: #333;
+}
+
+.goalCode {
+  background: #e5e7eb;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.goalArea {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.goalText {
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.objectives {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+.objectives h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.objectives ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.objectives li {
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+/* Progress Summary */
+.progressSummary {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+.progressSummary h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.progressTable,
+.servicesTable,
+.logsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.progressTable th,
+.progressTable td,
+.servicesTable th,
+.servicesTable td,
+.logsTable th,
+.logsTable td {
+  border: 1px solid #ddd;
+  padding: 0.375rem 0.5rem;
+  text-align: left;
+}
+
+.progressTable th,
+.servicesTable th,
+.logsTable th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+/* No Data */
+.noData {
+  color: #666;
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 0.25rem;
+}
+
+/* Signatures */
+.signatureGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.signatureLine {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.signatureRole {
+  min-width: 120px;
+  font-weight: 500;
+}
+
+.signaturePlaceholder {
+  flex: 1;
+  border-bottom: 1px solid #333;
+  height: 1.5rem;
+}
+
+.signatureDate {
+  font-size: 0.875rem;
+}
+
+/* Footer */
+.docFooter {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.docFooter p {
+  margin: 0.25rem 0;
+}
+
+/* Print-specific styles */
+@media print {
+  .document {
+    font-size: 11pt;
+  }
+
+  .section {
+    page-break-inside: avoid;
+  }
+
+  .goalItem {
+    page-break-inside: avoid;
+  }
+
+  .signatureGrid {
+    page-break-inside: avoid;
+  }
+}

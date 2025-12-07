@@ -40,6 +40,56 @@ enum StatusCode {
   URGENT
 }
 
+enum GoalArea {
+  READING
+  WRITING
+  MATH
+  COMMUNICATION
+  SOCIAL_EMOTIONAL
+  BEHAVIOR
+  MOTOR_SKILLS
+  DAILY_LIVING
+  VOCATIONAL
+  OTHER
+}
+
+enum ProgressLevel {
+  NOT_ADDRESSED
+  FULL_SUPPORT
+  SOME_SUPPORT
+  LOW_SUPPORT
+  MET_TARGET
+}
+
+enum WorkSampleRating {
+  BELOW_TARGET
+  NEAR_TARGET
+  MEETS_TARGET
+  ABOVE_TARGET
+}
+
+enum ServiceType {
+  SPECIAL_EDUCATION
+  SPEECH_LANGUAGE
+  OCCUPATIONAL_THERAPY
+  PHYSICAL_THERAPY
+  COUNSELING
+  BEHAVIORAL_SUPPORT
+  READING_SPECIALIST
+  PARAPROFESSIONAL
+  OTHER
+}
+
+enum ServiceSetting {
+  GENERAL_EDUCATION
+  SPECIAL_EDUCATION
+  RESOURCE_ROOM
+  THERAPY_ROOM
+  COMMUNITY
+  HOME
+  OTHER
+}
+
 // ============================================
 // USER MODEL
 // ============================================
@@ -65,6 +115,9 @@ model AppUser {
   jurisdiction   Jurisdiction? @relation(fields: [jurisdictionId], references: [id])
   students       Student[]     @relation("TeacherStudents")
   statusUpdates  StudentStatus[] @relation("StatusUpdatedBy")
+  progressRecords GoalProgress[] @relation("ProgressRecordedBy")
+  workSamples    WorkSample[]   @relation("WorkSampleUploadedBy")
+  serviceLogs    ServiceLog[]   @relation("ServiceProvider")
 
   @@index([googleId])
   @@index([email])
@@ -210,6 +263,8 @@ model PlanInstance {
   schemaId     String
   schema       PlanSchema      @relation(fields: [schemaId], references: [id])
   fieldValues  PlanFieldValue[]
+  goals        Goal[]
+  serviceLogs  ServiceLog[]
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -232,4 +287,105 @@ model PlanFieldValue {
 
   @@unique([planInstanceId, fieldKey])
   @@index([planInstanceId])
+}
+
+// ============================================
+// GOAL MODEL (IEP Goals)
+// ============================================
+
+model Goal {
+  id               String    @id @default(uuid())
+  goalCode         String    // e.g., "GOAL-1", "GOAL-2"
+  area             GoalArea
+  baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
+  annualGoalText   String    @db.Text
+  shortTermObjectives Json?  // Array of short-term objectives
+  progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
+  targetDate       DateTime?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  planInstanceId String
+  planInstance   PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  progressRecords GoalProgress[]
+  workSamples    WorkSample[]
+
+  @@unique([planInstanceId, goalCode])
+  @@index([planInstanceId])
+  @@index([area])
+}
+
+// ============================================
+// GOAL PROGRESS MODEL (Progress Tracking)
+// ============================================
+
+model GoalProgress {
+  id           String        @id @default(uuid())
+  date         DateTime      @default(now())
+  quickSelect  ProgressLevel // One-tap progress level
+  measureJson  Json?         // Detailed measurement data
+  comment      String?       @db.Text
+  isDictated   Boolean       @default(false) // True if entered via voice
+  createdAt    DateTime      @default(now())
+
+  // Relations
+  goalId     String
+  goal       Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  recordedById String
+  recordedBy   AppUser @relation("ProgressRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([goalId, date])
+  @@index([goalId])
+}
+
+// ============================================
+// WORK SAMPLE MODEL (Student Work Samples)
+// ============================================
+
+model WorkSample {
+  id         String           @id @default(uuid())
+  fileUrl    String           // URL to stored file (S3, GCP, Azure)
+  fileName   String
+  fileType   String           // MIME type
+  fileSize   Int              // Size in bytes
+  rating     WorkSampleRating
+  comment    String?
+  capturedAt DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+
+  // Relations
+  goalId     String
+  goal       Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   AppUser @relation("WorkSampleUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([goalId])
+  @@index([capturedAt])
+}
+
+// ============================================
+// SERVICE LOG MODEL (Service Delivery Tracking)
+// ============================================
+
+model ServiceLog {
+  id          String        @id @default(uuid())
+  date        DateTime
+  minutes     Int
+  serviceType ServiceType
+  setting     ServiceSetting
+  notes       String?       @db.Text
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  planInstanceId String
+  planInstance   PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  providerId     String
+  provider       AppUser      @relation("ServiceProvider", fields: [providerId], references: [id])
+
+  @@index([planInstanceId, date])
+  @@index([planInstanceId, serviceType])
+  @@index([providerId])
 }
