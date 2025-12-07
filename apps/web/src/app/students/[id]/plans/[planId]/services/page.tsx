@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, addDays } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
 import { api, ServiceLog, ServiceType, ServiceSetting, ServiceSummary } from '@/lib/api';
 import styles from './page.module.css';

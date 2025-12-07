@@ -17,7 +17,7 @@ const PROGRESS_OPTIONS: { value: ProgressLevel; label: string; color: string; bg
   { value: 'MET_TARGET', label: 'Met Target', color: '#166534', bgColor: '#dcfce7' },
 ];
 
-export function QuickProgressButtons({ goalId, onSelect }: QuickProgressButtonsProps) {
+export function QuickProgressButtons({ onSelect }: QuickProgressButtonsProps) {
   const [saving, setSaving] = useState<ProgressLevel | null>(null);
   const [showComment, setShowComment] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<ProgressLevel | null>(null);

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { useRouter, useParams } from 'next/navigation';
 import { AuthProvider } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -22,7 +22,7 @@ jest.mock('@/lib/api', () => ({
 
 // Mock date-fns format
 jest.mock('date-fns', () => ({
-  format: jest.fn((date, formatStr) => '2024-01-15'),
+  format: jest.fn(() => '2024-01-15'),
 }));
 
 const mockUser = {

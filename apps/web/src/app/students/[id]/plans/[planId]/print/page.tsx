@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan, Goal, GoalArea, ProgressLevel, ServiceLog, ServiceType, ServiceSetting } from '@/lib/api';
+import { api, Plan, GoalArea, ProgressLevel, ServiceType, ServiceSetting } from '@/lib/api';
 import styles from './page.module.css';
 
 const GOAL_AREA_LABELS: Record<GoalArea, string> = {
