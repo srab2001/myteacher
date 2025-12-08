@@ -3,10 +3,19 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import pg from 'pg';
 import passport from './config/passport.js';
 import { env } from './config/env.js';
 
 import path from 'path';
+
+// PostgreSQL session store
+const PgSession = connectPgSimple(session);
+const pgPool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -38,9 +47,14 @@ export function createApp(): Express {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
-  // Session configuration
+  // Session configuration with PostgreSQL store for serverless
   app.use(
     session({
+      store: new PgSession({
+        pool: pgPool,
+        tableName: 'session', // Will auto-create if doesn't exist
+        createTableIfMissing: true,
+      }),
       secret: env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
