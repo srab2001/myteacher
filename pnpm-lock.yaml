@@ -23,9 +23,9 @@ importers:
 
   apps/api:
     dependencies:
-      '@myteacher/db':
-        specifier: workspace:*
-        version: link:../../packages/db
+      '@prisma/client':
+        specifier: ^5.22.0
+        version: 5.22.0(prisma@5.22.0)
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -120,6 +120,9 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.25)
+      prisma:
+        specifier: ^5.22.0
+        version: 5.22.0
       supertest:
         specifier: ^6.3.3
         version: 6.3.4
