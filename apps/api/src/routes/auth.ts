@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import passport from 'passport';
+import bcrypt from 'bcryptjs';
 import { env } from '../config/env.js';
 import { requireAuth } from '../middleware/auth.js';
+import { prisma } from '../lib/db.js';
 
 const router = Router();
 
@@ -100,6 +102,47 @@ router.get('/me', requireAuth, (req, res) => {
       isOnboarded: req.user!.isOnboarded,
     },
   });
+});
+
+// Password reset endpoint (protected by reset key)
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { username, newPassword, resetKey } = req.body;
+
+    // Verify reset key (use SESSION_SECRET as the reset key for simplicity)
+    const expectedKey = env.SESSION_SECRET;
+    if (!resetKey || resetKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid reset key' });
+    }
+
+    if (!username || !newPassword) {
+      return res.status(400).json({ error: 'Username and new password are required' });
+    }
+
+    // Find user
+    const user = await prisma.appUser.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    await prisma.appUser.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    console.log('Password reset successful for user:', username);
+    return res.json({ success: true, message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    return res.status(500).json({ error: 'Failed to reset password' });
+  }
 });
 
 export default router;
