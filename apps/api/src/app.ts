@@ -48,7 +48,7 @@ export function createApp(): Express {
         secure: env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        sameSite: env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-origin cookies
       },
     })
   );
