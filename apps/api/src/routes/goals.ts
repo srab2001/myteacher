@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, GoalArea, ProgressLevel } from '../lib/db.js';
+import { prisma, Prisma, GoalArea, ProgressLevel } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 
 const router = Router();
@@ -40,7 +40,7 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
         goalCode: data.goalCode,
         area: data.area,
         annualGoalText: data.annualGoalText,
-        baselineJson: data.baselineJson || {},
+        baselineJson: (data.baselineJson || {}) as Prisma.InputJsonValue,
         shortTermObjectives: data.shortTermObjectives || [],
         progressSchedule: data.progressSchedule,
         targetDate: data.targetDate ? new Date(data.targetDate) : null,
@@ -162,7 +162,7 @@ router.patch('/:goalId', requireAuth, requireOnboarded, async (req, res) => {
       data: {
         ...(data.area && { area: data.area }),
         ...(data.annualGoalText && { annualGoalText: data.annualGoalText }),
-        ...(data.baselineJson && { baselineJson: data.baselineJson }),
+        ...(data.baselineJson && { baselineJson: data.baselineJson as Prisma.InputJsonValue }),
         ...(data.shortTermObjectives && { shortTermObjectives: data.shortTermObjectives }),
         ...(data.progressSchedule && { progressSchedule: data.progressSchedule }),
         ...(data.targetDate && { targetDate: new Date(data.targetDate) }),
@@ -262,7 +262,7 @@ router.post('/:goalId/progress/dictation', requireAuth, requireOnboarded, async 
         goalId: goal.id,
         quickSelect: data.quickSelect,
         comment: data.comment,
-        measureJson: data.measureJson || {},
+        measureJson: (data.measureJson || {}) as Prisma.InputJsonValue,
         isDictated: true,
         date: data.date ? new Date(data.date) : new Date(),
         recordedById: req.user!.id,
