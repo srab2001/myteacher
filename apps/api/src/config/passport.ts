@@ -38,28 +38,41 @@ passport.use(
     },
     async (username, password, done) => {
       try {
+        console.log('Login attempt for username:', username);
+
         // Find user by username
         const user = await prisma.appUser.findUnique({
           where: { username },
         });
 
+        console.log('User found:', user ? 'yes' : 'no');
+
         if (!user) {
+          console.log('Login failed: user not found');
           return done(null, false, { message: 'Invalid username or password' });
         }
 
         if (!user.passwordHash) {
+          console.log('Login failed: no password hash');
           return done(null, false, { message: 'This account does not support password login' });
         }
+
+        console.log('Password hash exists, verifying...');
 
         // Verify password
         const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
+        console.log('Password valid:', isValidPassword);
+
         if (!isValidPassword) {
+          console.log('Login failed: invalid password');
           return done(null, false, { message: 'Invalid username or password' });
         }
 
+        console.log('Login successful for user:', user.id);
         return done(null, user);
       } catch (error) {
+        console.error('Login error:', error);
         return done(error);
       }
     }
