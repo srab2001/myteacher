@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan } from '@/lib/api';
+import { api, Plan, PriorPlanDocument } from '@/lib/api';
 import styles from '../iep/page.module.css';
 
 export default function FiveOhFourInterviewPage() {
@@ -14,6 +15,8 @@ export default function FiveOhFourInterviewPage() {
   const studentId = params.id as string;
 
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [priorPlans, setPriorPlans] = useState<PriorPlanDocument[]>([]);
+  const [showStartStep, setShowStartStep] = useState(true);
   const [currentSection, setCurrentSection] = useState(0);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
@@ -31,16 +34,30 @@ export default function FiveOhFourInterviewPage() {
 
   const loadPlan = useCallback(async () => {
     try {
-      const { plan: loadedPlan } = await api.getPlan(planId);
-      setPlan(loadedPlan);
-      setFormData(loadedPlan.fieldValues || {});
+      const [planRes, priorPlansRes] = await Promise.all([
+        api.getPlan(planId),
+        api.getStudentPriorPlans(studentId),
+      ]);
+      setPlan(planRes.plan);
+      setFormData(planRes.plan.fieldValues || {});
+
+      // Filter prior plans to show only 504 plans
+      const prior504Plans = priorPlansRes.priorPlans.filter(
+        (p: PriorPlanDocument) => p.planType === 'FIVE_OH_FOUR'
+      );
+      setPriorPlans(prior504Plans);
+
+      // If plan already has data or no prior plans exist, skip start step
+      if (Object.keys(planRes.plan.fieldValues || {}).length > 0 || prior504Plans.length === 0) {
+        setShowStartStep(false);
+      }
     } catch (err) {
       console.error('Failed to load plan:', err);
       setError('Failed to load plan');
     } finally {
       setLoadingPlan(false);
     }
-  }, [planId]);
+  }, [planId, studentId]);
 
   useEffect(() => {
     if (user?.isOnboarded && planId) {
@@ -82,6 +99,10 @@ export default function FiveOhFourInterviewPage() {
         return next;
       });
     }
+  };
+
+  const handleStartBlank = () => {
+    setShowStartStep(false);
   };
 
   const sections = plan?.schema?.fields?.sections || [];
@@ -148,6 +169,71 @@ export default function FiveOhFourInterviewPage() {
     return (
       <div className={styles.container}>
         <div className={styles.error}>Plan not found</div>
+      </div>
+    );
+  }
+
+  // Start Step - Show prior plans option
+  if (showStartStep && priorPlans.length > 0) {
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button className={styles.backBtn} onClick={() => router.push(`/students/${studentId}`)}>
+            ← Back to Student
+          </button>
+          <div className={styles.headerInfo}>
+            <h1>504 Plan: {plan.student.firstName} {plan.student.lastName}</h1>
+            <span className={styles.status}>{plan.status}</span>
+          </div>
+        </header>
+
+        <div className={styles.startStep}>
+          <h2>Getting Started</h2>
+          <p>This student has prior 504 plan documents on file. You can review them before starting your new plan.</p>
+
+          <div className={styles.startOptions}>
+            <div className={styles.startOption}>
+              <h3>Start Blank</h3>
+              <p>Begin with an empty 504 plan form.</p>
+              <button className="btn btn-primary" onClick={handleStartBlank}>
+                Start Blank 504 Plan
+              </button>
+            </div>
+
+            <div className={styles.startOption}>
+              <h3>Review Prior 504 Plans</h3>
+              <p>Download and review previous 504 plans before starting.</p>
+              <div className={styles.priorPlansList}>
+                {priorPlans.map(priorPlan => (
+                  <div key={priorPlan.id} className={styles.priorPlanItem}>
+                    <div className={styles.priorPlanInfo}>
+                      <span className={styles.priorPlanFile}>{priorPlan.fileName}</span>
+                      {priorPlan.planDate && (
+                        <span className={styles.priorPlanDate}>
+                          Plan Date: {format(new Date(priorPlan.planDate), 'MMM d, yyyy')}
+                        </span>
+                      )}
+                      {priorPlan.notes && (
+                        <span className={styles.priorPlanNotes}>{priorPlan.notes}</span>
+                      )}
+                    </div>
+                    <a
+                      href={api.getPriorPlanDownloadUrl(priorPlan.id)}
+                      className="btn btn-outline btn-sm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-secondary" onClick={handleStartBlank} style={{ marginTop: '1rem' }}>
+                Continue to 504 Plan Form
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
