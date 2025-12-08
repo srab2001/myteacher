@@ -9,11 +9,17 @@ import fs from 'fs';
 const router = Router();
 
 // Configure multer for file uploads
-const uploadDir = process.env.UPLOAD_DIR || './uploads';
+// Use /tmp for serverless environments (Vercel), otherwise use local uploads dir
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+const uploadDir = process.env.UPLOAD_DIR || (isServerless ? '/tmp/uploads' : './uploads');
 
-// Ensure upload directory exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Ensure upload directory exists (wrapped in try-catch for serverless)
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (error) {
+  console.warn('Could not create upload directory:', error);
 }
 
 const storage = multer.diskStorage({
