@@ -141,6 +141,8 @@ model AppUser {
   bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
   formTemplateUploads FormTemplate[] @relation("FormTemplateUploadedBy")
   behaviorEvents BehaviorEvent[] @relation("BehaviorRecordedBy")
+  permission     UserPermission?
+  studentAccess  StudentAccess[]
 
   @@index([googleId])
   @@index([email])
@@ -196,6 +198,7 @@ model Student {
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
+  accessGrants   StudentAccess[]
 
   @@index([recordId])
   @@index([externalId])
@@ -596,4 +599,44 @@ model BehaviorEvent {
 
   @@index([behaviorTargetId, eventDate])
   @@index([behaviorTargetId])
+}
+
+// ============================================
+// USER PERMISSION MODEL (Fine-grained permissions)
+// ============================================
+
+model UserPermission {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  canCreatePlans Boolean  @default(false) // Can create new 504/IEP/Behavior plans
+  canUpdatePlans Boolean  @default(false) // Can edit plans, add targets, events
+  canReadAll     Boolean  @default(false) // Can read all students in jurisdiction
+  canManageDocs  Boolean  @default(false) // Admin: can manage schemas, best practices
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// STUDENT ACCESS MODEL (Explicit student access grants)
+// ============================================
+
+model StudentAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  studentId String
+  grantedAt DateTime @default(now())
+  expiresAt DateTime? // Optional expiration
+
+  // Relations
+  user    AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, studentId])
+  @@index([userId])
+  @@index([studentId])
 }

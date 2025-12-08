@@ -193,14 +193,133 @@ After merging to production:
    pnpm prisma db seed
    ```
 
-## Access Control
+## Access Control & Permission Framework
 
-All routes enforce:
-- User authentication (`requireAuth`)
-- Onboarding completion (`requireOnboarded`)
-- Teacher-student relationship validation (only access plans for students assigned to the teacher)
+### Permission Middleware (`apps/api/src/middleware/permissions.ts`)
 
-Note: Full permission framework (canCreatePlans, canUpdatePlans, canReadAll) is planned for Phase 5.
+All routes now use the comprehensive permission framework:
+
+#### Permission Model (UserPermission)
+- `canCreatePlans`: Can create new 504/IEP/Behavior plans
+- `canUpdatePlans`: Can edit plans, add targets, events
+- `canReadAll`: Can read all students in jurisdiction
+- `canManageDocs`: Admin can manage schemas, best practices
+
+#### Student Access Model (StudentAccess)
+- Grants explicit access to specific students
+- Supports expiration dates for temporary access
+- Unique constraint on (userId, studentId)
+
+#### Access Control Logic
+1. **Assigned Teacher**: User is the student's assigned `teacherId` → access granted
+2. **canReadAll Permission**: User has `canReadAll` in same jurisdiction → access granted
+3. **StudentAccess Grant**: Explicit grant exists and not expired → access granted
+
+#### Middleware Functions
+- `requireStudentAccess(paramName)` - Check student access via route param
+- `requirePlanAccess(paramName)` - Check plan access via route param
+- `requireBehaviorTargetAccess(paramName)` - Check target access via route param
+- `requireBehaviorEventAccess(paramName)` - Check event access via route param
+- `requireCreatePlanPermission` - Check create plan permission
+- `requireUpdatePlanPermission` - Check update plan permission
+- `requireManageDocsPermission` - Check admin doc management permission
+
+#### Role-Based Defaults
+- **ADMIN**: All permissions implicitly granted
+- **TEACHER/CASE_MANAGER**: Create/update for assigned students
+- **AIDE**: Requires explicit UserPermission grants
+
+### New Reporting Endpoints
+
+#### GET /students/status-summary
+Returns summary for all accessible students:
+```json
+{
+  "students": [{
+    "studentId": "...",
+    "recordId": "...",
+    "firstName": "...",
+    "lastName": "...",
+    "gradeLevel": "...",
+    "overallStatus": { "code": "...", "summary": "...", "effectiveDate": "..." },
+    "hasActiveIEP": true,
+    "hasActive504": false,
+    "hasActiveBehaviorPlan": true,
+    "activePlanDates": {
+      "iepStart": "...",
+      "iepEnd": "...",
+      "sec504Start": null,
+      "sec504End": null,
+      "behaviorStart": "..."
+    }
+  }]
+}
+```
+
+#### GET /students/:id/iep-progress
+Returns IEP goal progress report with trend analysis:
+- Goal-by-goal progress summary
+- Trend calculation (improving/stable/declining/insufficient_data)
+- On-track indicator
+- Recent progress records
+
+#### GET /students/:id/service-minutes
+Returns service delivery report:
+- Date range filtering
+- Service type grouping
+- Total minutes and session counts
+- Provider information
+
+### Admin Schema Viewer Endpoints
+
+#### GET /admin/schemas
+List all plan schemas with filters:
+- Filter by planType, jurisdictionId, activeOnly
+- Returns plan counts, version info
+
+#### GET /admin/schemas/:id
+Get full schema details with field definitions
+
+#### POST /admin/schemas
+Create new schema version:
+- Auto-increments version number
+- Starts as inactive
+
+#### PATCH /admin/schemas/:id
+Update schema metadata:
+- Activating auto-deactivates other versions
+
+#### GET /admin/schemas/:id/plans
+List plans using a schema with pagination
+
+## Database Schema Updates
+
+### New Models (Prisma)
+
+```prisma
+model UserPermission {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  canCreatePlans Boolean  @default(false)
+  canUpdatePlans Boolean  @default(false)
+  canReadAll     Boolean  @default(false)
+  canManageDocs  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StudentAccess {
+  id        String    @id @default(uuid())
+  userId    String
+  studentId String
+  grantedAt DateTime  @default(now())
+  expiresAt DateTime?
+  user    AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  @@unique([userId, studentId])
+}
+```
 
 ## Future Enhancements (Phase 4+)
 
@@ -209,3 +328,4 @@ Note: Full permission framework (canCreatePlans, canUpdatePlans, canReadAll) is 
 - Data visualization/charts for behavior events
 - Progress monitoring alerts
 - Team collaboration features
+- Admin UI for managing UserPermission and StudentAccess

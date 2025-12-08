@@ -2,15 +2,18 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma, StatusScope, StatusCode } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
+import { getAccessibleStudentIds, requireStudentAccess, getUserPermissions } from '../middleware/permissions.js';
 
 const router = Router();
 
-// Get all students for current teacher
+// Get all students for current user (based on permissions)
 router.get('/', requireAuth, requireOnboarded, async (req, res) => {
   try {
+    const studentIds = await getAccessibleStudentIds(req.user!.id);
+
     const students = await prisma.student.findMany({
       where: {
-        teacherId: req.user!.id,
+        id: { in: studentIds },
         isActive: true,
       },
       include: {
@@ -42,14 +45,76 @@ router.get('/', requireAuth, requireOnboarded, async (req, res) => {
   }
 });
 
-// Get single student
-router.get('/:id', requireAuth, requireOnboarded, async (req, res) => {
+// GET /students/status-summary - Get status summary for all accessible students
+router.get('/status-summary', requireAuth, requireOnboarded, async (req, res) => {
   try {
-    const student = await prisma.student.findFirst({
+    const studentIds = await getAccessibleStudentIds(req.user!.id);
+
+    const students = await prisma.student.findMany({
       where: {
-        id: req.params.id,
-        teacherId: req.user!.id,
+        id: { in: studentIds },
+        isActive: true,
       },
+      include: {
+        statuses: {
+          where: { scope: 'OVERALL' },
+          orderBy: { effectiveDate: 'desc' },
+          take: 1,
+        },
+        planInstances: {
+          where: { status: 'ACTIVE' },
+          include: {
+            planType: true,
+          },
+        },
+      },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+
+    const statusSummary = students.map(s => {
+      const overallStatus = s.statuses[0] || null;
+      const activePlans = s.planInstances;
+
+      const activeIEP = activePlans.find(p => p.planType.code === 'IEP');
+      const active504 = activePlans.find(p => p.planType.code === 'FIVE_OH_FOUR');
+      const activeBehavior = activePlans.find(p => p.planType.code === 'BEHAVIOR_PLAN');
+
+      return {
+        studentId: s.id,
+        recordId: s.recordId,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        gradeLevel: s.grade,
+        overallStatus: overallStatus ? {
+          code: overallStatus.code,
+          summary: overallStatus.summary,
+          effectiveDate: overallStatus.effectiveDate,
+        } : null,
+        hasActiveIEP: !!activeIEP,
+        hasActive504: !!active504,
+        hasActiveBehaviorPlan: !!activeBehavior,
+        activePlanDates: {
+          iepStart: activeIEP?.startDate || null,
+          iepEnd: activeIEP?.endDate || null,
+          sec504Start: active504?.startDate || null,
+          sec504End: active504?.endDate || null,
+          behaviorStart: activeBehavior?.startDate || null,
+        },
+      };
+    });
+
+    res.json({ students: statusSummary });
+  } catch (error) {
+    console.error('Status summary fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch status summary' });
+  }
+});
+
+// Get single student
+router.get('/:id', requireAuth, requireOnboarded, requireStudentAccess('id'), async (req, res) => {
+  try {
+    const student = await prisma.student.findUnique({
+      where: { id: req.params.id },
       include: {
         statuses: {
           orderBy: { effectiveDate: 'desc' },
@@ -95,19 +160,8 @@ router.get('/:id', requireAuth, requireOnboarded, async (req, res) => {
 });
 
 // Get student statuses
-router.get('/:id/status', requireAuth, requireOnboarded, async (req, res) => {
+router.get('/:id/status', requireAuth, requireOnboarded, requireStudentAccess('id'), async (req, res) => {
   try {
-    const student = await prisma.student.findFirst({
-      where: {
-        id: req.params.id,
-        teacherId: req.user!.id,
-      },
-    });
-
-    if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
-    }
-
     // Get latest status for each scope
     const latestStatuses = await prisma.studentStatus.findMany({
       where: { studentId: req.params.id },
@@ -150,20 +204,9 @@ const statusSchema = z.object({
   effectiveDate: z.string().transform(s => new Date(s)),
 });
 
-router.post('/:id/status', requireAuth, requireOnboarded, async (req, res) => {
+router.post('/:id/status', requireAuth, requireOnboarded, requireStudentAccess('id'), async (req, res) => {
   try {
     const data = statusSchema.parse(req.body);
-
-    const student = await prisma.student.findFirst({
-      where: {
-        id: req.params.id,
-        teacherId: req.user!.id,
-      },
-    });
-
-    if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
-    }
 
     const status = await prisma.studentStatus.create({
       data: {
@@ -188,6 +231,193 @@ router.post('/:id/status', requireAuth, requireOnboarded, async (req, res) => {
     }
     console.error('Status create error:', error);
     res.status(500).json({ error: 'Failed to create status' });
+  }
+});
+
+// GET /:id/iep-progress - Get IEP progress report for a student
+router.get('/:id/iep-progress', requireAuth, requireOnboarded, requireStudentAccess('id'), async (req, res) => {
+  try {
+    // Find active IEP plan for this student
+    const iepPlan = await prisma.planInstance.findFirst({
+      where: {
+        studentId: req.params.id,
+        planType: { code: 'IEP' },
+        status: 'ACTIVE',
+      },
+      include: {
+        goals: {
+          include: {
+            progressRecords: {
+              orderBy: { date: 'desc' },
+            },
+          },
+        },
+        student: true,
+        planType: true,
+      },
+    });
+
+    if (!iepPlan) {
+      return res.status(404).json({ error: 'No active IEP found for this student' });
+    }
+
+    // Calculate progress summary for each goal
+    const goalsWithProgress = iepPlan.goals.map(goal => {
+      const records = goal.progressRecords;
+      const latestRecord = records[0] || null;
+      const firstRecord = records[records.length - 1] || null;
+
+      // Calculate trend if there are at least 2 records
+      let trend: 'improving' | 'stable' | 'declining' | 'insufficient_data' = 'insufficient_data';
+      if (records.length >= 2) {
+        const recentAvg = records.slice(0, Math.min(3, records.length)).reduce((sum, r) => sum + (r.percentCorrect || 0), 0) / Math.min(3, records.length);
+        const olderAvg = records.slice(-Math.min(3, records.length)).reduce((sum, r) => sum + (r.percentCorrect || 0), 0) / Math.min(3, records.length);
+
+        if (recentAvg > olderAvg + 5) trend = 'improving';
+        else if (recentAvg < olderAvg - 5) trend = 'declining';
+        else trend = 'stable';
+      }
+
+      return {
+        goalId: goal.id,
+        goalCode: goal.goalCode,
+        area: goal.area,
+        annualGoalText: goal.annualGoalText,
+        baselineValue: goal.baselineValue,
+        targetValue: goal.targetValue,
+        targetDate: goal.targetDate,
+        progressSummary: {
+          totalRecords: records.length,
+          latestValue: latestRecord?.percentCorrect || null,
+          latestDate: latestRecord?.date || null,
+          firstValue: firstRecord?.percentCorrect || null,
+          trend,
+          isOnTrack: latestRecord ? (latestRecord.percentCorrect || 0) >= (goal.targetValue || 0) * 0.8 : null,
+        },
+        recentProgress: records.slice(0, 5).map(r => ({
+          id: r.id,
+          date: r.date,
+          percentCorrect: r.percentCorrect,
+          trials: r.trials,
+          notes: r.notes,
+        })),
+      };
+    });
+
+    res.json({
+      studentId: iepPlan.studentId,
+      studentName: `${iepPlan.student.firstName} ${iepPlan.student.lastName}`,
+      planId: iepPlan.id,
+      planStatus: iepPlan.status,
+      planStartDate: iepPlan.startDate,
+      planEndDate: iepPlan.endDate,
+      totalGoals: iepPlan.goals.length,
+      goals: goalsWithProgress,
+    });
+  } catch (error) {
+    console.error('IEP progress fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch IEP progress' });
+  }
+});
+
+// GET /:id/service-minutes - Get service minutes report for a student
+router.get('/:id/service-minutes', requireAuth, requireOnboarded, requireStudentAccess('id'), async (req, res) => {
+  try {
+    const { from, to } = req.query;
+
+    // Default to current school year if no dates provided
+    const now = new Date();
+    const defaultFrom = new Date(now.getFullYear(), now.getMonth() >= 8 ? 8 : -4, 1); // Sept 1 or prev Sept 1
+    const defaultTo = now;
+
+    const fromDate = from && typeof from === 'string' ? new Date(from) : defaultFrom;
+    const toDate = to && typeof to === 'string' ? new Date(to) : defaultTo;
+
+    // Find active IEP for this student
+    const iepPlan = await prisma.planInstance.findFirst({
+      where: {
+        studentId: req.params.id,
+        planType: { code: 'IEP' },
+        status: 'ACTIVE',
+      },
+      include: {
+        serviceLogs: {
+          where: {
+            date: {
+              gte: fromDate,
+              lte: toDate,
+            },
+          },
+          include: {
+            provider: {
+              select: { displayName: true },
+            },
+          },
+          orderBy: { date: 'desc' },
+        },
+        student: true,
+      },
+    });
+
+    if (!iepPlan) {
+      return res.status(404).json({ error: 'No active IEP found for this student' });
+    }
+
+    // Group service logs by service type
+    const serviceGroups: Record<string, {
+      serviceType: string;
+      totalMinutes: number;
+      sessionCount: number;
+      logs: Array<{
+        id: string;
+        date: Date;
+        minutes: number;
+        notes: string | null;
+        provider: string | null;
+      }>;
+    }> = {};
+
+    for (const log of iepPlan.serviceLogs) {
+      if (!serviceGroups[log.serviceType]) {
+        serviceGroups[log.serviceType] = {
+          serviceType: log.serviceType,
+          totalMinutes: 0,
+          sessionCount: 0,
+          logs: [],
+        };
+      }
+      serviceGroups[log.serviceType].totalMinutes += log.minutes;
+      serviceGroups[log.serviceType].sessionCount += 1;
+      serviceGroups[log.serviceType].logs.push({
+        id: log.id,
+        date: log.date,
+        minutes: log.minutes,
+        notes: log.notes,
+        provider: log.provider?.displayName || null,
+      });
+    }
+
+    const totalMinutes = Object.values(serviceGroups).reduce((sum, g) => sum + g.totalMinutes, 0);
+    const totalSessions = Object.values(serviceGroups).reduce((sum, g) => sum + g.sessionCount, 0);
+
+    res.json({
+      studentId: iepPlan.studentId,
+      studentName: `${iepPlan.student.firstName} ${iepPlan.student.lastName}`,
+      planId: iepPlan.id,
+      dateRange: {
+        from: fromDate,
+        to: toDate,
+      },
+      summary: {
+        totalMinutes,
+        totalSessions,
+        averageMinutesPerSession: totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0,
+      },
+      services: Object.values(serviceGroups),
+    });
+  } catch (error) {
+    console.error('Service minutes fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch service minutes' });
   }
 });
 

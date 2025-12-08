@@ -2,20 +2,18 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
+import { requireStudentAccess, requirePlanAccess, requireCreatePlanPermission, requireUpdatePlanPermission } from '../middleware/permissions.js';
 
 const router = Router();
 
 // Create a new plan for a student
-router.post('/students/:studentId/plans/:planTypeCode', requireAuth, requireOnboarded, async (req, res) => {
+router.post('/students/:studentId/plans/:planTypeCode', requireAuth, requireOnboarded, requireStudentAccess('studentId'), requireCreatePlanPermission, async (req, res) => {
   try {
     const { studentId, planTypeCode } = req.params;
 
-    // Verify student belongs to this teacher
-    const student = await prisma.student.findFirst({
-      where: {
-        id: studentId,
-        teacherId: req.user!.id,
-      },
+    // Student access already verified by middleware
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
     });
 
     if (!student) {
@@ -97,15 +95,10 @@ router.post('/students/:studentId/plans/:planTypeCode', requireAuth, requireOnbo
 });
 
 // Get a plan by ID
-router.get('/:planId', requireAuth, requireOnboarded, async (req, res) => {
+router.get('/:planId', requireAuth, requireOnboarded, requirePlanAccess('planId'), async (req, res) => {
   try {
-    const plan = await prisma.planInstance.findFirst({
-      where: {
-        id: req.params.planId,
-        student: {
-          teacherId: req.user!.id,
-        },
-      },
+    const plan = await prisma.planInstance.findUnique({
+      where: { id: req.params.planId },
       include: {
         schema: true,
         planType: true,
@@ -181,18 +174,13 @@ const updateFieldsSchema = z.object({
   fields: z.record(z.unknown()),
 });
 
-router.patch('/:planId/fields', requireAuth, requireOnboarded, async (req, res) => {
+router.patch('/:planId/fields', requireAuth, requireOnboarded, requirePlanAccess('planId'), requireUpdatePlanPermission, async (req, res) => {
   try {
     const data = updateFieldsSchema.parse(req.body);
 
-    // Verify plan belongs to teacher
-    const plan = await prisma.planInstance.findFirst({
-      where: {
-        id: req.params.planId,
-        student: {
-          teacherId: req.user!.id,
-        },
-      },
+    // Plan access already verified by middleware
+    const plan = await prisma.planInstance.findUnique({
+      where: { id: req.params.planId },
     });
 
     if (!plan) {
@@ -236,15 +224,10 @@ router.patch('/:planId/fields', requireAuth, requireOnboarded, async (req, res) 
 });
 
 // Finalize a plan (validate required fields)
-router.post('/:planId/finalize', requireAuth, requireOnboarded, async (req, res) => {
+router.post('/:planId/finalize', requireAuth, requireOnboarded, requirePlanAccess('planId'), requireUpdatePlanPermission, async (req, res) => {
   try {
-    const plan = await prisma.planInstance.findFirst({
-      where: {
-        id: req.params.planId,
-        student: {
-          teacherId: req.user!.id,
-        },
-      },
+    const plan = await prisma.planInstance.findUnique({
+      where: { id: req.params.planId },
       include: {
         schema: true,
         fieldValues: true,
@@ -304,14 +287,11 @@ router.post('/:planId/finalize', requireAuth, requireOnboarded, async (req, res)
 });
 
 // Get all plans for a student
-router.get('/students/:studentId/plans', requireAuth, requireOnboarded, async (req, res) => {
+router.get('/students/:studentId/plans', requireAuth, requireOnboarded, requireStudentAccess('studentId'), async (req, res) => {
   try {
     const plans = await prisma.planInstance.findMany({
       where: {
         studentId: req.params.studentId,
-        student: {
-          teacherId: req.user!.id,
-        },
       },
       include: {
         planType: true,

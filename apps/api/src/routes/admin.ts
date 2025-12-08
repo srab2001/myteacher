@@ -617,4 +617,325 @@ router.get('/jurisdictions', requireAdmin, async (_req, res) => {
   }
 });
 
+// ============================================
+// SCHEMA VIEWER (Admin only)
+// ============================================
+
+// GET /admin/schemas - List all plan schemas
+router.get('/schemas', requireAdmin, async (req, res) => {
+  try {
+    const { planType, jurisdictionId, activeOnly } = req.query;
+
+    const where: {
+      planType?: { code: string };
+      jurisdictionId?: string | null;
+      isActive?: boolean;
+    } = {};
+
+    if (planType && typeof planType === 'string') {
+      where.planType = { code: planType };
+    }
+    if (jurisdictionId && typeof jurisdictionId === 'string') {
+      where.jurisdictionId = jurisdictionId === 'global' ? null : jurisdictionId;
+    }
+    if (activeOnly === 'true') {
+      where.isActive = true;
+    }
+
+    const schemas = await prisma.planSchema.findMany({
+      where,
+      include: {
+        planType: { select: { code: true, name: true } },
+        jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
+        _count: { select: { planInstances: true } },
+      },
+      orderBy: [{ planTypeId: 'asc' }, { version: 'desc' }],
+    });
+
+    res.json({
+      schemas: schemas.map(s => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        version: s.version,
+        planType: s.planType.code,
+        planTypeName: s.planType.name,
+        jurisdictionId: s.jurisdictionId,
+        jurisdictionName: s.jurisdiction?.districtName || 'Global',
+        isActive: s.isActive,
+        planCount: s._count.planInstances,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Schemas fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch schemas' });
+  }
+});
+
+// GET /admin/schemas/:id - Get a specific schema with full field definitions
+router.get('/schemas/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+      include: {
+        planType: { select: { code: true, name: true } },
+        jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
+        _count: { select: { planInstances: true } },
+      },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    res.json({
+      schema: {
+        id: schema.id,
+        name: schema.name,
+        description: schema.description,
+        version: schema.version,
+        planType: schema.planType.code,
+        planTypeName: schema.planType.name,
+        jurisdictionId: schema.jurisdictionId,
+        jurisdictionName: schema.jurisdiction?.districtName || 'Global',
+        isActive: schema.isActive,
+        planCount: schema._count.planInstances,
+        fields: schema.fields, // Full field definitions JSON
+        createdAt: schema.createdAt,
+        updatedAt: schema.updatedAt,
+      },
+    });
+  } catch (error) {
+    console.error('Schema fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch schema' });
+  }
+});
+
+// POST /admin/schemas - Create a new schema version
+router.post('/schemas', requireAdmin, async (req, res) => {
+  try {
+    const bodySchema = z.object({
+      name: z.string().min(1, 'Name is required'),
+      description: z.string().optional(),
+      planType: z.enum(['IEP', 'FIVE_OH_FOUR', 'BEHAVIOR_PLAN']),
+      jurisdictionId: z.string().optional().nullable(),
+      fields: z.object({
+        sections: z.array(z.object({
+          key: z.string(),
+          title: z.string(),
+          order: z.number(),
+          fields: z.array(z.object({
+            key: z.string(),
+            type: z.string(),
+            label: z.string(),
+            required: z.boolean().optional(),
+            options: z.array(z.string()).optional(),
+            placeholder: z.string().optional(),
+          })),
+          isGoalsSection: z.boolean().optional(),
+          isBehaviorTargetsSection: z.boolean().optional(),
+        })),
+      }),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    // Get the plan type
+    const planType = await prisma.planType.findFirst({
+      where: {
+        code: data.planType as PlanTypeCode,
+      },
+    });
+
+    if (!planType) {
+      return res.status(404).json({ error: 'Plan type not found' });
+    }
+
+    // Get the next version number
+    const latestSchema = await prisma.planSchema.findFirst({
+      where: {
+        planTypeId: planType.id,
+        jurisdictionId: data.jurisdictionId || null,
+      },
+      orderBy: { version: 'desc' },
+    });
+
+    const nextVersion = (latestSchema?.version || 0) + 1;
+
+    const schema = await prisma.planSchema.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        version: nextVersion,
+        planTypeId: planType.id,
+        jurisdictionId: data.jurisdictionId || null,
+        fields: data.fields,
+        isActive: false, // New schemas start as inactive
+      },
+      include: {
+        planType: { select: { code: true, name: true } },
+        jurisdiction: { select: { id: true, districtName: true } },
+      },
+    });
+
+    res.status(201).json({
+      schema: {
+        id: schema.id,
+        name: schema.name,
+        description: schema.description,
+        version: schema.version,
+        planType: schema.planType.code,
+        planTypeName: schema.planType.name,
+        jurisdictionId: schema.jurisdictionId,
+        jurisdictionName: schema.jurisdiction?.districtName || 'Global',
+        isActive: schema.isActive,
+        planCount: 0,
+        fields: schema.fields,
+        createdAt: schema.createdAt,
+        updatedAt: schema.updatedAt,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Schema create error:', error);
+    res.status(500).json({ error: 'Failed to create schema' });
+  }
+});
+
+// PATCH /admin/schemas/:id - Update schema (only metadata, not fields for safety)
+router.patch('/schemas/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bodySchema = z.object({
+      name: z.string().min(1).optional(),
+      description: z.string().optional().nullable(),
+      isActive: z.boolean().optional(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    // If activating this schema, deactivate other versions for the same plan type/jurisdiction
+    if (data.isActive === true) {
+      await prisma.planSchema.updateMany({
+        where: {
+          planTypeId: schema.planTypeId,
+          jurisdictionId: schema.jurisdictionId,
+          isActive: true,
+          NOT: { id },
+        },
+        data: { isActive: false },
+      });
+    }
+
+    const updated = await prisma.planSchema.update({
+      where: { id },
+      data: {
+        name: data.name,
+        description: data.description,
+        isActive: data.isActive,
+      },
+      include: {
+        planType: { select: { code: true, name: true } },
+        jurisdiction: { select: { id: true, districtName: true } },
+        _count: { select: { planInstances: true } },
+      },
+    });
+
+    res.json({
+      schema: {
+        id: updated.id,
+        name: updated.name,
+        description: updated.description,
+        version: updated.version,
+        planType: updated.planType.code,
+        planTypeName: updated.planType.name,
+        jurisdictionId: updated.jurisdictionId,
+        jurisdictionName: updated.jurisdiction?.districtName || 'Global',
+        isActive: updated.isActive,
+        planCount: updated._count.planInstances,
+        fields: updated.fields,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Schema update error:', error);
+    res.status(500).json({ error: 'Failed to update schema' });
+  }
+});
+
+// GET /admin/schemas/:id/plans - Get plans using this schema
+router.get('/schemas/:id/plans', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = '20', offset = '0' } = req.query;
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    const [plans, total] = await Promise.all([
+      prisma.planInstance.findMany({
+        where: { schemaId: id },
+        include: {
+          student: { select: { id: true, firstName: true, lastName: true, grade: true } },
+          planType: { select: { code: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: parseInt(limit as string, 10),
+        skip: parseInt(offset as string, 10),
+      }),
+      prisma.planInstance.count({
+        where: { schemaId: id },
+      }),
+    ]);
+
+    res.json({
+      plans: plans.map(p => ({
+        id: p.id,
+        status: p.status,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        studentId: p.student.id,
+        studentName: `${p.student.firstName} ${p.student.lastName}`,
+        studentGrade: p.student.grade,
+        planType: p.planType.code,
+        planTypeName: p.planType.name,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      })),
+      pagination: {
+        total,
+        limit: parseInt(limit as string, 10),
+        offset: parseInt(offset as string, 10),
+      },
+    });
+  } catch (error) {
+    console.error('Schema plans fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch schema plans' });
+  }
+});
+
 export default router;

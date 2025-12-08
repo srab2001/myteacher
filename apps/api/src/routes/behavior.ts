@@ -2,20 +2,16 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma, BehaviorMeasurementType, Prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
+import { requirePlanAccess, requireUpdatePlanPermission, requireBehaviorTargetAccess, requireBehaviorEventAccess } from '../middleware/permissions.js';
 
 const router = Router();
 
 // Get behavior plan by plan instance ID
-router.get('/plans/:planId', requireAuth, requireOnboarded, async (req, res) => {
+router.get('/plans/:planId', requireAuth, requireOnboarded, requirePlanAccess('planId'), async (req, res) => {
   try {
     const behaviorPlan = await prisma.behaviorPlan.findFirst({
       where: {
         planInstanceId: req.params.planId,
-        planInstance: {
-          student: {
-            teacherId: req.user!.id,
-          },
-        },
       },
       include: {
         planInstance: {
@@ -59,19 +55,14 @@ const createTargetSchema = z.object({
   measurementType: z.nativeEnum(BehaviorMeasurementType),
 });
 
-router.post('/plans/:planId/targets', requireAuth, requireOnboarded, async (req, res) => {
+router.post('/plans/:planId/targets', requireAuth, requireOnboarded, requirePlanAccess('planId'), requireUpdatePlanPermission, async (req, res) => {
   try {
     const data = createTargetSchema.parse(req.body);
 
-    // Find the behavior plan and verify access
+    // Find the behavior plan (access already verified by middleware)
     const behaviorPlan = await prisma.behaviorPlan.findFirst({
       where: {
         planInstanceId: req.params.planId,
-        planInstance: {
-          student: {
-            teacherId: req.user!.id,
-          },
-        },
       },
     });
 
@@ -102,16 +93,11 @@ router.post('/plans/:planId/targets', requireAuth, requireOnboarded, async (req,
 });
 
 // Get all behavior targets for a plan
-router.get('/plans/:planId/targets', requireAuth, requireOnboarded, async (req, res) => {
+router.get('/plans/:planId/targets', requireAuth, requireOnboarded, requirePlanAccess('planId'), async (req, res) => {
   try {
     const behaviorPlan = await prisma.behaviorPlan.findFirst({
       where: {
         planInstanceId: req.params.planId,
-        planInstance: {
-          student: {
-            teacherId: req.user!.id,
-          },
-        },
       },
     });
 
@@ -146,19 +132,10 @@ router.get('/plans/:planId/targets', requireAuth, requireOnboarded, async (req, 
 });
 
 // Update a behavior target
-router.patch('/targets/:targetId', requireAuth, requireOnboarded, async (req, res) => {
+router.patch('/targets/:targetId', requireAuth, requireOnboarded, requireBehaviorTargetAccess('targetId'), requireUpdatePlanPermission, async (req, res) => {
   try {
-    const target = await prisma.behaviorTarget.findFirst({
-      where: {
-        id: req.params.targetId,
-        behaviorPlan: {
-          planInstance: {
-            student: {
-              teacherId: req.user!.id,
-            },
-          },
-        },
-      },
+    const target = await prisma.behaviorTarget.findUnique({
+      where: { id: req.params.targetId },
     });
 
     if (!target) {
@@ -189,28 +166,11 @@ router.patch('/targets/:targetId', requireAuth, requireOnboarded, async (req, re
 });
 
 // Delete (deactivate) a behavior target
-router.delete('/targets/:targetId', requireAuth, requireOnboarded, async (req, res) => {
+router.delete('/targets/:targetId', requireAuth, requireOnboarded, requireBehaviorTargetAccess('targetId'), requireUpdatePlanPermission, async (req, res) => {
   try {
-    const target = await prisma.behaviorTarget.findFirst({
-      where: {
-        id: req.params.targetId,
-        behaviorPlan: {
-          planInstance: {
-            student: {
-              teacherId: req.user!.id,
-            },
-          },
-        },
-      },
-    });
-
-    if (!target) {
-      return res.status(404).json({ error: 'Target not found' });
-    }
-
     // Soft delete by setting isActive to false
     await prisma.behaviorTarget.update({
-      where: { id: target.id },
+      where: { id: req.params.targetId },
       data: { isActive: false },
     });
 
@@ -232,22 +192,13 @@ const createEventSchema = z.object({
   contextJson: z.record(z.unknown()).optional(),
 });
 
-router.post('/targets/:targetId/events', requireAuth, requireOnboarded, async (req, res) => {
+router.post('/targets/:targetId/events', requireAuth, requireOnboarded, requireBehaviorTargetAccess('targetId'), requireUpdatePlanPermission, async (req, res) => {
   try {
     const data = createEventSchema.parse(req.body);
 
-    // Verify target access
-    const target = await prisma.behaviorTarget.findFirst({
-      where: {
-        id: req.params.targetId,
-        behaviorPlan: {
-          planInstance: {
-            student: {
-              teacherId: req.user!.id,
-            },
-          },
-        },
-      },
+    // Target access already verified by middleware
+    const target = await prisma.behaviorTarget.findUnique({
+      where: { id: req.params.targetId },
     });
 
     if (!target) {
@@ -295,22 +246,13 @@ router.post('/targets/:targetId/events', requireAuth, requireOnboarded, async (r
 });
 
 // Get events for a behavior target
-router.get('/targets/:targetId/events', requireAuth, requireOnboarded, async (req, res) => {
+router.get('/targets/:targetId/events', requireAuth, requireOnboarded, requireBehaviorTargetAccess('targetId'), async (req, res) => {
   try {
     const { from, to } = req.query;
 
-    // Verify target access
-    const target = await prisma.behaviorTarget.findFirst({
-      where: {
-        id: req.params.targetId,
-        behaviorPlan: {
-          planInstance: {
-            student: {
-              teacherId: req.user!.id,
-            },
-          },
-        },
-      },
+    // Target access already verified by middleware
+    const target = await prisma.behaviorTarget.findUnique({
+      where: { id: req.params.targetId },
     });
 
     if (!target) {
@@ -358,29 +300,10 @@ router.get('/targets/:targetId/events', requireAuth, requireOnboarded, async (re
 });
 
 // Delete a behavior event
-router.delete('/events/:eventId', requireAuth, requireOnboarded, async (req, res) => {
+router.delete('/events/:eventId', requireAuth, requireOnboarded, requireBehaviorEventAccess('eventId'), requireUpdatePlanPermission, async (req, res) => {
   try {
-    const event = await prisma.behaviorEvent.findFirst({
-      where: {
-        id: req.params.eventId,
-        target: {
-          behaviorPlan: {
-            planInstance: {
-              student: {
-                teacherId: req.user!.id,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!event) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-
     await prisma.behaviorEvent.delete({
-      where: { id: event.id },
+      where: { id: req.params.eventId },
     });
 
     res.json({ success: true });

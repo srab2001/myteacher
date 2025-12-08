@@ -475,3 +475,161 @@ describe('504 Plan Eligibility Determination', () => {
     expect(validEligibilityOptions).toHaveLength(3);
   });
 });
+
+describe('Permission-Based Access Control', () => {
+  describe('User Permission Model', () => {
+    it('defines permission flags correctly', () => {
+      const userPermission = {
+        userId: 'test-user-id',
+        canCreatePlans: true,
+        canUpdatePlans: true,
+        canReadAll: false,
+        canManageDocs: false,
+      };
+
+      expect(userPermission.canCreatePlans).toBe(true);
+      expect(userPermission.canUpdatePlans).toBe(true);
+      expect(userPermission.canReadAll).toBe(false);
+      expect(userPermission.canManageDocs).toBe(false);
+    });
+
+    it('defaults permissions to false when not set', () => {
+      const defaultPermissions = {
+        canCreatePlans: false,
+        canUpdatePlans: false,
+        canReadAll: false,
+        canManageDocs: false,
+      };
+
+      Object.values(defaultPermissions).forEach(value => {
+        expect(value).toBe(false);
+      });
+    });
+  });
+
+  describe('Student Access Model', () => {
+    it('defines student access grant correctly', () => {
+      const studentAccess = {
+        id: 'access-grant-id',
+        userId: 'test-user-id',
+        studentId: 'test-student-id',
+        grantedAt: new Date(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      };
+
+      expect(studentAccess.userId).toBe('test-user-id');
+      expect(studentAccess.studentId).toBe('test-student-id');
+      expect(studentAccess.expiresAt).toBeInstanceOf(Date);
+    });
+
+    it('allows null expiresAt for permanent access', () => {
+      const permanentAccess = {
+        id: 'permanent-access-id',
+        userId: 'test-user-id',
+        studentId: 'test-student-id',
+        grantedAt: new Date(),
+        expiresAt: null,
+      };
+
+      expect(permanentAccess.expiresAt).toBeNull();
+    });
+  });
+
+  describe('Access Control Logic', () => {
+    it('grants access when user is assigned teacher', () => {
+      const student = { ...mockStudent, teacherId: mockUser.id };
+      const hasAccess = student.teacherId === mockUser.id;
+      expect(hasAccess).toBe(true);
+    });
+
+    it('denies access when user is not assigned teacher and no access grant', () => {
+      const student = { ...mockStudent, teacherId: 'other-teacher-id' };
+      const hasAccessGrant = false;
+      const hasCanReadAll = false;
+
+      const hasAccess = student.teacherId === mockUser.id || hasAccessGrant || hasCanReadAll;
+      expect(hasAccess).toBe(false);
+    });
+
+    it('grants access via canReadAll permission in same jurisdiction', () => {
+      const userPermission = {
+        canReadAll: true,
+      };
+      const userJurisdictionId = 'test-jurisdiction-id';
+      const studentJurisdictionId = 'test-jurisdiction-id';
+
+      const hasAccess = userPermission.canReadAll && userJurisdictionId === studentJurisdictionId;
+      expect(hasAccess).toBe(true);
+    });
+
+    it('denies access via canReadAll for different jurisdiction', () => {
+      const userPermission = {
+        canReadAll: true,
+      };
+      const userJurisdictionId = 'jurisdiction-a';
+      const studentJurisdictionId = 'jurisdiction-b';
+
+      const hasAccess = userPermission.canReadAll && userJurisdictionId === studentJurisdictionId;
+      expect(hasAccess).toBe(false);
+    });
+
+    it('grants access via explicit StudentAccess grant', () => {
+      const studentAccessGrants = [
+        { userId: mockUser.id, studentId: mockStudent.id, expiresAt: null },
+      ];
+
+      const hasAccessGrant = studentAccessGrants.some(
+        grant => grant.userId === mockUser.id &&
+                 grant.studentId === mockStudent.id &&
+                 (grant.expiresAt === null || new Date(grant.expiresAt) > new Date())
+      );
+
+      expect(hasAccessGrant).toBe(true);
+    });
+
+    it('denies access when StudentAccess grant has expired', () => {
+      const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // Yesterday
+      const studentAccessGrants = [
+        { userId: mockUser.id, studentId: mockStudent.id, expiresAt: pastDate },
+      ];
+
+      const hasAccessGrant = studentAccessGrants.some(
+        grant => grant.userId === mockUser.id &&
+                 grant.studentId === mockStudent.id &&
+                 (grant.expiresAt === null || new Date(grant.expiresAt) > new Date())
+      );
+
+      expect(hasAccessGrant).toBe(false);
+    });
+  });
+
+  describe('Role-Based Permissions', () => {
+    it('ADMIN role has implicit create permission', () => {
+      const adminUser = { ...mockUser, role: 'ADMIN' };
+      const hasCreatePermission = adminUser.role === 'ADMIN';
+      expect(hasCreatePermission).toBe(true);
+    });
+
+    it('TEACHER role has implicit create permission for assigned students', () => {
+      const teacherUser = { ...mockUser, role: 'TEACHER' };
+      const hasCreatePermission = teacherUser.role === 'TEACHER' || teacherUser.role === 'CASE_MANAGER';
+      expect(hasCreatePermission).toBe(true);
+    });
+
+    it('CASE_MANAGER role has implicit create permission for assigned students', () => {
+      const caseManagerUser = { ...mockUser, role: 'CASE_MANAGER' };
+      const hasCreatePermission = caseManagerUser.role === 'TEACHER' || caseManagerUser.role === 'CASE_MANAGER';
+      expect(hasCreatePermission).toBe(true);
+    });
+
+    it('AIDE role requires explicit canCreatePlans permission', () => {
+      const aideUser = { ...mockUser, role: 'AIDE' };
+      const hasRoleBasedPermission = aideUser.role === 'ADMIN' || aideUser.role === 'TEACHER' || aideUser.role === 'CASE_MANAGER';
+      expect(hasRoleBasedPermission).toBe(false);
+
+      // With explicit permission
+      const aidePermission = { canCreatePlans: true };
+      expect(aidePermission.canCreatePlans).toBe(true);
+    });
+  });
+});
