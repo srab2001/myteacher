@@ -8,6 +8,7 @@ import { prisma } from '../lib/db.js';
  * - canCreatePlans: Can create new 504/IEP/Behavior plans
  * - canUpdatePlans: Can edit plans, add targets, events
  * - canReadAll: Can read all students in jurisdiction
+ * - canManageUsers: Admin can manage users and permissions
  * - canManageDocs: Admin can manage schemas, best practices
  *
  * Student Access:
@@ -21,6 +22,7 @@ interface UserPermissions {
   canCreatePlans: boolean;
   canUpdatePlans: boolean;
   canReadAll: boolean;
+  canManageUsers: boolean;
   canManageDocs: boolean;
 }
 
@@ -36,6 +38,7 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
     canCreatePlans: permission?.canCreatePlans ?? false,
     canUpdatePlans: permission?.canUpdatePlans ?? false,
     canReadAll: permission?.canReadAll ?? false,
+    canManageUsers: (permission as { canManageUsers?: boolean })?.canManageUsers ?? false,
     canManageDocs: permission?.canManageDocs ?? false,
   };
 }
@@ -202,6 +205,44 @@ export function requireManageDocsPermission(req: Request, res: Response, next: N
     }
 
     return res.status(403).json({ error: 'Manage documents permission required' });
+  })().catch(next);
+}
+
+/**
+ * Middleware: Require canManageUsers permission (admin only)
+ */
+export function requireManageUsersPermission(req: Request, res: Response, next: NextFunction) {
+  (async () => {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const permission = await getUserPermissions(req.user.id);
+
+    if (req.user.role === 'ADMIN' || permission.canManageUsers) {
+      return next();
+    }
+
+    return res.status(403).json({ error: 'Manage users permission required' });
+  })().catch(next);
+}
+
+/**
+ * Middleware: Require either canManageUsers or canManageDocs permission
+ */
+export function requireAdminPermission(req: Request, res: Response, next: NextFunction) {
+  (async () => {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const permission = await getUserPermissions(req.user.id);
+
+    if (req.user.role === 'ADMIN' || permission.canManageUsers || permission.canManageDocs) {
+      return next();
+    }
+
+    return res.status(403).json({ error: 'Admin permission required' });
   })().catch(next);
 }
 

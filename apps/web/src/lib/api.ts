@@ -348,6 +348,55 @@ export interface ServiceMinutesReport {
   }>;
 }
 
+// Phase 5: Admin User Management Types
+export type AdminUserRole = 'TEACHER' | 'CASE_MANAGER' | 'ADMIN';
+
+export interface AdminPermissions {
+  canCreatePlans: boolean;
+  canUpdatePlans: boolean;
+  canReadAll: boolean;
+  canManageUsers: boolean;
+  canManageDocs: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: AdminUserRole;
+  isActive: boolean;
+  jurisdictionId: string | null;
+  jurisdictionName: string | null;
+  permissions: AdminPermissions | null;
+  studentAccessCount?: number;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  studentAccess: StudentAccessEntry[];
+}
+
+export interface StudentAccessEntry {
+  id: string;
+  studentId: string;
+  recordId: string;
+  firstName?: string;
+  lastName?: string;
+  studentName: string;
+  grade: string;
+  schoolName?: string;
+  isActive?: boolean;
+  canEdit: boolean;
+  grantedAt: string;
+}
+
+export interface StudentAccessResponse {
+  canReadAll: boolean;
+  studentAccess: StudentAccessEntry[];
+  message?: string;
+}
+
 // Phase 4: Admin Schema Types
 export interface AdminSchema {
   id: string;
@@ -940,6 +989,79 @@ class ApiClient {
     if (limit !== undefined) params.append('limit', String(limit));
     const queryString = params.toString();
     return this.fetch(`/api/admin/schemas/${schemaId}/plans${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Phase 5: Admin User Management API
+  async getAdminUsers(filters?: {
+    role?: AdminUserRole;
+    search?: string;
+  }): Promise<{ users: AdminUser[] }> {
+    const params = new URLSearchParams();
+    if (filters?.role) params.append('role', filters.role);
+    if (filters?.search) params.append('search', filters.search);
+    const queryString = params.toString();
+    return this.fetch(`/api/admin/users${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAdminUser(userId: string): Promise<{ user: AdminUserDetail }> {
+    return this.fetch(`/api/admin/users/${userId}`);
+  }
+
+  async createAdminUser(data: {
+    email: string;
+    displayName: string;
+    role: AdminUserRole;
+    jurisdictionId?: string | null;
+    permissions?: Partial<AdminPermissions>;
+  }): Promise<{ user: AdminUser }> {
+    return this.fetch('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminUser(userId: string, data: {
+    displayName?: string;
+    role?: AdminUserRole;
+    isActive?: boolean;
+    jurisdictionId?: string | null;
+  }): Promise<{ user: AdminUser }> {
+    return this.fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminUserPermissions(userId: string, permissions: Partial<AdminPermissions>): Promise<{ permissions: AdminPermissions }> {
+    return this.fetch(`/api/admin/users/${userId}/permissions`, {
+      method: 'PATCH',
+      body: JSON.stringify(permissions),
+    });
+  }
+
+  // Phase 5: Student Access Management API
+  async getUserStudentAccess(userId: string): Promise<StudentAccessResponse> {
+    return this.fetch(`/api/admin/users/${userId}/students`);
+  }
+
+  async addStudentAccess(userId: string, recordId: string, canEdit?: boolean): Promise<{ studentAccess: StudentAccessEntry }> {
+    return this.fetch(`/api/admin/users/${userId}/students`, {
+      method: 'POST',
+      body: JSON.stringify({ recordId, canEdit: canEdit ?? false }),
+    });
+  }
+
+  async updateStudentAccess(userId: string, accessId: string, canEdit: boolean): Promise<{ studentAccess: StudentAccessEntry }> {
+    return this.fetch(`/api/admin/users/${userId}/students/${accessId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ canEdit }),
+    });
+  }
+
+  async removeStudentAccess(userId: string, accessId: string): Promise<{ success: boolean; message: string }> {
+    return this.fetch(`/api/admin/users/${userId}/students/${accessId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

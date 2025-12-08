@@ -3,8 +3,10 @@ import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { prisma, PlanTypeCode } from '../lib/db.js';
+import bcrypt from 'bcryptjs';
+import { prisma, PlanTypeCode, UserRole } from '../lib/db.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { requireManageUsersPermission, getUserPermissions } from '../middleware/permissions.js';
 import { ingestBestPracticeDocument, getDocumentChunkStats } from '../services/ingestion.js';
 
 const router = Router();
@@ -935,6 +937,598 @@ router.get('/schemas/:id/plans', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Schema plans fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch schema plans' });
+  }
+});
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+// GET /admin/users - List all users with permissions
+router.get('/users', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { role, search } = req.query;
+
+    const where: {
+      role?: UserRole;
+      OR?: { email?: { contains: string; mode: 'insensitive' }; displayName?: { contains: string; mode: 'insensitive' } }[];
+    } = {};
+
+    if (role && typeof role === 'string' && Object.values(UserRole).includes(role as UserRole)) {
+      where.role = role as UserRole;
+    }
+
+    if (search && typeof search === 'string') {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { displayName: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      include: {
+        permission: true,
+        jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
+        _count: { select: { studentAccess: true } },
+      },
+      orderBy: [{ role: 'asc' }, { displayName: 'asc' }],
+    });
+
+    res.json({
+      users: users.map(u => ({
+        id: u.id,
+        email: u.email,
+        displayName: u.displayName,
+        role: u.role,
+        isActive: u.isActive,
+        jurisdictionId: u.jurisdictionId,
+        jurisdictionName: u.jurisdiction?.districtName || null,
+        permissions: u.permission ? {
+          canCreatePlans: u.permission.canCreatePlans,
+          canUpdatePlans: u.permission.canUpdatePlans,
+          canReadAll: u.permission.canReadAll,
+          canManageUsers: (u.permission as { canManageUsers?: boolean }).canManageUsers ?? false,
+          canManageDocs: u.permission.canManageDocs,
+        } : null,
+        studentAccessCount: u._count.studentAccess,
+        createdAt: u.createdAt,
+        lastLoginAt: u.lastLoginAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Users fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// POST /admin/users - Create a new user
+router.post('/users', requireManageUsersPermission, async (req, res) => {
+  try {
+    const bodySchema = z.object({
+      email: z.string().email('Invalid email'),
+      displayName: z.string().min(1, 'Display name is required'),
+      role: z.enum(['TEACHER', 'CASE_MANAGER', 'ADMIN']),
+      jurisdictionId: z.string().optional().nullable(),
+      permissions: z.object({
+        canCreatePlans: z.boolean().default(false),
+        canUpdatePlans: z.boolean().default(false),
+        canReadAll: z.boolean().default(false),
+        canManageUsers: z.boolean().default(false),
+        canManageDocs: z.boolean().default(false),
+      }).optional(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    // Check if user with email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'User with this email already exists' });
+    }
+
+    // Verify jurisdiction if provided
+    if (data.jurisdictionId) {
+      const jurisdiction = await prisma.jurisdiction.findUnique({
+        where: { id: data.jurisdictionId },
+      });
+      if (!jurisdiction) {
+        return res.status(404).json({ error: 'Jurisdiction not found' });
+      }
+    }
+
+    // Create user with permissions
+    const user = await prisma.user.create({
+      data: {
+        email: data.email,
+        displayName: data.displayName,
+        role: data.role as UserRole,
+        jurisdictionId: data.jurisdictionId || null,
+        isActive: true,
+        permission: data.permissions ? {
+          create: {
+            canCreatePlans: data.permissions.canCreatePlans,
+            canUpdatePlans: data.permissions.canUpdatePlans,
+            canReadAll: data.permissions.canReadAll,
+            canManageUsers: data.permissions.canManageUsers,
+            canManageDocs: data.permissions.canManageDocs,
+          },
+        } : undefined,
+      },
+      include: {
+        permission: true,
+        jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
+      },
+    });
+
+    res.status(201).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        isActive: user.isActive,
+        jurisdictionId: user.jurisdictionId,
+        jurisdictionName: user.jurisdiction?.districtName || null,
+        permissions: user.permission ? {
+          canCreatePlans: user.permission.canCreatePlans,
+          canUpdatePlans: user.permission.canUpdatePlans,
+          canReadAll: user.permission.canReadAll,
+          canManageUsers: (user.permission as { canManageUsers?: boolean }).canManageUsers ?? false,
+          canManageDocs: user.permission.canManageDocs,
+        } : null,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('User create error:', error);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// GET /admin/users/:userId - Get user details
+router.get('/users/:userId', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        permission: true,
+        jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
+        studentAccess: {
+          include: {
+            student: { select: { id: true, recordId: true, firstName: true, lastName: true, grade: true } },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        isActive: user.isActive,
+        jurisdictionId: user.jurisdictionId,
+        jurisdictionName: user.jurisdiction?.districtName || null,
+        permissions: user.permission ? {
+          canCreatePlans: user.permission.canCreatePlans,
+          canUpdatePlans: user.permission.canUpdatePlans,
+          canReadAll: user.permission.canReadAll,
+          canManageUsers: (user.permission as { canManageUsers?: boolean }).canManageUsers ?? false,
+          canManageDocs: user.permission.canManageDocs,
+        } : null,
+        studentAccess: user.studentAccess.map(sa => ({
+          id: sa.id,
+          studentId: sa.student.id,
+          recordId: sa.student.recordId,
+          studentName: `${sa.student.firstName} ${sa.student.lastName}`,
+          grade: sa.student.grade,
+          canEdit: sa.canEdit,
+          grantedAt: sa.createdAt,
+        })),
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+      },
+    });
+  } catch (error) {
+    console.error('User fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// PATCH /admin/users/:userId - Update user details
+router.patch('/users/:userId', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const bodySchema = z.object({
+      displayName: z.string().min(1).optional(),
+      role: z.enum(['TEACHER', 'CASE_MANAGER', 'ADMIN']).optional(),
+      isActive: z.boolean().optional(),
+      jurisdictionId: z.string().optional().nullable(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify jurisdiction if provided
+    if (data.jurisdictionId) {
+      const jurisdiction = await prisma.jurisdiction.findUnique({
+        where: { id: data.jurisdictionId },
+      });
+      if (!jurisdiction) {
+        return res.status(404).json({ error: 'Jurisdiction not found' });
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        displayName: data.displayName,
+        role: data.role as UserRole,
+        isActive: data.isActive,
+        jurisdictionId: data.jurisdictionId,
+      },
+      include: {
+        permission: true,
+        jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
+      },
+    });
+
+    res.json({
+      user: {
+        id: updated.id,
+        email: updated.email,
+        displayName: updated.displayName,
+        role: updated.role,
+        isActive: updated.isActive,
+        jurisdictionId: updated.jurisdictionId,
+        jurisdictionName: updated.jurisdiction?.districtName || null,
+        permissions: updated.permission ? {
+          canCreatePlans: updated.permission.canCreatePlans,
+          canUpdatePlans: updated.permission.canUpdatePlans,
+          canReadAll: updated.permission.canReadAll,
+          canManageUsers: (updated.permission as { canManageUsers?: boolean }).canManageUsers ?? false,
+          canManageDocs: updated.permission.canManageDocs,
+        } : null,
+        createdAt: updated.createdAt,
+        lastLoginAt: updated.lastLoginAt,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('User update error:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// PATCH /admin/users/:userId/permissions - Update user permissions
+router.patch('/users/:userId/permissions', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const bodySchema = z.object({
+      canCreatePlans: z.boolean().optional(),
+      canUpdatePlans: z.boolean().optional(),
+      canReadAll: z.boolean().optional(),
+      canManageUsers: z.boolean().optional(),
+      canManageDocs: z.boolean().optional(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { permission: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Upsert permissions
+    const permission = await prisma.userPermission.upsert({
+      where: { userId },
+      update: {
+        canCreatePlans: data.canCreatePlans ?? user.permission?.canCreatePlans ?? false,
+        canUpdatePlans: data.canUpdatePlans ?? user.permission?.canUpdatePlans ?? false,
+        canReadAll: data.canReadAll ?? user.permission?.canReadAll ?? false,
+        canManageUsers: data.canManageUsers ?? (user.permission as { canManageUsers?: boolean })?.canManageUsers ?? false,
+        canManageDocs: data.canManageDocs ?? user.permission?.canManageDocs ?? false,
+      },
+      create: {
+        userId,
+        canCreatePlans: data.canCreatePlans ?? false,
+        canUpdatePlans: data.canUpdatePlans ?? false,
+        canReadAll: data.canReadAll ?? false,
+        canManageUsers: data.canManageUsers ?? false,
+        canManageDocs: data.canManageDocs ?? false,
+      },
+    });
+
+    res.json({
+      permissions: {
+        canCreatePlans: permission.canCreatePlans,
+        canUpdatePlans: permission.canUpdatePlans,
+        canReadAll: permission.canReadAll,
+        canManageUsers: (permission as { canManageUsers?: boolean }).canManageUsers ?? false,
+        canManageDocs: permission.canManageDocs,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Permissions update error:', error);
+    res.status(500).json({ error: 'Failed to update permissions' });
+  }
+});
+
+// ============================================
+// STUDENT ACCESS MANAGEMENT
+// ============================================
+
+// GET /admin/users/:userId/students - Get user's student access list
+router.get('/users/:userId/students', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { permission: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user has canReadAll (ignore StudentAccess table)
+    const canReadAll = user.permission?.canReadAll ?? false;
+
+    if (canReadAll) {
+      return res.json({
+        canReadAll: true,
+        studentAccess: [],
+        message: 'User has canReadAll permission and can access all students',
+      });
+    }
+
+    const studentAccess = await prisma.studentAccess.findMany({
+      where: { userId },
+      include: {
+        student: {
+          select: {
+            id: true,
+            recordId: true,
+            firstName: true,
+            lastName: true,
+            grade: true,
+            schoolName: true,
+            isActive: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      canReadAll: false,
+      studentAccess: studentAccess.map(sa => ({
+        id: sa.id,
+        studentId: sa.student.id,
+        recordId: sa.student.recordId,
+        firstName: sa.student.firstName,
+        lastName: sa.student.lastName,
+        studentName: `${sa.student.firstName} ${sa.student.lastName}`,
+        grade: sa.student.grade,
+        schoolName: sa.student.schoolName,
+        isActive: sa.student.isActive,
+        canEdit: sa.canEdit,
+        grantedAt: sa.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Student access fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch student access' });
+  }
+});
+
+// POST /admin/users/:userId/students - Add student access by recordId
+router.post('/users/:userId/students', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const bodySchema = z.object({
+      recordId: z.string().min(1, 'Record ID is required'),
+      canEdit: z.boolean().default(false),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    // Verify user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Find student by recordId
+    const student = await prisma.student.findFirst({
+      where: { recordId: data.recordId },
+    });
+
+    if (!student) {
+      return res.status(404).json({ error: `Student with recordId "${data.recordId}" not found` });
+    }
+
+    // Check if access already exists
+    const existingAccess = await prisma.studentAccess.findFirst({
+      where: {
+        userId,
+        studentId: student.id,
+      },
+    });
+
+    if (existingAccess) {
+      return res.status(409).json({ error: 'User already has access to this student' });
+    }
+
+    // Create student access
+    const access = await prisma.studentAccess.create({
+      data: {
+        userId,
+        studentId: student.id,
+        canEdit: data.canEdit,
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            recordId: true,
+            firstName: true,
+            lastName: true,
+            grade: true,
+            schoolName: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      studentAccess: {
+        id: access.id,
+        studentId: access.student.id,
+        recordId: access.student.recordId,
+        firstName: access.student.firstName,
+        lastName: access.student.lastName,
+        studentName: `${access.student.firstName} ${access.student.lastName}`,
+        grade: access.student.grade,
+        schoolName: access.student.schoolName,
+        canEdit: access.canEdit,
+        grantedAt: access.createdAt,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Student access create error:', error);
+    res.status(500).json({ error: 'Failed to create student access' });
+  }
+});
+
+// PATCH /admin/users/:userId/students/:accessId - Update student access
+router.patch('/users/:userId/students/:accessId', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { userId, accessId } = req.params;
+
+    const bodySchema = z.object({
+      canEdit: z.boolean(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    // Verify access exists and belongs to user
+    const access = await prisma.studentAccess.findFirst({
+      where: {
+        id: accessId,
+        userId,
+      },
+    });
+
+    if (!access) {
+      return res.status(404).json({ error: 'Student access not found' });
+    }
+
+    const updated = await prisma.studentAccess.update({
+      where: { id: accessId },
+      data: { canEdit: data.canEdit },
+      include: {
+        student: {
+          select: {
+            id: true,
+            recordId: true,
+            firstName: true,
+            lastName: true,
+            grade: true,
+            schoolName: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      studentAccess: {
+        id: updated.id,
+        studentId: updated.student.id,
+        recordId: updated.student.recordId,
+        firstName: updated.student.firstName,
+        lastName: updated.student.lastName,
+        studentName: `${updated.student.firstName} ${updated.student.lastName}`,
+        grade: updated.student.grade,
+        schoolName: updated.student.schoolName,
+        canEdit: updated.canEdit,
+        grantedAt: updated.createdAt,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Student access update error:', error);
+    res.status(500).json({ error: 'Failed to update student access' });
+  }
+});
+
+// DELETE /admin/users/:userId/students/:accessId - Remove student access
+router.delete('/users/:userId/students/:accessId', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { userId, accessId } = req.params;
+
+    // Verify access exists and belongs to user
+    const access = await prisma.studentAccess.findFirst({
+      where: {
+        id: accessId,
+        userId,
+      },
+    });
+
+    if (!access) {
+      return res.status(404).json({ error: 'Student access not found' });
+    }
+
+    await prisma.studentAccess.delete({
+      where: { id: accessId },
+    });
+
+    res.json({ success: true, message: 'Student access removed' });
+  } catch (error) {
+    console.error('Student access delete error:', error);
+    res.status(500).json({ error: 'Failed to remove student access' });
   }
 });
 

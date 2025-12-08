@@ -611,6 +611,7 @@ model UserPermission {
   canCreatePlans Boolean  @default(false) // Can create new 504/IEP/Behavior plans
   canUpdatePlans Boolean  @default(false) // Can edit plans, add targets, events
   canReadAll     Boolean  @default(false) // Can read all students in jurisdiction
+  canManageUsers Boolean  @default(false) // Admin: can manage users and permissions
   canManageDocs  Boolean  @default(false) // Admin: can manage schemas, best practices
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
