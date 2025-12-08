@@ -35,29 +35,32 @@ router.post('/login', (req, res, next) => {
   })(req, res, next);
 });
 
-// Initiate Google OAuth
-router.get(
-  '/google',
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-  })
-);
+// Google OAuth routes (only if configured)
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL) {
+  // Initiate Google OAuth
+  router.get(
+    '/google',
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+    })
+  );
 
-// Google OAuth callback
-router.get(
-  '/google/callback',
-  passport.authenticate('google', {
-    failureRedirect: `${env.FRONTEND_URL}/login?error=auth_failed`,
-  }),
-  (req, res) => {
-    // Redirect based on onboarding status
-    if (req.user?.isOnboarded) {
-      res.redirect(`${env.FRONTEND_URL}/dashboard`);
-    } else {
-      res.redirect(`${env.FRONTEND_URL}/onboarding`);
+  // Google OAuth callback
+  router.get(
+    '/google/callback',
+    passport.authenticate('google', {
+      failureRedirect: `${env.FRONTEND_URL}/login?error=auth_failed`,
+    }),
+    (req, res) => {
+      // Redirect based on onboarding status
+      if (req.user?.isOnboarded) {
+        res.redirect(`${env.FRONTEND_URL}/dashboard`);
+      } else {
+        res.redirect(`${env.FRONTEND_URL}/onboarding`);
+      }
     }
-  }
-);
+  );
+}
 
 // Logout
 router.post('/logout', (req, res, next) => {
