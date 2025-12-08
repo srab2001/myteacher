@@ -28,9 +28,20 @@ export default function StudentDetailPage() {
     history: StudentStatus[];
   } | null>(null);
   const [priorPlans, setPriorPlans] = useState<PriorPlanDocument[]>([]);
+  const [studentPlans, setStudentPlans] = useState<Array<{
+    id: string;
+    status: string;
+    startDate: string;
+    endDate: string | null;
+    planType: string;
+    planTypeCode: string;
+    schemaName: string;
+    createdAt: string;
+  }>>([]);
   const [loadingStudent, setLoadingStudent] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [creatingPlan, setCreatingPlan] = useState<PlanTypeCode | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,14 +51,16 @@ export default function StudentDetailPage() {
 
   const loadStudent = useCallback(async () => {
     try {
-      const [studentRes, statusRes, priorPlansRes] = await Promise.all([
+      const [studentRes, statusRes, priorPlansRes, plansRes] = await Promise.all([
         api.getStudent(studentId),
         api.getStudentStatus(studentId),
         api.getStudentPriorPlans(studentId),
+        api.getStudentPlans(studentId),
       ]);
       setStudent(studentRes.student);
       setStatusData(statusRes);
       setPriorPlans(priorPlansRes.priorPlans);
+      setStudentPlans(plansRes.plans);
     } catch (err) {
       console.error('Failed to load student:', err);
     } finally {
@@ -85,6 +98,41 @@ export default function StudentDetailPage() {
     if (!confirm('Are you sure you want to delete this prior plan document?')) return;
     await api.deletePriorPlan(priorPlanId);
     await loadStudent();
+  };
+
+  const handleStartPlan = async (planTypeCode: PlanTypeCode) => {
+    setCreatingPlan(planTypeCode);
+    try {
+      const { plan } = await api.createPlan(studentId, planTypeCode);
+      // Navigate to the appropriate plan editor
+      if (planTypeCode === 'IEP') {
+        router.push(`/students/${studentId}/plans/${plan.id}/iep`);
+      } else if (planTypeCode === 'FIVE_OH_FOUR') {
+        router.push(`/students/${studentId}/plans/${plan.id}/504`);
+      } else if (planTypeCode === 'BEHAVIOR_PLAN') {
+        router.push(`/students/${studentId}/plans/${plan.id}/behavior`);
+      }
+    } catch (err) {
+      console.error('Failed to create plan:', err);
+      alert('Failed to create plan. Please try again.');
+    } finally {
+      setCreatingPlan(null);
+    }
+  };
+
+  const getPlanByType = (typeCode: string) => {
+    return studentPlans.find(p => p.planTypeCode === typeCode && (p.status === 'DRAFT' || p.status === 'ACTIVE'));
+  };
+
+  const getPlanEditorUrl = (plan: { id: string; planTypeCode: string }) => {
+    if (plan.planTypeCode === 'IEP') {
+      return `/students/${studentId}/plans/${plan.id}/iep`;
+    } else if (plan.planTypeCode === 'FIVE_OH_FOUR') {
+      return `/students/${studentId}/plans/${plan.id}/504`;
+    } else if (plan.planTypeCode === 'BEHAVIOR_PLAN') {
+      return `/students/${studentId}/plans/${plan.id}/behavior`;
+    }
+    return `/students/${studentId}/plans/${plan.id}`;
   };
 
   if (loading || loadingStudent) {
@@ -199,23 +247,152 @@ export default function StudentDetailPage() {
             )}
           </section>
 
-          {student.plans && student.plans.length > 0 && (
-            <section className={styles.section}>
-              <h3>Plans</h3>
-              <div className={styles.plansList}>
-                {student.plans.map(plan => (
-                  <div key={plan.id} className={styles.planItem}>
-                    <span className={styles.planType}>{plan.type}</span>
-                    <span className={styles.planStatus}>{plan.status}</span>
-                    <span className={styles.planDates}>
-                      {format(new Date(plan.startDate), 'MMM d, yyyy')}
-                      {plan.endDate && <> - {format(new Date(plan.endDate), 'MMM d, yyyy')}</>}
-                    </span>
+          {/* Plan Tiles Section */}
+          <section className={styles.section}>
+            <h3>Plans</h3>
+            <div className={styles.planTilesGrid}>
+              {/* IEP Tile */}
+              {(() => {
+                const iepPlan = getPlanByType('IEP');
+                return (
+                  <div className={styles.planTile}>
+                    <div className={styles.planTileHeader}>
+                      <h4>IEP</h4>
+                      {iepPlan && (
+                        <span className={`${styles.planTileStatus} ${styles[iepPlan.status.toLowerCase()]}`}>
+                          {iepPlan.status}
+                        </span>
+                      )}
+                    </div>
+                    {iepPlan ? (
+                      <>
+                        <p className={styles.planTileDate}>
+                          Started: {format(new Date(iepPlan.startDate), 'MMM d, yyyy')}
+                        </p>
+                        <div className={styles.planTileActions}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => router.push(getPlanEditorUrl(iepPlan))}
+                          >
+                            Open IEP
+                          </button>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => router.push(`/students/${studentId}/plans/${iepPlan.id}/goals`)}
+                          >
+                            Goals & Progress
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className={styles.planTileEmpty}>No active IEP</p>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleStartPlan('IEP')}
+                          disabled={creatingPlan === 'IEP'}
+                        >
+                          {creatingPlan === 'IEP' ? 'Starting...' : 'Start IEP'}
+                        </button>
+                      </>
+                    )}
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                );
+              })()}
+
+              {/* 504 Plan Tile */}
+              {(() => {
+                const plan504 = getPlanByType('FIVE_OH_FOUR');
+                return (
+                  <div className={styles.planTile}>
+                    <div className={styles.planTileHeader}>
+                      <h4>504 Plan</h4>
+                      {plan504 && (
+                        <span className={`${styles.planTileStatus} ${styles[plan504.status.toLowerCase()]}`}>
+                          {plan504.status}
+                        </span>
+                      )}
+                    </div>
+                    {plan504 ? (
+                      <>
+                        <p className={styles.planTileDate}>
+                          Started: {format(new Date(plan504.startDate), 'MMM d, yyyy')}
+                        </p>
+                        <div className={styles.planTileActions}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => router.push(getPlanEditorUrl(plan504))}
+                          >
+                            Open 504 Plan
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className={styles.planTileEmpty}>No active 504 Plan</p>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleStartPlan('FIVE_OH_FOUR')}
+                          disabled={creatingPlan === 'FIVE_OH_FOUR'}
+                        >
+                          {creatingPlan === 'FIVE_OH_FOUR' ? 'Starting...' : 'Start 504 Plan'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Behavior Plan Tile */}
+              {(() => {
+                const behaviorPlan = getPlanByType('BEHAVIOR_PLAN');
+                return (
+                  <div className={styles.planTile}>
+                    <div className={styles.planTileHeader}>
+                      <h4>Behavior Plan</h4>
+                      {behaviorPlan && (
+                        <span className={`${styles.planTileStatus} ${styles[behaviorPlan.status.toLowerCase()]}`}>
+                          {behaviorPlan.status}
+                        </span>
+                      )}
+                    </div>
+                    {behaviorPlan ? (
+                      <>
+                        <p className={styles.planTileDate}>
+                          Started: {format(new Date(behaviorPlan.startDate), 'MMM d, yyyy')}
+                        </p>
+                        <div className={styles.planTileActions}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => router.push(getPlanEditorUrl(behaviorPlan))}
+                          >
+                            Open Behavior Plan
+                          </button>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => router.push(`/students/${studentId}/plans/${behaviorPlan.id}/behavior/data`)}
+                          >
+                            Record Data
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className={styles.planTileEmpty}>No active Behavior Plan</p>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleStartPlan('BEHAVIOR_PLAN')}
+                          disabled={creatingPlan === 'BEHAVIOR_PLAN'}
+                        >
+                          {creatingPlan === 'BEHAVIOR_PLAN' ? 'Starting...' : 'Start Behavior Plan'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </section>
 
           {/* Prior Plans Section */}
           <section className={styles.section}>

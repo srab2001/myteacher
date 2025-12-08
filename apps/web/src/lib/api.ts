@@ -54,6 +54,48 @@ export type WorkSampleRating = 'BELOW_TARGET' | 'NEAR_TARGET' | 'MEETS_TARGET' |
 export type ServiceType = 'SPECIAL_EDUCATION' | 'SPEECH_LANGUAGE' | 'OCCUPATIONAL_THERAPY' | 'PHYSICAL_THERAPY' | 'COUNSELING' | 'BEHAVIORAL_SUPPORT' | 'READING_SPECIALIST' | 'PARAPROFESSIONAL' | 'OTHER';
 export type ServiceSetting = 'GENERAL_EDUCATION' | 'SPECIAL_EDUCATION' | 'RESOURCE_ROOM' | 'THERAPY_ROOM' | 'COMMUNITY' | 'HOME' | 'OTHER';
 
+// Phase 3 Behavior Types
+export type BehaviorMeasurementType = 'FREQUENCY' | 'DURATION' | 'INTERVAL' | 'RATING';
+
+export interface BehaviorTarget {
+  id: string;
+  code: string;
+  name: string;
+  definition: string;
+  examples: string | null;
+  nonExamples: string | null;
+  measurementType: BehaviorMeasurementType;
+  isActive: boolean;
+  events: BehaviorEvent[];
+}
+
+export interface BehaviorEvent {
+  id: string;
+  eventDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  count: number | null;
+  rating: number | null;
+  durationSeconds: number | null;
+  contextJson: Record<string, unknown> | null;
+  createdAt: string;
+  recordedBy?: { displayName: string };
+}
+
+export interface BehaviorPlan {
+  id: string;
+  summary: string | null;
+  planInstance: Plan;
+  targets: BehaviorTarget[];
+}
+
+export interface BehaviorEventSummary {
+  totalEvents: number;
+  totalCount: number;
+  totalDurationSeconds: number;
+  averageRating: number;
+}
+
 export interface PlanSchema {
   id: string;
   version: number;
@@ -650,6 +692,81 @@ class ApiClient {
   // Admin: Jurisdictions
   async getAdminJurisdictions(): Promise<{ jurisdictions: Jurisdiction[] }> {
     return this.fetch('/api/admin/jurisdictions');
+  }
+
+  // Phase 3: Behavior Plan API
+  async getBehaviorPlan(planId: string): Promise<{ behaviorPlan: BehaviorPlan }> {
+    return this.fetch(`/api/behavior-plans/plans/${planId}`);
+  }
+
+  async getBehaviorTargets(planId: string): Promise<{ targets: BehaviorTarget[] }> {
+    return this.fetch(`/api/behavior-plans/plans/${planId}/targets`);
+  }
+
+  async createBehaviorTarget(planId: string, data: {
+    code: string;
+    name: string;
+    definition: string;
+    examples?: string;
+    nonExamples?: string;
+    measurementType: BehaviorMeasurementType;
+  }): Promise<{ target: BehaviorTarget }> {
+    return this.fetch(`/api/behavior-plans/plans/${planId}/targets`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateBehaviorTarget(targetId: string, data: Partial<{
+    name: string;
+    definition: string;
+    examples: string;
+    nonExamples: string;
+    measurementType: BehaviorMeasurementType;
+  }>): Promise<{ target: BehaviorTarget }> {
+    return this.fetch(`/api/behavior-targets/targets/${targetId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteBehaviorTarget(targetId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/behavior-targets/targets/${targetId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getBehaviorEvents(targetId: string, from?: string, to?: string): Promise<{
+    events: BehaviorEvent[];
+    summary: BehaviorEventSummary;
+    measurementType: BehaviorMeasurementType;
+  }> {
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    const queryString = params.toString();
+    return this.fetch(`/api/behavior-targets/targets/${targetId}/events${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async createBehaviorEvent(targetId: string, data: {
+    eventDate: string;
+    startTime?: string;
+    endTime?: string;
+    count?: number;
+    rating?: number;
+    durationSeconds?: number;
+    contextJson?: Record<string, unknown>;
+  }): Promise<{ event: BehaviorEvent }> {
+    return this.fetch(`/api/behavior-targets/targets/${targetId}/events`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteBehaviorEvent(eventId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/behavior-events/events/${eventId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

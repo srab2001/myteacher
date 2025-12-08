@@ -62,6 +62,15 @@ router.post('/students/:studentId/plans/:planTypeCode', requireAuth, requireOnbo
       },
     });
 
+    // If this is a BEHAVIOR_PLAN, also create the BehaviorPlan record
+    if (planTypeCode === 'BEHAVIOR_PLAN') {
+      await prisma.behaviorPlan.create({
+        data: {
+          planInstanceId: plan.id,
+        },
+      });
+    }
+
     res.status(201).json({
       plan: {
         id: plan.id,

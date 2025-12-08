@@ -29,6 +29,7 @@ import workSampleRoutes from './routes/worksamples.js';
 import priorPlanRoutes from './routes/priorplans.js';
 import adminRoutes from './routes/admin.js';
 import generationRoutes from './routes/generation.js';
+import behaviorRoutes from './routes/behavior.js';
 
 export function createApp(): Express {
   const app = express();
@@ -101,6 +102,9 @@ export function createApp(): Express {
   app.use('/api', priorPlanRoutes); // For /api/students/:id/prior-plans routes
   app.use('/api/admin', adminRoutes); // Admin routes
   app.use('/api', generationRoutes); // Content generation routes
+  app.use('/api/behavior-plans', behaviorRoutes); // Behavior plan routes
+  app.use('/api/behavior-targets', behaviorRoutes); // Behavior target routes
+  app.use('/api/behavior-events', behaviorRoutes); // Behavior event routes
 
   // 404 handler
   app.use((_req, res) => {
