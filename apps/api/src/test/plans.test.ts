@@ -17,7 +17,7 @@ jest.mock('../config/env.js', () => ({
 }));
 
 // Mock Prisma
-jest.mock('@myteacher/db', () => ({
+jest.mock('../lib/db.js', () => ({
   prisma: {
     appUser: {
       findUnique: jest.fn(),
