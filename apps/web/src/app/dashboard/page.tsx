@@ -1,23 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { api, Student, BestPracticeDocument, FormTemplate } from '@/lib/api';
+import { api, StudentStatusSummary, BestPracticeDocument, FormTemplate } from '@/lib/api';
 import { StatusBadge } from '@/components/StatusBadge';
 import styles from './page.module.css';
 
 type TabType = 'students' | 'best-practice' | 'templates';
+type StatusFilter = 'ALL' | 'ON_TRACK' | 'WATCH' | 'CONCERN' | 'URGENT' | 'NO_STATUS';
+
+interface Filters {
+  status: StatusFilter;
+  hasIEP: boolean;
+  has504: boolean;
+  hasBehavior: boolean;
+}
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<StudentStatusSummary[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('students');
   const [bestPracticeDocs, setBestPracticeDocs] = useState<BestPracticeDocument[]>([]);
   const [formTemplates, setFormTemplates] = useState<FormTemplate[]>([]);
   const [loadingAdmin, setLoadingAdmin] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    status: 'ALL',
+    hasIEP: false,
+    has504: false,
+    hasBehavior: false,
+  });
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -33,7 +47,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user?.isOnboarded) {
-      api.getStudents()
+      api.getStudentStatusSummary()
         .then(({ students }) => setStudents(students))
         .catch(console.error)
         .finally(() => setLoadingStudents(false));
@@ -59,10 +73,42 @@ export default function DashboardPage() {
     }
   }, [activeTab, isAdmin, bestPracticeDocs.length, formTemplates.length]);
 
+  // Apply client-side filters
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
+      // Status filter
+      if (filters.status !== 'ALL') {
+        if (filters.status === 'NO_STATUS') {
+          if (student.overallStatus) return false;
+        } else {
+          if (!student.overallStatus || student.overallStatus.code !== filters.status) return false;
+        }
+      }
+
+      // Plan type filters (any selected must be true)
+      if (filters.hasIEP && !student.hasActiveIEP) return false;
+      if (filters.has504 && !student.hasActive504) return false;
+      if (filters.hasBehavior && !student.hasActiveBehaviorPlan) return false;
+
+      return true;
+    });
+  }, [students, filters]);
+
   const handleLogout = async () => {
     await logout();
     router.push('/');
   };
+
+  const clearFilters = () => {
+    setFilters({
+      status: 'ALL',
+      hasIEP: false,
+      has504: false,
+      hasBehavior: false,
+    });
+  };
+
+  const hasActiveFilters = filters.status !== 'ALL' || filters.hasIEP || filters.has504 || filters.hasBehavior;
 
   if (loading || !user) {
     return (
@@ -116,6 +162,13 @@ export default function DashboardPage() {
                 <span className={styles.icon}>&#128203;</span>
                 Form Templates
               </button>
+              <button
+                className={styles.adminBtn}
+                onClick={() => router.push('/admin/schemas')}
+              >
+                <span className={styles.icon}>&#128221;</span>
+                Plan Schemas
+              </button>
             </div>
           </div>
         )}
@@ -150,40 +203,141 @@ export default function DashboardPage() {
             <section className={styles.section}>
               <div className={styles.sectionHeader}>
                 <h3>Your Students</h3>
-                <span className={styles.count}>{students.length} students</span>
+                <span className={styles.count}>
+                  {filteredStudents.length} of {students.length} students
+                </span>
+              </div>
+
+              {/* Filter Panel */}
+              <div className={styles.filterPanel}>
+                <div className={styles.filterGroup}>
+                  <label className={styles.filterLabel}>Status</label>
+                  <select
+                    className={styles.filterSelect}
+                    value={filters.status}
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value as StatusFilter })}
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="ON_TRACK">On Track</option>
+                    <option value="WATCH">Watch</option>
+                    <option value="CONCERN">Concern</option>
+                    <option value="URGENT">Urgent</option>
+                    <option value="NO_STATUS">No Status</option>
+                  </select>
+                </div>
+                <div className={styles.filterGroup}>
+                  <label className={styles.filterLabel}>Plan Types</label>
+                  <div className={styles.checkboxGroup}>
+                    <label className={styles.checkbox}>
+                      <input
+                        type="checkbox"
+                        checked={filters.hasIEP}
+                        onChange={(e) => setFilters({ ...filters, hasIEP: e.target.checked })}
+                      />
+                      Has IEP
+                    </label>
+                    <label className={styles.checkbox}>
+                      <input
+                        type="checkbox"
+                        checked={filters.has504}
+                        onChange={(e) => setFilters({ ...filters, has504: e.target.checked })}
+                      />
+                      Has 504
+                    </label>
+                    <label className={styles.checkbox}>
+                      <input
+                        type="checkbox"
+                        checked={filters.hasBehavior}
+                        onChange={(e) => setFilters({ ...filters, hasBehavior: e.target.checked })}
+                      />
+                      Has Behavior Plan
+                    </label>
+                  </div>
+                </div>
+                {hasActiveFilters && (
+                  <button className={styles.clearFilters} onClick={clearFilters}>
+                    Clear Filters
+                  </button>
+                )}
               </div>
 
               {loadingStudents ? (
                 <div className="loading-container">
                   <div className="spinner" />
                 </div>
-              ) : students.length === 0 ? (
+              ) : filteredStudents.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <p>No students assigned yet.</p>
-                  <p className={styles.hint}>Students will appear here once they are assigned to you.</p>
+                  {students.length === 0 ? (
+                    <>
+                      <p>No students assigned yet.</p>
+                      <p className={styles.hint}>Students will appear here once they are assigned to you.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>No students match the current filters.</p>
+                      <button className="btn btn-outline" onClick={clearFilters}>
+                        Clear Filters
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
-                <div className={styles.studentGrid}>
-                  {students.map(student => (
-                    <div
-                      key={student.id}
-                      className={styles.studentCard}
-                      onClick={() => router.push(`/students/${student.id}`)}
-                    >
-                      <div className={styles.studentInfo}>
-                        <h4>{student.lastName}, {student.firstName}</h4>
-                        <p>Grade {student.grade} • {student.schoolName}</p>
-                        <p className={styles.studentId}>{student.recordId}</p>
-                      </div>
-                      <div className={styles.studentStatus}>
-                        {student.overallStatus ? (
-                          <StatusBadge code={student.overallStatus.code} />
-                        ) : (
-                          <span className={styles.noStatus}>No status</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                <div className={styles.tableContainer}>
+                  <table className={styles.studentTable}>
+                    <thead>
+                      <tr>
+                        <th>Record ID</th>
+                        <th>Name</th>
+                        <th>Grade</th>
+                        <th>Status</th>
+                        <th>IEP</th>
+                        <th>504</th>
+                        <th>Behavior</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStudents.map(student => (
+                        <tr key={student.studentId}>
+                          <td className={styles.recordId}>{student.recordId}</td>
+                          <td className={styles.studentName}>
+                            {student.lastName}, {student.firstName}
+                          </td>
+                          <td>{student.gradeLevel}</td>
+                          <td>
+                            {student.overallStatus ? (
+                              <StatusBadge code={student.overallStatus.code} />
+                            ) : (
+                              <span className={styles.noStatus}>-</span>
+                            )}
+                          </td>
+                          <td>
+                            <span className={`${styles.planFlag} ${student.hasActiveIEP ? styles.active : styles.inactive}`}>
+                              {student.hasActiveIEP ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`${styles.planFlag} ${student.hasActive504 ? styles.active : styles.inactive}`}>
+                              {student.hasActive504 ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`${styles.planFlag} ${student.hasActiveBehaviorPlan ? styles.active : styles.inactive}`}>
+                              {student.hasActiveBehaviorPlan ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className={styles.actionBtn}
+                              onClick={() => router.push(`/students/${student.studentId}`)}
+                            >
+                              Open
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </section>
@@ -216,7 +370,7 @@ export default function DashboardPage() {
                     <div key={doc.id} className={styles.studentCard}>
                       <div className={styles.studentInfo}>
                         <h4>{doc.title}</h4>
-                        <p>{doc.planTypeName} • {doc.gradeBand || 'All Grades'}</p>
+                        <p>{doc.planTypeName} - {doc.gradeBand || 'All Grades'}</p>
                         <p className={styles.studentId}>
                           {doc.ingestionStatus === 'COMPLETE' ? `${doc.chunkCount} chunks` : doc.ingestionStatus}
                         </p>

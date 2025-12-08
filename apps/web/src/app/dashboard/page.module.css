@@ -271,3 +271,152 @@
 .tabContent {
   min-height: 300px;
 }
+
+/* Filter Panel */
+.filterPanel {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filterLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.filterSelect {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.checkboxGroup {
+  display: flex;
+  gap: 1rem;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.checkbox input {
+  cursor: pointer;
+}
+
+.clearFilters {
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: auto;
+}
+
+.clearFilters:hover {
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+
+/* Student Table */
+.tableContainer {
+  overflow-x: auto;
+}
+
+.studentTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.studentTable th,
+.studentTable td {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.studentTable th {
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--background);
+  white-space: nowrap;
+}
+
+.studentTable tbody tr:hover {
+  background: var(--background);
+}
+
+.studentTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.recordId {
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.studentName {
+  font-weight: 500;
+}
+
+.planFlag {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.planFlag.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.planFlag.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.actionBtn {
+  padding: 0.375rem 0.75rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.actionBtn:hover {
+  background: var(--primary-dark, #4f46e5);
+}

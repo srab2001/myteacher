@@ -188,12 +188,20 @@ export default function StudentDetailPage() {
             ) : (
               <span className={styles.noStatus}>No status set</span>
             )}
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowStatusModal(true)}
-            >
-              Update Status
-            </button>
+            <div className={styles.headerActions}>
+              <button
+                className="btn btn-outline"
+                onClick={() => router.push(`/students/${studentId}/reports`)}
+              >
+                Reports
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowStatusModal(true)}
+              >
+                Update Status
+              </button>
+            </div>
           </div>
         </div>
 

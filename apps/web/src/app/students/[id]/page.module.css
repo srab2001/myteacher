@@ -64,6 +64,11 @@
   gap: 1rem;
 }
 
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .noStatus {
   color: var(--muted);
   font-size: 0.875rem;

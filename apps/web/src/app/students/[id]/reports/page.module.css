@@ -1,0 +1,397 @@
+.container {
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.header {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.backBtn:hover {
+  text-decoration: underline;
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.pageHeader {
+  margin-bottom: 1.5rem;
+}
+
+.pageHeader h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.pageHeader p {
+  color: var(--muted);
+}
+
+.notFound {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.notFound h2 {
+  margin-bottom: 1rem;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  background: white;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--foreground);
+}
+
+.tab.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* Report Section */
+.reportSection {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.reportHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.reportHeader h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.reportHeader p {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* Date Form */
+.dateForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.dateField label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dateField input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.dateField input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Report Content */
+.reportContent {
+  padding: 1.5rem;
+}
+
+.reportMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.reportMeta p {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.reportMeta strong {
+  color: var(--foreground);
+}
+
+.exportButtons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Summary Cards */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summaryCard {
+  background: var(--background);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.summaryValue {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.summaryLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+/* Goals Table */
+.goalsTable {
+  overflow-x: auto;
+}
+
+.goalsTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.goalsTable th,
+.goalsTable td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.goalsTable th {
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--background);
+  white-space: nowrap;
+}
+
+.goalsTable tbody tr:hover {
+  background: var(--background);
+}
+
+.goalCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.goalText {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dateNote {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Trend Labels */
+.trendImproving {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.trendStable {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.trendDeclining {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.trendInsufficient {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* On Track Indicators */
+.onTrack {
+  color: #15803d;
+  font-weight: 500;
+}
+
+.offTrack {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.unknown {
+  color: var(--muted);
+}
+
+/* Service List */
+.servicesList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.serviceGroup {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.serviceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+
+.serviceHeader h4 {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.serviceTotals {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.serviceTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.serviceTable th,
+.serviceTable td {
+  padding: 0.625rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.serviceTable th {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.serviceTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.serviceTable tbody tr:hover {
+  background: var(--background);
+}
+
+.notesCell {
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+/* Error and Empty States */
+.errorMessage {
+  padding: 1rem;
+  margin: 1rem 1.5rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.emptyMessage {
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+}
