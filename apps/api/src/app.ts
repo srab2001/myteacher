@@ -33,6 +33,9 @@ import generationRoutes from './routes/generation.js';
 export function createApp(): Express {
   const app = express();
 
+  // Trust proxy - required for secure cookies behind Vercel/proxies
+  app.set('trust proxy', 1);
+
   // Security middleware
   app.use(helmet());
   app.use(
@@ -52,17 +55,19 @@ export function createApp(): Express {
     session({
       store: new PgSession({
         pool: pgPool,
-        tableName: 'session', // Will auto-create if doesn't exist
+        tableName: 'session',
         createTableIfMissing: true,
       }),
+      name: 'myteacher.sid',
       secret: env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
+      proxy: true,
       cookie: {
         secure: env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-origin cookies
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       },
     })
   );

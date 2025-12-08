@@ -18,18 +18,25 @@ router.post('/login', (req, res, next) => {
       if (err) {
         return next(err);
       }
-      return res.json({
-        user: {
-          id: user.id,
-          email: user.email,
-          displayName: user.displayName,
-          avatarUrl: user.avatarUrl,
-          role: user.role,
-          stateCode: user.stateCode,
-          districtName: user.districtName,
-          schoolName: user.schoolName,
-          isOnboarded: user.isOnboarded,
-        },
+      // Save session explicitly before responding (important for async stores)
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('Session save error:', saveErr);
+          return next(saveErr);
+        }
+        return res.json({
+          user: {
+            id: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            avatarUrl: user.avatarUrl,
+            role: user.role,
+            stateCode: user.stateCode,
+            districtName: user.districtName,
+            schoolName: user.schoolName,
+            isOnboarded: user.isOnboarded,
+          },
+        });
       });
     });
   })(req, res, next);
