@@ -1,4 +1,4 @@
-import { prisma, PlanTypeCode, UserRole } from '@myteacher/db';
+import { prisma, PlanTypeCode, UserRole } from '../lib/db.js';
 
 // Mock environment
 jest.mock('../config/env.js', () => ({

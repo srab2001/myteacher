@@ -3,7 +3,7 @@ import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { prisma, PlanTypeCode } from '@myteacher/db';
+import { prisma, PlanTypeCode } from '../lib/db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { ingestBestPracticeDocument, getDocumentChunkStats } from '../services/ingestion.js';
 

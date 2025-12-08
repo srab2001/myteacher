@@ -1,4 +1,4 @@
-import { prisma, StatusScope, StatusCode } from '@myteacher/db';
+import { prisma, StatusScope, StatusCode } from '../lib/db.js';
 
 // Mock environment
 jest.mock('../config/env.js', () => ({

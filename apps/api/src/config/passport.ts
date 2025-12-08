@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcryptjs';
-import { prisma, AppUser } from '@myteacher/db';
+import { prisma, AppUser } from '../lib/db.js';
 import { env } from './env.js';
 
 // Extend Express.User to include our AppUser type

@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../app.js';
-import { prisma } from '@myteacher/db';
+import { prisma } from '../lib/db.js';
 
 // Mock environment variables for tests
 jest.mock('../config/env.js', () => ({

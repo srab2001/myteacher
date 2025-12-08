@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { prisma, PlanTypeCode, IngestionStatus } from '@myteacher/db';
+import { prisma, PlanTypeCode, IngestionStatus } from '../lib/db.js';
 
 // Section tag patterns for different plan types
 const SECTION_PATTERNS: Record<string, { pattern: RegExp; tag: string }[]> = {

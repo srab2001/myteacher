@@ -3,7 +3,7 @@ import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { prisma, PlanTypeCode } from '@myteacher/db';
+import { prisma, PlanTypeCode } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 
 const router = Router();

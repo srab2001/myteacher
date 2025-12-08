@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, WorkSampleRating } from '@myteacher/db';
+import { prisma, WorkSampleRating } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import multer from 'multer';
 import path from 'path';

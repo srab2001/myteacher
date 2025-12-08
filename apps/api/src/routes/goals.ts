@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, GoalArea, ProgressLevel } from '@myteacher/db';
+import { prisma, GoalArea, ProgressLevel } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 
 const router = Router();

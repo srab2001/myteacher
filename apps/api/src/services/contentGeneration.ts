@@ -1,4 +1,4 @@
-import { prisma } from '@myteacher/db';
+import { prisma } from '../lib/db.js';
 import { queryChunksForGeneration, getSectionTagsForPlanType } from './ingestion.js';
 
 // Section tag to field mapping for different plan types
