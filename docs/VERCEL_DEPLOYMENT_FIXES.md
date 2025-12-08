@@ -1,5 +1,9 @@
 # MyTeacher Vercel Deployment Errors & Fixes
 
+This document contains all errors encountered during deployment to Vercel/Neon and their solutions.
+
+---
+
 ## 1. Prisma JSON Type Errors
 
 **Error:**
@@ -43,6 +47,8 @@ ENOENT: no such file or directory, mkdir './uploads'
 
 **Files:** `worksamples.ts`, `priorplans.ts`, `admin.ts`
 
+**Cause:** Vercel serverless functions have a read-only filesystem except for `/tmp`.
+
 **Fix:** Use `/tmp/uploads` in serverless and wrap in try-catch:
 ```typescript
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -83,6 +89,8 @@ Vercel couldn't find serverless function entry point
 Login returns 200 but /auth/me returns 401
 ```
 
+**Cause:** Default in-memory session store doesn't persist across serverless function invocations.
+
 **File:** `apps/api/src/app.ts`
 
 **Fix:** Added PostgreSQL session store:
@@ -113,6 +121,8 @@ store: new PgSession({
 Session not written to store before response sent
 ```
 
+**Cause:** Async session stores may not complete writes before response is sent.
+
 **File:** `apps/api/src/routes/auth.ts`
 
 **Fix:** Explicit `session.save()` before responding:
@@ -138,6 +148,8 @@ req.logIn(user, (err) => {
 Secure cookies not working behind reverse proxy
 ```
 
+**Cause:** Express doesn't trust proxy headers by default, so secure cookies fail.
+
 **File:** `apps/api/src/app.ts`
 
 **Fix:** Added trust proxy settings:
@@ -162,6 +174,8 @@ Browser blocks third-party cookies between myteacher-web.vercel.app and myteache
 GET https://myteacher-api.vercel.app/auth/me 401 (Unauthorized)
 ```
 
+**Cause:** Modern browsers block third-party cookies. When frontend (myteacher-web.vercel.app) makes requests to API (myteacher-api.vercel.app), cookies are considered third-party and blocked.
+
 **File:** `apps/web/next.config.js`
 
 **Fix:** Use Next.js rewrites to proxy API calls through same domain:
@@ -170,6 +184,8 @@ GET https://myteacher-api.vercel.app/auth/me 401 (Unauthorized)
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
+    // Use API_URL (server-side only) for rewrites
+    // NEXT_PUBLIC_API_URL should NOT be set - client uses relative URLs
     const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
     return [
       {
@@ -188,8 +204,14 @@ module.exports = nextConfig;
 ```
 
 **Vercel Environment Variables (myteacher-web):**
-- **Remove:** `NEXT_PUBLIC_API_URL`
-- **Add:** `API_URL=https://myteacher-api.vercel.app`
+- **Remove:** `NEXT_PUBLIC_API_URL` (critical - this gets bundled into client JS)
+- **Add:** `API_URL=https://myteacher-api.vercel.app` (server-side only)
+
+**Why this works:**
+1. Client makes request to `/auth/login` (relative URL, same domain)
+2. Next.js rewrites it to `https://myteacher-api.vercel.app/auth/login`
+3. Response cookies are set on `myteacher-web.vercel.app` (same origin)
+4. No third-party cookie blocking
 
 ---
 
@@ -200,6 +222,8 @@ module.exports = nextConfig;
 Login failed: user not found (connecting to wrong database)
 ```
 
+**Cause:** DATABASE_URL environment variable was misconfigured or pointing to wrong database.
+
 **Fix:** Set correct Neon connection string in Vercel environment variables:
 ```
 DATABASE_URL=postgresql://neondb_owner:PASSWORD@ep-polished-snow-a4osv2nl-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require
@@ -207,24 +231,129 @@ DATABASE_URL=postgresql://neondb_owner:PASSWORD@ep-polished-snow-a4osv2nl-pooler
 
 ---
 
+## 10. Password Hash Mismatch After Seeding
+
+**Error:**
+```
+Login failed: invalid password
+```
+
+**Cause:** Password hash in database doesn't match due to seed issues or different bcrypt versions.
+
+**File:** `apps/api/src/routes/auth.ts`
+
+**Fix:** Added password reset endpoint protected by SESSION_SECRET:
+```typescript
+// Password reset endpoint (protected by reset key)
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { username, newPassword, resetKey } = req.body;
+
+    // Verify reset key (use SESSION_SECRET as the reset key)
+    const expectedKey = env.SESSION_SECRET;
+    if (!resetKey || resetKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid reset key' });
+    }
+
+    if (!username || !newPassword) {
+      return res.status(400).json({ error: 'Username and new password are required' });
+    }
+
+    const user = await prisma.appUser.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await prisma.appUser.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    return res.json({ success: true, message: 'Password reset successful' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+```
+
+**Usage:**
+```bash
+curl -X POST https://myteacher-api.vercel.app/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "stuadmin",
+    "newPassword": "stuteacher1125",
+    "resetKey": "YOUR_SESSION_SECRET"
+  }'
+```
+
+---
+
 ## Environment Variables Summary
 
 ### myteacher-api (API Server)
-| Variable | Value |
-|----------|-------|
-| `DATABASE_URL` | Neon PostgreSQL connection string |
-| `SESSION_SECRET` | Random secure string |
-| `NODE_ENV` | `production` |
-| `FRONTEND_URL` | `https://myteacher-web.vercel.app` |
+
+| Variable | Value | Required |
+|----------|-------|----------|
+| `DATABASE_URL` | Neon PostgreSQL connection string | Yes |
+| `SESSION_SECRET` | Random secure string (32+ chars) | Yes |
+| `NODE_ENV` | `production` | Yes |
+| `FRONTEND_URL` | `https://myteacher-web.vercel.app` | Yes |
 
 ### myteacher-web (Frontend)
-| Variable | Value |
-|----------|-------|
-| `API_URL` | `https://myteacher-api.vercel.app` |
-| `NEXT_PUBLIC_API_URL` | **DO NOT SET** (leave empty) |
+
+| Variable | Value | Required |
+|----------|-------|----------|
+| `API_URL` | `https://myteacher-api.vercel.app` | Yes |
+| `NEXT_PUBLIC_API_URL` | **DO NOT SET** (must be empty/removed) | No |
+
+---
+
+## Deployment Checklist
+
+### Before Deploying
+
+- [ ] Remove `NEXT_PUBLIC_API_URL` from myteacher-web environment
+- [ ] Add `API_URL` to myteacher-web environment
+- [ ] Verify `DATABASE_URL` points to correct Neon database
+- [ ] Verify `SESSION_SECRET` is set in myteacher-api
+
+### After Deploying
+
+- [ ] Redeploy myteacher-web **without** build cache after env var changes
+- [ ] Run database seed if needed: `DATABASE_URL="..." pnpm seed`
+- [ ] Reset admin password if login fails (use curl command above)
+- [ ] Test login at https://myteacher-web.vercel.app/login
 
 ---
 
 ## Admin Login Credentials
+
 - **Username:** `stuadmin`
 - **Password:** `stuteacher1125`
+
+---
+
+## Troubleshooting
+
+### Login returns 200 but dashboard shows 401
+- Check that `NEXT_PUBLIC_API_URL` is **not set** in myteacher-web
+- Redeploy myteacher-web without build cache
+
+### "Invalid password" after successful seed
+- Use the password reset endpoint with your SESSION_SECRET
+- Verify bcryptjs is used in both seed.ts and passport.ts
+
+### Session not persisting
+- Check PostgreSQL session table exists (`session` table)
+- Verify `trust proxy` is set in app.ts
+- Verify `proxy: true` in session config
+
+### CORS errors
+- Check `FRONTEND_URL` is set correctly in myteacher-api
+- Verify CORS middleware allows the frontend origin
