@@ -10,17 +10,20 @@ import { ingestBestPracticeDocument, getDocumentChunkStats } from '../services/i
 const router = Router();
 
 // Configure multer for file uploads
-const bestPracticeUploadDir = process.env.UPLOAD_DIR
-  ? `${process.env.UPLOAD_DIR}/best-practices`
-  : './uploads/best-practices';
-const templateUploadDir = process.env.UPLOAD_DIR
-  ? `${process.env.UPLOAD_DIR}/form-templates`
-  : './uploads/form-templates';
+// Use /tmp for serverless environments (Vercel), otherwise use local uploads dir
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+const baseUploadDir = process.env.UPLOAD_DIR || (isServerless ? '/tmp/uploads' : './uploads');
+const bestPracticeUploadDir = `${baseUploadDir}/best-practices`;
+const templateUploadDir = `${baseUploadDir}/form-templates`;
 
-// Ensure upload directories exist
+// Ensure upload directories exist (wrapped in try-catch for serverless)
 [bestPracticeUploadDir, templateUploadDir].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (error) {
+    console.warn('Could not create upload directory:', dir, error);
   }
 });
 
