@@ -87,6 +87,16 @@ router.post('/logout', (req, res, next) => {
   });
 });
 
+// Debug endpoint to check OAuth configuration (no secrets exposed)
+router.get('/debug-oauth', (req, res) => {
+  res.json({
+    googleConfigured: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL),
+    callbackUrl: env.GOOGLE_CALLBACK_URL || 'NOT SET',
+    frontendUrl: env.FRONTEND_URL || 'NOT SET',
+    clientIdPrefix: env.GOOGLE_CLIENT_ID ? env.GOOGLE_CLIENT_ID.substring(0, 20) + '...' : 'NOT SET',
+  });
+});
+
 // Get current user
 router.get('/me', requireAuth, (req, res) => {
   res.json({
