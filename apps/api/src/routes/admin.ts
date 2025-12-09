@@ -965,7 +965,7 @@ router.get('/users', requireManageUsersPermission, async (req, res) => {
       ];
     }
 
-    const users = await prisma.user.findMany({
+    const users = await prisma.appUser.findMany({
       where,
       include: {
         permission: true,
@@ -1022,7 +1022,7 @@ router.post('/users', requireManageUsersPermission, async (req, res) => {
     const data = bodySchema.parse(req.body);
 
     // Check if user with email already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.appUser.findUnique({
       where: { email: data.email },
     });
 
@@ -1041,7 +1041,7 @@ router.post('/users', requireManageUsersPermission, async (req, res) => {
     }
 
     // Create user with permissions
-    const user = await prisma.user.create({
+    const user = await prisma.appUser.create({
       data: {
         email: data.email,
         displayName: data.displayName,
@@ -1097,7 +1097,7 @@ router.get('/users/:userId', requireManageUsersPermission, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
       include: {
         permission: true,
@@ -1163,7 +1163,7 @@ router.patch('/users/:userId', requireManageUsersPermission, async (req, res) =>
 
     const data = bodySchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
     });
 
@@ -1181,7 +1181,7 @@ router.patch('/users/:userId', requireManageUsersPermission, async (req, res) =>
       }
     }
 
-    const updated = await prisma.user.update({
+    const updated = await prisma.appUser.update({
       where: { id: userId },
       data: {
         displayName: data.displayName,
@@ -1239,7 +1239,7 @@ router.patch('/users/:userId/permissions', requireManageUsersPermission, async (
 
     const data = bodySchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
       include: { permission: true },
     });
@@ -1410,7 +1410,7 @@ router.get('/users/:userId/students', requireManageUsersPermission, async (req, 
   try {
     const { userId } = req.params;
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
       include: { permission: true },
     });
@@ -1483,7 +1483,7 @@ router.post('/users/:userId/students', requireManageUsersPermission, async (req,
     const data = bodySchema.parse(req.body);
 
     // Verify user exists
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
     });
 
