@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import {
@@ -36,7 +36,6 @@ const PERMISSION_LABELS: Record<keyof AdminPermissions, string> = {
 
 export default function UserDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const userId = params.userId as string;
 
   const [user, setUser] = useState<AdminUserDetail | null>(null);

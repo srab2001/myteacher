@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { render, waitFor, screen, fireEvent } from '@testing-library/react';
 import { useRouter, useParams } from 'next/navigation';
 import { AuthProvider } from '@/lib/auth-context';
