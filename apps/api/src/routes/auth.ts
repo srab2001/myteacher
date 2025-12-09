@@ -54,28 +54,44 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
     })
   );
 
-  // Google OAuth callback
-  router.get(
-    '/google/callback',
-    passport.authenticate('google', {
-      failureRedirect: `${env.FRONTEND_URL}/login?error=auth_failed`,
-    }),
-    (req, res) => {
-      // Save session explicitly before redirect (important for async stores)
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error after OAuth:', err);
-          return res.redirect(`${env.FRONTEND_URL}/login?error=session_failed`);
+  // Google OAuth callback with custom error handling
+  router.get('/google/callback', (req, res, next) => {
+    passport.authenticate('google', (err: Error | null, user: Express.User | false, info: unknown) => {
+      if (err) {
+        console.error('Google OAuth error:', err.message);
+        console.error('Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+        // Check for specific error types
+        const errorCode = (err as { code?: string }).code || 'unknown';
+        return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_error&code=${errorCode}`);
+      }
+
+      if (!user) {
+        console.error('Google OAuth - no user returned, info:', info);
+        return res.redirect(`${env.FRONTEND_URL}/login?error=auth_failed`);
+      }
+
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          console.error('Login error after OAuth:', loginErr);
+          return res.redirect(`${env.FRONTEND_URL}/login?error=login_failed`);
         }
-        // Redirect based on onboarding status
-        if (req.user?.isOnboarded) {
-          res.redirect(`${env.FRONTEND_URL}/dashboard`);
-        } else {
-          res.redirect(`${env.FRONTEND_URL}/onboarding`);
-        }
+
+        // Save session explicitly before redirect (important for async stores)
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('Session save error after OAuth:', saveErr);
+            return res.redirect(`${env.FRONTEND_URL}/login?error=session_failed`);
+          }
+          // Redirect based on onboarding status
+          if (req.user?.isOnboarded) {
+            res.redirect(`${env.FRONTEND_URL}/dashboard`);
+          } else {
+            res.redirect(`${env.FRONTEND_URL}/onboarding`);
+          }
+        });
       });
-    }
-  );
+    })(req, res, next);
+  });
 }
 
 // Logout
@@ -96,11 +112,17 @@ router.post('/logout', (req, res, next) => {
 
 // Debug endpoint to check OAuth configuration (no secrets exposed)
 router.get('/debug-oauth', (req, res) => {
+  const clientSecret = env.GOOGLE_CLIENT_SECRET || '';
   res.json({
     googleConfigured: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL),
     callbackUrl: env.GOOGLE_CALLBACK_URL || 'NOT SET',
     frontendUrl: env.FRONTEND_URL || 'NOT SET',
     clientIdPrefix: env.GOOGLE_CLIENT_ID ? env.GOOGLE_CLIENT_ID.substring(0, 20) + '...' : 'NOT SET',
+    // Show client secret format hints without exposing the actual secret
+    clientSecretLength: clientSecret.length,
+    clientSecretPrefix: clientSecret.substring(0, 6) + '...',
+    clientSecretHasSpaces: clientSecret.includes(' '),
+    clientSecretHasNewlines: clientSecret.includes('\n'),
     nodeEnv: env.NODE_ENV || 'NOT SET',
     cookieSecure: env.NODE_ENV === 'production',
     cookieSameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
