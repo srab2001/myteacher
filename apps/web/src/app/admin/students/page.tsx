@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { api, AdminStudent, User } from '@/lib/api';
+import { api, AdminStudent, User, AdminUser } from '@/lib/api';
 import styles from './page.module.css';
 
 export default function AdminStudentsPage() {
@@ -14,22 +14,26 @@ export default function AdminStudentsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [assigningStudent, setAssigningStudent] = useState<string | null>(null);
   const [assignMessage, setAssignMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState<AdminStudent | null>(null);
 
   const loadData = useCallback(async () => {
     setError(null);
     try {
-      const [studentsRes, userRes] = await Promise.all([
+      const [studentsRes, userRes, usersRes] = await Promise.all([
         api.getAdminStudents({
           search: searchTerm || undefined,
           limit: 50,
         }),
         api.getMe(),
+        api.getAdminUsers(),
       ]);
       setStudents(studentsRes.students);
       setTotal(studentsRes.total);
       setCurrentUser(userRes.user);
+      setUsers(usersRes.users.filter(u => u.isActive));
     } catch (err) {
       console.error('Failed to load students:', err);
       setError(err instanceof Error ? err.message : 'Failed to load students');
@@ -46,16 +50,20 @@ export default function AdminStudentsPage() {
 
   const handleAssignToMe = async (student: AdminStudent) => {
     if (!currentUser) return;
+    await handleAssignToUser(student, currentUser.id, currentUser.displayName || 'you');
+  };
 
+  const handleAssignToUser = async (student: AdminStudent, userId: string, userName: string) => {
     setAssigningStudent(student.id);
     setAssignMessage(null);
 
     try {
-      await api.addStudentAccess(currentUser.id, student.recordId, true);
+      await api.addStudentAccess(userId, student.recordId, true);
       setAssignMessage({
         type: 'success',
-        text: `${student.firstName} ${student.lastName} has been assigned to you!`,
+        text: `${student.firstName} ${student.lastName} has been assigned to ${userName}!`,
       });
+      setShowAssignModal(null);
       // Clear message after 3 seconds
       setTimeout(() => setAssignMessage(null), 3000);
     } catch (err) {
@@ -177,13 +185,20 @@ export default function AdminStudentsPage() {
                       ? format(new Date(student.createdAt), 'MMM d, yyyy')
                       : '-'}
                   </td>
-                  <td>
+                  <td className={styles.actionsCell}>
                     <button
                       className={styles.assignButton}
                       onClick={() => handleAssignToMe(student)}
                       disabled={assigningStudent === student.id}
                     >
                       {assigningStudent === student.id ? 'Assigning...' : 'Assign to Me'}
+                    </button>
+                    <button
+                      className={styles.assignButtonOutline}
+                      onClick={() => setShowAssignModal(student)}
+                      disabled={assigningStudent === student.id}
+                    >
+                      Assign to...
                     </button>
                   </td>
                 </tr>
@@ -197,6 +212,16 @@ export default function AdminStudentsPage() {
         <CreateStudentModal
           onClose={() => setShowCreateModal(false)}
           onComplete={handleCreateComplete}
+        />
+      )}
+
+      {showAssignModal && (
+        <AssignStudentModal
+          student={showAssignModal}
+          users={users}
+          onClose={() => setShowAssignModal(null)}
+          onAssign={(userId, userName) => handleAssignToUser(showAssignModal, userId, userName)}
+          assigning={assigningStudent === showAssignModal.id}
         />
       )}
     </div>
@@ -360,6 +385,96 @@ function CreateStudentModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function AssignStudentModal({
+  student,
+  users,
+  onClose,
+  onAssign,
+  assigning,
+}: {
+  student: AdminStudent;
+  users: AdminUser[];
+  onClose: () => void;
+  onAssign: (userId: string, userName: string) => void;
+  assigning: boolean;
+}) {
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredUsers = users.filter(
+    (u) =>
+      u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedUser = users.find((u) => u.id === selectedUserId);
+
+  const handleAssign = () => {
+    if (!selectedUserId || !selectedUser) return;
+    onAssign(selectedUserId, selectedUser.displayName);
+  };
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <h3>Assign Student to User</h3>
+        <p className={styles.assignStudentInfo}>
+          Assigning <strong>{student.firstName} {student.lastName}</strong> ({student.recordId})
+        </p>
+
+        <div className={styles.formGroup}>
+          <label>Search Users</label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name or email..."
+          />
+        </div>
+
+        <div className={styles.userList}>
+          {filteredUsers.length === 0 ? (
+            <p className={styles.noUsers}>No users found</p>
+          ) : (
+            filteredUsers.map((user) => (
+              <div
+                key={user.id}
+                className={`${styles.userItem} ${selectedUserId === user.id ? styles.selected : ''}`}
+                onClick={() => setSelectedUserId(user.id)}
+              >
+                <div className={styles.userInfo}>
+                  <span className={styles.userName}>{user.displayName}</span>
+                  <span className={styles.userEmail}>{user.email}</span>
+                </div>
+                <span className={styles.userRole}>{user.role}</span>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className={styles.modalActions}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={onClose}
+            disabled={assigning}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleAssign}
+            disabled={assigning || !selectedUserId}
+          >
+            {assigning ? 'Assigning...' : 'Assign Student'}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -264,3 +264,97 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.actionsCell {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.assignButtonOutline {
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.assignButtonOutline:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+}
+
+.assignButtonOutline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.assignStudentInfo {
+  margin: 0 0 1.5rem 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.userList {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.userItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.userItem:last-child {
+  border-bottom: none;
+}
+
+.userItem:hover {
+  background: var(--background);
+}
+
+.userItem.selected {
+  background: #eff6ff;
+  border-left: 3px solid var(--primary);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.userName {
+  font-weight: 500;
+}
+
+.userEmail {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.userRole {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--background);
+  border-radius: 0.25rem;
+  color: var(--muted);
+}
+
+.noUsers {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem;
+  margin: 0;
+}
