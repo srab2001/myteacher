@@ -119,6 +119,8 @@ model AppUser {
   districtName  String?
   schoolName    String?
   isOnboarded   Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -133,10 +135,51 @@ model AppUser {
   priorPlanUploads PriorPlanDocument[] @relation("PriorPlanUploadedBy")
   bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
   formTemplateUploads FormTemplate[] @relation("FormTemplateUploadedBy")
+  permission     UserPermission?
+  studentAccess  StudentAccess[]
 
   @@index([googleId])
   @@index([email])
   @@index([username])
+}
+
+// ============================================
+// USER PERMISSION MODEL
+// ============================================
+
+model UserPermission {
+  id             String   @id @default(uuid())
+  canCreatePlans Boolean  @default(false)
+  canUpdatePlans Boolean  @default(false)
+  canReadAll     Boolean  @default(false)
+  canManageUsers Boolean  @default(false)
+  canManageDocs  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  userId String  @unique
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// STUDENT ACCESS MODEL (Grants user access to specific students)
+// ============================================
+
+model StudentAccess {
+  id        String   @id @default(uuid())
+  canEdit   Boolean  @default(false)
+  grantedAt DateTime @default(now())
+
+  // Relations
+  userId    String
+  user      AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, studentId])
+  @@index([userId])
+  @@index([studentId])
 }
 
 // ============================================
@@ -173,21 +216,23 @@ model Student {
   externalId    String?             // External SIS ID if used
   firstName     String
   lastName      String
-  dateOfBirth   DateTime
-  grade         String
-  schoolName    String
+  dateOfBirth   DateTime?
+  grade         String?
+  schoolName    String?
+  districtName  String?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  jurisdictionId String
-  jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
-  teacherId      String
-  teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
+  jurisdictionId String?
+  jurisdiction   Jurisdiction?   @relation(fields: [jurisdictionId], references: [id])
+  teacherId      String?
+  teacher        AppUser?        @relation("TeacherStudents", fields: [teacherId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
+  studentAccess  StudentAccess[]
 
   @@index([recordId])
   @@index([externalId])
