@@ -94,6 +94,9 @@ router.get('/debug-oauth', (req, res) => {
     callbackUrl: env.GOOGLE_CALLBACK_URL || 'NOT SET',
     frontendUrl: env.FRONTEND_URL || 'NOT SET',
     clientIdPrefix: env.GOOGLE_CLIENT_ID ? env.GOOGLE_CLIENT_ID.substring(0, 20) + '...' : 'NOT SET',
+    nodeEnv: env.NODE_ENV || 'NOT SET',
+    cookieSecure: env.NODE_ENV === 'production',
+    cookieSameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
   });
 });
 
