@@ -446,7 +446,7 @@ export default function BehaviorDataPage() {
                           <p className={styles.eventContext}>{(event.contextJson as { notes?: string }).notes}</p>
                         )}
                         <div className={styles.eventMeta}>
-                          <span>Recorded by {event.recordedBy.displayName}</span>
+                          <span>Recorded by {event.recordedBy?.displayName || 'Unknown'}</span>
                           <button
                             className={styles.deleteBtn}
                             onClick={() => handleDeleteEvent(event.id)}
