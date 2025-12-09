@@ -97,6 +97,24 @@ router.get('/debug-oauth', (req, res) => {
   });
 });
 
+// Debug endpoint to check database connectivity
+router.get('/debug-db', async (req, res) => {
+  try {
+    const userCount = await prisma.appUser.count();
+    res.json({
+      connected: true,
+      userCount,
+      databaseUrlSet: !!process.env.DATABASE_URL,
+    });
+  } catch (error) {
+    res.json({
+      connected: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      databaseUrlSet: !!process.env.DATABASE_URL,
+    });
+  }
+});
+
 // Get current user
 router.get('/me', requireAuth, (req, res) => {
   res.json({
