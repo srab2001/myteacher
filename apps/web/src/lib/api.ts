@@ -94,6 +94,8 @@ export interface BehaviorEventSummary {
   totalCount: number;
   totalDurationSeconds: number;
   averageRating: number;
+  averageCount?: number;
+  averageDuration?: number;
 }
 
 export interface PlanSchema {
