@@ -99,18 +99,22 @@ router.get('/debug-oauth', (req, res) => {
 
 // Debug endpoint to check database connectivity
 router.get('/debug-db', async (req, res) => {
+  const dbUrl = process.env.DATABASE_URL || '';
+  const urlPrefix = dbUrl.substring(0, 15); // Show first 15 chars to debug format
   try {
     const userCount = await prisma.appUser.count();
     res.json({
       connected: true,
       userCount,
       databaseUrlSet: !!process.env.DATABASE_URL,
+      urlPrefix,
     });
   } catch (error) {
     res.json({
       connected: false,
       error: error instanceof Error ? error.message : 'Unknown error',
       databaseUrlSet: !!process.env.DATABASE_URL,
+      urlPrefix,
     });
   }
 });
