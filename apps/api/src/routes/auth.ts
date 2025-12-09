@@ -129,6 +129,18 @@ router.get('/debug-db', async (req, res) => {
   }
 });
 
+// Debug session endpoint
+router.get('/debug-session', (req, res) => {
+  res.json({
+    hasSessionCookie: !!req.cookies['myteacher.sid'],
+    cookieNames: Object.keys(req.cookies || {}),
+    sessionId: req.sessionID ? req.sessionID.substring(0, 10) + '...' : 'none',
+    isAuthenticated: req.isAuthenticated?.() || false,
+    hasUser: !!req.user,
+    userId: req.user?.id || null,
+  });
+});
+
 // Get current user
 router.get('/me', requireAuth, (req, res) => {
   res.json({
