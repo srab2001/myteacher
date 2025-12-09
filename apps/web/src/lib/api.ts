@@ -892,6 +892,7 @@ class ApiClient {
     examples: string;
     nonExamples: string;
     measurementType: BehaviorMeasurementType;
+    isActive: boolean;
   }>): Promise<{ target: BehaviorTarget }> {
     return this.fetch(`/api/behavior-targets/targets/${targetId}`, {
       method: 'PATCH',
