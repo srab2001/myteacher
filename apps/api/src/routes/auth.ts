@@ -61,12 +61,19 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
       failureRedirect: `${env.FRONTEND_URL}/login?error=auth_failed`,
     }),
     (req, res) => {
-      // Redirect based on onboarding status
-      if (req.user?.isOnboarded) {
-        res.redirect(`${env.FRONTEND_URL}/dashboard`);
-      } else {
-        res.redirect(`${env.FRONTEND_URL}/onboarding`);
-      }
+      // Save session explicitly before redirect (important for async stores)
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error after OAuth:', err);
+          return res.redirect(`${env.FRONTEND_URL}/login?error=session_failed`);
+        }
+        // Redirect based on onboarding status
+        if (req.user?.isOnboarded) {
+          res.redirect(`${env.FRONTEND_URL}/dashboard`);
+        } else {
+          res.redirect(`${env.FRONTEND_URL}/onboarding`);
+        }
+      });
     }
   );
 }
