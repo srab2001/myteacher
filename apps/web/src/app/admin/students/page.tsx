@@ -10,10 +10,12 @@ export default function AdminStudentsPage() {
   const [students, setStudents] = useState<AdminStudent[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const loadData = useCallback(async () => {
+    setError(null);
     try {
       const res = await api.getAdminStudents({
         search: searchTerm || undefined,
@@ -23,6 +25,9 @@ export default function AdminStudentsPage() {
       setTotal(res.total);
     } catch (err) {
       console.error('Failed to load students:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load students');
+      setStudents([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -76,7 +81,16 @@ export default function AdminStudentsPage() {
         </span>
       </div>
 
-      {students.length === 0 ? (
+      {error && (
+        <div className={styles.errorBanner}>
+          <p>Error: {error}</p>
+          <button className="btn btn-outline" onClick={loadData}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!error && students.length === 0 ? (
         <div className={styles.emptyState}>
           <p>No students found.</p>
           <p className={styles.hint}>
@@ -85,7 +99,7 @@ export default function AdminStudentsPage() {
               : 'Create a student to get started.'}
           </p>
         </div>
-      ) : (
+      ) : !error && (
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>

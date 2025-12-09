@@ -53,6 +53,22 @@
   font-size: 0.875rem;
 }
 
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.errorBanner p {
+  margin: 0;
+  color: #dc2626;
+}
+
 .emptyState {
   text-align: center;
   padding: 4rem 2rem;
