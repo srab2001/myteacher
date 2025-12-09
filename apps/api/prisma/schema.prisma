@@ -167,9 +167,10 @@ model UserPermission {
 // ============================================
 
 model StudentAccess {
-  id        String   @id @default(uuid())
-  canEdit   Boolean  @default(false)
-  grantedAt DateTime @default(now())
+  id        String    @id @default(uuid())
+  canEdit   Boolean   @default(false)
+  grantedAt DateTime  @default(now())
+  expiresAt DateTime?
 
   // Relations
   userId    String
