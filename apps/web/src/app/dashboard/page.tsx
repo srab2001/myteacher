@@ -150,6 +150,20 @@ export default function DashboardPage() {
             <div className={styles.adminButtons}>
               <button
                 className={styles.adminBtn}
+                onClick={() => router.push('/admin/users')}
+              >
+                <span className={styles.icon}>&#128101;</span>
+                Manage Users
+              </button>
+              <button
+                className={styles.adminBtn}
+                onClick={() => router.push('/admin/students')}
+              >
+                <span className={styles.icon}>&#127891;</span>
+                Manage Students
+              </button>
+              <button
+                className={styles.adminBtn}
                 onClick={() => router.push('/admin/documents/best-practice')}
               >
                 <span className={styles.icon}>&#128196;</span>

@@ -1066,6 +1066,48 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Admin Student Management
+  async getAdminStudents(params?: { search?: string; limit?: number; offset?: number }): Promise<{
+    students: AdminStudent[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const queryString = new URLSearchParams();
+    if (params?.search) queryString.set('search', params.search);
+    if (params?.limit) queryString.set('limit', params.limit.toString());
+    if (params?.offset) queryString.set('offset', params.offset.toString());
+    return this.fetch(`/api/admin/students${queryString.toString() ? `?${queryString}` : ''}`);
+  }
+
+  async createStudent(data: {
+    recordId: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth?: string;
+    grade?: string;
+    schoolName?: string;
+    districtName?: string;
+  }): Promise<{ student: AdminStudent }> {
+    return this.fetch('/api/admin/students', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+}
+
+export interface AdminStudent {
+  id: string;
+  recordId: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string | null;
+  grade: string | null;
+  schoolName: string | null;
+  districtName: string | null;
+  isActive: boolean;
+  createdAt?: string;
 }
 
 export const api = new ApiClient();

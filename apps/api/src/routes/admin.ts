@@ -1287,6 +1287,121 @@ router.patch('/users/:userId/permissions', requireManageUsersPermission, async (
 });
 
 // ============================================
+// STUDENT MANAGEMENT
+// ============================================
+
+// GET /admin/students - List all students
+router.get('/students', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { search, limit = '50', offset = '0' } = req.query;
+
+    const where: { OR?: Array<{ firstName?: { contains: string; mode: 'insensitive' }; lastName?: { contains: string; mode: 'insensitive' }; recordId?: { contains: string; mode: 'insensitive' } }> } = {};
+
+    if (search && typeof search === 'string') {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { recordId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [students, total] = await Promise.all([
+      prisma.student.findMany({
+        where,
+        orderBy: { lastName: 'asc' },
+        take: parseInt(limit as string),
+        skip: parseInt(offset as string),
+        select: {
+          id: true,
+          recordId: true,
+          firstName: true,
+          lastName: true,
+          dateOfBirth: true,
+          grade: true,
+          schoolName: true,
+          districtName: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
+      prisma.student.count({ where }),
+    ]);
+
+    res.json({
+      students: students.map(s => ({
+        ...s,
+        dateOfBirth: s.dateOfBirth?.toISOString().split('T')[0] || null,
+      })),
+      total,
+      limit: parseInt(limit as string),
+      offset: parseInt(offset as string),
+    });
+  } catch (error) {
+    console.error('Students list error:', error);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
+});
+
+// POST /admin/students - Create a new student
+router.post('/students', requireManageUsersPermission, async (req, res) => {
+  try {
+    const createStudentSchema = z.object({
+      recordId: z.string().min(1, 'Record ID is required'),
+      firstName: z.string().min(1, 'First name is required'),
+      lastName: z.string().min(1, 'Last name is required'),
+      dateOfBirth: z.string().optional(),
+      grade: z.string().optional(),
+      schoolName: z.string().optional(),
+      districtName: z.string().optional(),
+    });
+
+    const data = createStudentSchema.parse(req.body);
+
+    // Check if recordId already exists
+    const existing = await prisma.student.findFirst({
+      where: { recordId: data.recordId },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: `Student with Record ID "${data.recordId}" already exists` });
+    }
+
+    const student = await prisma.student.create({
+      data: {
+        recordId: data.recordId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+        grade: data.grade || null,
+        schoolName: data.schoolName || null,
+        districtName: data.districtName || null,
+        isActive: true,
+      },
+    });
+
+    res.status(201).json({
+      student: {
+        id: student.id,
+        recordId: student.recordId,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        dateOfBirth: student.dateOfBirth?.toISOString().split('T')[0] || null,
+        grade: student.grade,
+        schoolName: student.schoolName,
+        districtName: student.districtName,
+        isActive: student.isActive,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Student create error:', error);
+    res.status(500).json({ error: 'Failed to create student' });
+  }
+});
+
+// ============================================
 // STUDENT ACCESS MANAGEMENT
 // ============================================
 
