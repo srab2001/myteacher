@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { api, AdminStudent } from '@/lib/api';
+import { api, AdminStudent, User } from '@/lib/api';
 import styles from './page.module.css';
 
 export default function AdminStudentsPage() {
@@ -13,16 +13,23 @@ export default function AdminStudentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [assigningStudent, setAssigningStudent] = useState<string | null>(null);
+  const [assignMessage, setAssignMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadData = useCallback(async () => {
     setError(null);
     try {
-      const res = await api.getAdminStudents({
-        search: searchTerm || undefined,
-        limit: 50,
-      });
-      setStudents(res.students);
-      setTotal(res.total);
+      const [studentsRes, userRes] = await Promise.all([
+        api.getAdminStudents({
+          search: searchTerm || undefined,
+          limit: 50,
+        }),
+        api.getMe(),
+      ]);
+      setStudents(studentsRes.students);
+      setTotal(studentsRes.total);
+      setCurrentUser(userRes.user);
     } catch (err) {
       console.error('Failed to load students:', err);
       setError(err instanceof Error ? err.message : 'Failed to load students');
@@ -36,6 +43,28 @@ export default function AdminStudentsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleAssignToMe = async (student: AdminStudent) => {
+    if (!currentUser) return;
+
+    setAssigningStudent(student.id);
+    setAssignMessage(null);
+
+    try {
+      await api.addStudentAccess(currentUser.id, student.recordId, true);
+      setAssignMessage({
+        type: 'success',
+        text: `${student.firstName} ${student.lastName} has been assigned to you!`,
+      });
+      // Clear message after 3 seconds
+      setTimeout(() => setAssignMessage(null), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to assign student';
+      setAssignMessage({ type: 'error', text: message });
+    } finally {
+      setAssigningStudent(null);
+    }
+  };
 
   const handleCreateComplete = () => {
     setShowCreateModal(false);
@@ -81,6 +110,12 @@ export default function AdminStudentsPage() {
         </span>
       </div>
 
+      {assignMessage && (
+        <div className={assignMessage.type === 'success' ? styles.successBanner : styles.errorBanner}>
+          <p>{assignMessage.text}</p>
+        </div>
+      )}
+
       {error && (
         <div className={styles.errorBanner}>
           <p>Error: {error}</p>
@@ -111,6 +146,7 @@ export default function AdminStudentsPage() {
                 <th>District</th>
                 <th>Status</th>
                 <th>Created</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -140,6 +176,15 @@ export default function AdminStudentsPage() {
                     {student.createdAt
                       ? format(new Date(student.createdAt), 'MMM d, yyyy')
                       : '-'}
+                  </td>
+                  <td>
+                    <button
+                      className={styles.assignButton}
+                      onClick={() => handleAssignToMe(student)}
+                      disabled={assigningStudent === student.id}
+                    >
+                      {assigningStudent === student.id ? 'Assigning...' : 'Assign to Me'}
+                    </button>
                   </td>
                 </tr>
               ))}
