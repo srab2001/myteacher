@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, Plan } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import { ServicesListEditor, ServiceItem } from '@/components/iep/ServicesListEditor';
+import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -24,6 +25,7 @@ export default function IEPInterviewPage() {
   const [generationAvailable, setGenerationAvailable] = useState(false);
   const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
+  const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -164,6 +166,13 @@ export default function IEPInterviewPage() {
         <div className={styles.headerInfo}>
           <h1>IEP: {plan.student.firstName} {plan.student.lastName}</h1>
           <span className={styles.status}>{plan.status}</span>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => setArtifactWizardOpen(true)}
+            style={{ marginLeft: 'auto' }}
+          >
+            Artifact Compare
+          </button>
         </div>
       </header>
 
@@ -365,6 +374,16 @@ export default function IEPInterviewPage() {
           View Printable IEP
         </button>
       </div>
+
+      {/* Artifact Compare Wizard */}
+      <ArtifactCompareWizard
+        studentId={studentId}
+        planId={planId}
+        planTypeCode="IEP"
+        studentName={`${plan.student.firstName} ${plan.student.lastName}`}
+        isOpen={artifactWizardOpen}
+        onClose={() => setArtifactWizardOpen(false)}
+      />
     </div>
   );
 }

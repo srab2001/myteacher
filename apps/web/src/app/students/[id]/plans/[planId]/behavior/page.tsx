@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
+import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
 import styles from '../iep/page.module.css';
 
 export default function BehaviorPlanInterviewPage() {
@@ -23,6 +24,7 @@ export default function BehaviorPlanInterviewPage() {
   const [generationAvailable, setGenerationAvailable] = useState(false);
   const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
+  const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -162,6 +164,13 @@ export default function BehaviorPlanInterviewPage() {
         <div className={styles.headerInfo}>
           <h1>Behavior Plan: {plan.student.firstName} {plan.student.lastName}</h1>
           <span className={styles.status}>{plan.status}</span>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => setArtifactWizardOpen(true)}
+            style={{ marginLeft: 'auto' }}
+          >
+            Artifact Compare
+          </button>
         </div>
       </header>
 
@@ -342,6 +351,16 @@ export default function BehaviorPlanInterviewPage() {
           Record Behavior Data
         </button>
       </div>
+
+      {/* Artifact Compare Wizard */}
+      <ArtifactCompareWizard
+        studentId={studentId}
+        planId={planId}
+        planTypeCode="BEHAVIOR_PLAN"
+        studentName={`${plan.student.firstName} ${plan.student.lastName}`}
+        isOpen={artifactWizardOpen}
+        onClose={() => setArtifactWizardOpen(false)}
+      />
     </div>
   );
 }

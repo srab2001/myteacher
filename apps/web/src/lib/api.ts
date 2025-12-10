@@ -1144,6 +1144,62 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // ============================================
+  // Artifact Compare API
+  // ============================================
+
+  async getArtifactComparisons(planId: string): Promise<{ comparisons: ArtifactComparison[] }> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare`);
+  }
+
+  async getArtifactComparison(planId: string, comparisonId: string): Promise<ArtifactComparison> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare/${comparisonId}`);
+  }
+
+  async createArtifactComparison(
+    planId: string,
+    data: {
+      artifactDate: string;
+      description?: string;
+      baselineFile: File;
+      compareFile: File;
+    }
+  ): Promise<ArtifactComparison> {
+    const formData = new FormData();
+    formData.append('artifactDate', data.artifactDate);
+    if (data.description) {
+      formData.append('description', data.description);
+    }
+    formData.append('baselineFile', data.baselineFile);
+    formData.append('compareFile', data.compareFile);
+
+    const response = await fetch(`${API_BASE}/api/plans/${planId}/artifact-compare`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async runArtifactComparison(planId: string, comparisonId: string, force?: boolean): Promise<ArtifactComparison> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare/${comparisonId}/compare`, {
+      method: 'POST',
+      body: JSON.stringify({ force: force ?? false }),
+    });
+  }
+
+  async deleteArtifactComparison(planId: string, comparisonId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare/${comparisonId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export interface AdminStudent {
@@ -1156,6 +1212,22 @@ export interface AdminStudent {
   schoolName: string | null;
   districtName: string | null;
   isActive: boolean;
+  createdAt?: string;
+}
+
+// Artifact Compare Types
+export interface ArtifactComparison {
+  id: string;
+  planInstanceId?: string;
+  artifactDate: string;
+  description: string | null;
+  baselineFileUrl: string;
+  compareFileUrl: string;
+  analysisText: string | null;
+  studentName?: string;
+  planTypeCode?: string;
+  planTypeName?: string;
+  createdBy?: string;
   createdAt?: string;
 }
 

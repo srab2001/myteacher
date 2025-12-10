@@ -30,6 +30,7 @@ import priorPlanRoutes from './routes/priorplans.js';
 import adminRoutes from './routes/admin.js';
 import generationRoutes from './routes/generation.js';
 import behaviorRoutes from './routes/behavior.js';
+import artifactCompareRoutes from './routes/artifactCompare.js';
 
 export function createApp(): Express {
   const app = express();
@@ -105,6 +106,7 @@ export function createApp(): Express {
   app.use('/api/behavior-plans', behaviorRoutes); // Behavior plan routes
   app.use('/api/behavior-targets', behaviorRoutes); // Behavior target routes
   app.use('/api/behavior-events', behaviorRoutes); // Behavior event routes
+  app.use('/api', artifactCompareRoutes); // Artifact compare routes (/api/plans/:planId/artifact-compare)
 
   // 404 handler
   app.use((_req, res) => {

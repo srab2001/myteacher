@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan, PriorPlanDocument } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
+import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
 import styles from '../iep/page.module.css';
 
 export default function FiveOhFourInterviewPage() {
@@ -26,6 +27,7 @@ export default function FiveOhFourInterviewPage() {
   const [generationAvailable, setGenerationAvailable] = useState(false);
   const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
+  const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -185,6 +187,13 @@ export default function FiveOhFourInterviewPage() {
           <div className={styles.headerInfo}>
             <h1>504 Plan: {plan.student.firstName} {plan.student.lastName}</h1>
             <span className={styles.status}>{plan.status}</span>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => setArtifactWizardOpen(true)}
+              style={{ marginLeft: 'auto' }}
+            >
+              Artifact Compare
+            </button>
           </div>
         </header>
 
@@ -248,6 +257,13 @@ export default function FiveOhFourInterviewPage() {
         <div className={styles.headerInfo}>
           <h1>504 Plan: {plan.student.firstName} {plan.student.lastName}</h1>
           <span className={styles.status}>{plan.status}</span>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => setArtifactWizardOpen(true)}
+            style={{ marginLeft: 'auto' }}
+          >
+            Artifact Compare
+          </button>
         </div>
       </header>
 
@@ -428,6 +444,16 @@ export default function FiveOhFourInterviewPage() {
           View Printable 504 Plan
         </button>
       </div>
+
+      {/* Artifact Compare Wizard */}
+      <ArtifactCompareWizard
+        studentId={studentId}
+        planId={planId}
+        planTypeCode="FIVE_OH_FOUR"
+        studentName={`${plan.student.firstName} ${plan.student.lastName}`}
+        isOpen={artifactWizardOpen}
+        onClose={() => setArtifactWizardOpen(false)}
+      />
     </div>
   );
 }
