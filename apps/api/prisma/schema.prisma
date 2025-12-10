@@ -102,6 +102,13 @@ enum IngestionStatus {
   ERROR
 }
 
+enum BehaviorMeasurementType {
+  FREQUENCY
+  DURATION
+  INTERVAL
+  RATING
+}
+
 // ============================================
 // USER MODEL
 // ============================================
@@ -119,8 +126,6 @@ model AppUser {
   districtName  String?
   schoolName    String?
   isOnboarded   Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -135,52 +140,14 @@ model AppUser {
   priorPlanUploads PriorPlanDocument[] @relation("PriorPlanUploadedBy")
   bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
   formTemplateUploads FormTemplate[] @relation("FormTemplateUploadedBy")
+  behaviorEvents BehaviorEvent[] @relation("BehaviorRecordedBy")
   permission     UserPermission?
   studentAccess  StudentAccess[]
+  artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
 
   @@index([googleId])
   @@index([email])
   @@index([username])
-}
-
-// ============================================
-// USER PERMISSION MODEL
-// ============================================
-
-model UserPermission {
-  id             String   @id @default(uuid())
-  canCreatePlans Boolean  @default(false)
-  canUpdatePlans Boolean  @default(false)
-  canReadAll     Boolean  @default(false)
-  canManageUsers Boolean  @default(false)
-  canManageDocs  Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  userId String  @unique
-  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// ============================================
-// STUDENT ACCESS MODEL (Grants user access to specific students)
-// ============================================
-
-model StudentAccess {
-  id        String    @id @default(uuid())
-  canEdit   Boolean   @default(false)
-  grantedAt DateTime  @default(now())
-  expiresAt DateTime?
-
-  // Relations
-  userId    String
-  user      AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  studentId String
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, studentId])
-  @@index([userId])
-  @@index([studentId])
 }
 
 // ============================================
@@ -217,23 +184,23 @@ model Student {
   externalId    String?             // External SIS ID if used
   firstName     String
   lastName      String
-  dateOfBirth   DateTime?
-  grade         String?
-  schoolName    String?
-  districtName  String?
+  dateOfBirth   DateTime
+  grade         String
+  schoolName    String
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  jurisdictionId String?
-  jurisdiction   Jurisdiction?   @relation(fields: [jurisdictionId], references: [id])
-  teacherId      String?
-  teacher        AppUser?        @relation("TeacherStudents", fields: [teacherId], references: [id])
+  jurisdictionId String
+  jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
+  teacherId      String
+  teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
-  studentAccess  StudentAccess[]
+  accessGrants   StudentAccess[]
+  artifactComparisons ArtifactComparison[]
 
   @@index([recordId])
   @@index([externalId])
@@ -283,6 +250,7 @@ model PlanType {
   priorPlanDocuments PriorPlanDocument[]
   bestPracticeDocs   BestPracticeDocument[] @relation("BestPracticeDocs")
   formTemplates      FormTemplate[]         @relation("FormTemplates")
+  artifactComparisons ArtifactComparison[]
 
   @@unique([jurisdictionId, code])
   @@index([code])
@@ -305,11 +273,34 @@ model PlanSchema {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  planTypeId String
-  planType   PlanType       @relation(fields: [planTypeId], references: [id])
-  instances  PlanInstance[]
+  planTypeId   String
+  planType     PlanType          @relation(fields: [planTypeId], references: [id])
+  instances    PlanInstance[]
+  fieldConfigs PlanFieldConfig[]
 
   @@index([planTypeId, isActive])
+}
+
+// ============================================
+// PLAN FIELD CONFIG MODEL (Field Requirement Overrides)
+// ============================================
+
+model PlanFieldConfig {
+  id           String     @id @default(cuid())
+  planSchema   PlanSchema @relation(fields: [planSchemaId], references: [id], onDelete: Cascade)
+  planSchemaId String
+
+  sectionKey   String     // References section.key in schema
+  fieldKey     String     // References field.key in schema
+
+  // If null, use required flag from schemaJson
+  isRequired   Boolean?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([planSchemaId, sectionKey, fieldKey])
+  @@index([planSchemaId])
 }
 
 // ============================================
@@ -334,6 +325,8 @@ model PlanInstance {
   fieldValues  PlanFieldValue[]
   goals        Goal[]
   serviceLogs  ServiceLog[]
+  behaviorPlan BehaviorPlan?
+  artifactComparisons ArtifactComparison[]
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -567,4 +560,143 @@ model BestPracticeChunk {
   @@index([bestPracticeDocumentId])
   @@index([planTypeCode, jurisdictionId, gradeBand, sectionTag])
   @@index([sectionTag])
+}
+
+// ============================================
+// BEHAVIOR PLAN MODEL (Behavior Intervention Plans)
+// ============================================
+
+model BehaviorPlan {
+  id             String   @id @default(uuid())
+  planInstanceId String   @unique
+  summary        String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  planInstance PlanInstance     @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  targets      BehaviorTarget[]
+}
+
+// ============================================
+// BEHAVIOR TARGET MODEL (Target Behaviors)
+// ============================================
+
+model BehaviorTarget {
+  id              String                  @id @default(uuid())
+  code            String                  // e.g., "BT-1", "BT-2"
+  name            String                  // Short name for the behavior
+  definition      String    @db.Text      // Operational definition
+  examples        String?   @db.Text      // Examples of the behavior
+  nonExamples     String?   @db.Text      // Non-examples (what it is not)
+  measurementType BehaviorMeasurementType
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  behaviorPlanId String
+  behaviorPlan   BehaviorPlan    @relation(fields: [behaviorPlanId], references: [id], onDelete: Cascade)
+  events         BehaviorEvent[]
+
+  @@unique([behaviorPlanId, code])
+  @@index([behaviorPlanId])
+}
+
+// ============================================
+// BEHAVIOR EVENT MODEL (Behavior Occurrences)
+// ============================================
+
+model BehaviorEvent {
+  id               String    @id @default(uuid())
+  eventDate        DateTime
+  startTime        DateTime?
+  endTime          DateTime?
+  count            Int?              // For frequency measurement
+  rating           Int?              // For rating measurement (1-5 scale)
+  durationSeconds  Int?              // For duration measurement
+  contextJson      Json?             // Antecedent, setting, notes
+  createdAt        DateTime  @default(now())
+
+  // Relations
+  behaviorTargetId String
+  target           BehaviorTarget @relation(fields: [behaviorTargetId], references: [id], onDelete: Cascade)
+  recordedById     String
+  recordedBy       AppUser        @relation("BehaviorRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([behaviorTargetId, eventDate])
+  @@index([behaviorTargetId])
+}
+
+// ============================================
+// USER PERMISSION MODEL (Fine-grained permissions)
+// ============================================
+
+model UserPermission {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  canCreatePlans Boolean  @default(false) // Can create new 504/IEP/Behavior plans
+  canUpdatePlans Boolean  @default(false) // Can edit plans, add targets, events
+  canReadAll     Boolean  @default(false) // Can read all students in jurisdiction
+  canManageUsers Boolean  @default(false) // Admin: can manage users and permissions
+  canManageDocs  Boolean  @default(false) // Admin: can manage schemas, best practices
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// STUDENT ACCESS MODEL (Explicit student access grants)
+// ============================================
+
+model StudentAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  studentId String
+  grantedAt DateTime @default(now())
+  expiresAt DateTime? // Optional expiration
+
+  // Relations
+  user    AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, studentId])
+  @@index([userId])
+  @@index([studentId])
+}
+
+// ============================================
+// ARTIFACT COMPARISON MODEL (Artifact Compare Feature)
+// ============================================
+
+model ArtifactComparison {
+  id               String   @id @default(uuid())
+  planInstanceId   String
+  studentId        String
+  planTypeId       String
+
+  artifactDate     DateTime
+  description      String?  @db.Text
+
+  baselineFileUrl  String
+  compareFileUrl   String
+
+  analysisText     String?  @db.Text
+
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  planInstance     PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  student          Student      @relation(fields: [studentId], references: [id])
+  planType         PlanType     @relation(fields: [planTypeId], references: [id])
+  createdBy        AppUser      @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+
+  @@index([planInstanceId])
+  @@index([studentId])
 }
