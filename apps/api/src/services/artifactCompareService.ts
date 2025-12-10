@@ -2,8 +2,11 @@
 // Handles ChatGPT-based comparison of baseline and student artifacts
 
 import OpenAI from 'openai';
-import pdfParse from 'pdf-parse';
+import * as pdfParseModule from 'pdf-parse';
 import mammoth from 'mammoth';
+
+// Handle both ESM and CJS exports
+const pdfParse = (pdfParseModule as any).default || pdfParseModule;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -146,7 +149,7 @@ export async function extractTextFromFile(
     const stripped = rtfText
       .replace(/\\[a-z]+\d* ?/gi, '')
       .replace(/[{}]/g, '')
-      .replace(/\\\'/[0-9a-f]{2}/gi, '')
+      .replace(/\\'[0-9a-f]{2}/gi, '')
       .trim();
     return stripped;
   }
