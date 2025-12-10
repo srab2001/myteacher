@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "installCommand": "npm install",
+  "installCommand": "npm install --ignore-scripts && npm run postinstall",
   "buildCommand": "npm run build",
   "outputDirectory": ".",
   "rewrites": [
