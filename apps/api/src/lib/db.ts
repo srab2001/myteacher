@@ -17,3 +17,6 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Re-export all Prisma types
 export * from '@prisma/client';
+
+// Also export our manual enum types as fallback (these work even if Prisma isn't generated)
+export * from '../types/prisma-enums.js';

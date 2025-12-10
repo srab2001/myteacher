@@ -3,6 +3,11 @@
   "installCommand": "npm install --ignore-scripts && npm run postinstall",
   "buildCommand": "npm run build",
   "outputDirectory": ".",
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@3"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
