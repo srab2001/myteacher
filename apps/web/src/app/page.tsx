@@ -1,18 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import styles from './page.module.css';
 
-export default function HomePage() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+function getOAuthErrorMessage(error: string | null): string | null {
+  if (!error) return null;
+  switch (error) {
+    case 'oauth_not_configured':
+      return 'Google sign-in is not available. Please use username/password login.';
+    case 'oauth_error':
+      return 'An error occurred during Google sign-in. Please try again.';
+    case 'auth_failed':
+      return 'Authentication failed. Please try again.';
+    case 'login_failed':
+      return 'Failed to complete sign-in. Please try again.';
+    case 'session_failed':
+      return 'Session error. Please try again.';
+    default:
+      return 'An unexpected error occurred. Please try again.';
+  }
+}
+
+function HomePageContent() {
   const { user, loading, refreshUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Handle OAuth error from redirect
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) {
+      setLoginError(getOAuthErrorMessage(error));
+      // Clean up URL
+      router.replace('/', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -105,7 +136,7 @@ export default function HomePage() {
               <span>or</span>
             </div>
 
-            <a href="/auth/google" className="btn btn-google" style={{ width: '100%' }}>
+            <a href={`${API_URL}/auth/google`} className="btn btn-google" style={{ width: '100%' }}>
               <GoogleIcon />
               Sign in with Google
             </a>
@@ -128,6 +159,20 @@ export default function HomePage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className={styles.container}>
+        <div className="loading-container">
+          <div className="spinner" />
+        </div>
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   );
 }
 
