@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npx prisma generate",
-    "postinstall": "npx prisma generate",
+    "build": "npx prisma@5.22.0 generate",
+    "postinstall": "npx prisma@5.22.0 generate",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
     "test": "jest --passWithNoTests",
