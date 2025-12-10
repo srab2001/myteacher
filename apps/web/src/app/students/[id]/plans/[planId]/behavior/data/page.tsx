@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan, BehaviorTarget, BehaviorEvent, BehaviorMeasurementType, BehaviorEventSummary } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import styles from './page.module.css';
 
 type NewTarget = {
@@ -446,7 +447,7 @@ export default function BehaviorDataPage() {
                           <p className={styles.eventContext}>{(event.contextJson as { notes?: string }).notes}</p>
                         )}
                         <div className={styles.eventMeta}>
-                          <span>Recorded by {event.recordedBy.displayName}</span>
+                          <span>Recorded by {event.recordedBy?.displayName || 'Unknown'}</span>
                           <button
                             className={styles.deleteBtn}
                             onClick={() => handleDeleteEvent(event.id)}
@@ -509,33 +510,30 @@ export default function BehaviorDataPage() {
                 </select>
               </div>
               <div className={styles.formRow}>
-                <label>Definition *</label>
-                <textarea
-                  className="form-textarea"
-                  rows={3}
+                <DictationTextArea
+                  label="Definition *"
                   value={newTarget.definition}
-                  onChange={e => setNewTarget(prev => ({ ...prev, definition: e.target.value }))}
+                  onChange={(value) => setNewTarget(prev => ({ ...prev, definition: value }))}
                   placeholder="Operational definition of the behavior..."
+                  rows={3}
                 />
               </div>
               <div className={styles.formRow}>
-                <label>Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={2}
+                <DictationTextArea
+                  label="Examples"
                   value={newTarget.examples}
-                  onChange={e => setNewTarget(prev => ({ ...prev, examples: e.target.value }))}
+                  onChange={(value) => setNewTarget(prev => ({ ...prev, examples: value }))}
                   placeholder="What counts as this behavior..."
+                  rows={2}
                 />
               </div>
               <div className={styles.formRow}>
-                <label>Non-Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={2}
+                <DictationTextArea
+                  label="Non-Examples"
                   value={newTarget.nonExamples}
-                  onChange={e => setNewTarget(prev => ({ ...prev, nonExamples: e.target.value }))}
+                  onChange={(value) => setNewTarget(prev => ({ ...prev, nonExamples: value }))}
                   placeholder="What does not count as this behavior..."
+                  rows={2}
                 />
               </div>
             </div>
@@ -585,30 +583,27 @@ export default function BehaviorDataPage() {
                 />
               </div>
               <div className={styles.formRow}>
-                <label>Definition *</label>
-                <textarea
-                  className="form-textarea"
-                  rows={3}
+                <DictationTextArea
+                  label="Definition *"
                   value={editingTarget.definition}
-                  onChange={e => setEditingTarget(prev => prev ? { ...prev, definition: e.target.value } : null)}
+                  onChange={(value) => setEditingTarget(prev => prev ? { ...prev, definition: value } : null)}
+                  rows={3}
                 />
               </div>
               <div className={styles.formRow}>
-                <label>Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={2}
+                <DictationTextArea
+                  label="Examples"
                   value={editingTarget.examples || ''}
-                  onChange={e => setEditingTarget(prev => prev ? { ...prev, examples: e.target.value } : null)}
+                  onChange={(value) => setEditingTarget(prev => prev ? { ...prev, examples: value } : null)}
+                  rows={2}
                 />
               </div>
               <div className={styles.formRow}>
-                <label>Non-Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={2}
+                <DictationTextArea
+                  label="Non-Examples"
                   value={editingTarget.nonExamples || ''}
-                  onChange={e => setEditingTarget(prev => prev ? { ...prev, nonExamples: e.target.value } : null)}
+                  onChange={(value) => setEditingTarget(prev => prev ? { ...prev, nonExamples: value } : null)}
+                  rows={2}
                 />
               </div>
             </div>
@@ -710,13 +705,12 @@ export default function BehaviorDataPage() {
               )}
 
               <div className={styles.formRow}>
-                <label>Context / Notes</label>
-                <textarea
-                  className="form-textarea"
-                  rows={2}
+                <DictationTextArea
+                  label="Context / Notes"
                   value={newEvent.context}
-                  onChange={e => setNewEvent(prev => ({ ...prev, context: e.target.value }))}
+                  onChange={(value) => setNewEvent(prev => ({ ...prev, context: value }))}
                   placeholder="Any relevant context or notes..."
+                  rows={2}
                 />
               </div>
             </div>

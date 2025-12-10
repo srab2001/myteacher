@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { WorkSampleRating } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import styles from './WorkSampleUpload.module.css';
 
 interface WorkSampleUploadProps {
@@ -186,11 +187,10 @@ export function WorkSampleUpload({ goalName, onClose, onUpload }: WorkSampleUplo
 
         {/* Comment Section */}
         <div className={styles.commentSection}>
-          <label className={styles.label}>Notes (optional)</label>
-          <textarea
-            className={styles.textarea}
+          <DictationTextArea
+            label="Notes (optional)"
             value={comment}
-            onChange={e => setComment(e.target.value)}
+            onChange={setComment}
             placeholder="Add any notes about this work sample..."
             rows={2}
           />

@@ -143,6 +143,7 @@ model AppUser {
   behaviorEvents BehaviorEvent[] @relation("BehaviorRecordedBy")
   permission     UserPermission?
   studentAccess  StudentAccess[]
+  artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
 
   @@index([googleId])
   @@index([email])
@@ -199,6 +200,7 @@ model Student {
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
   accessGrants   StudentAccess[]
+  artifactComparisons ArtifactComparison[]
 
   @@index([recordId])
   @@index([externalId])
@@ -248,6 +250,7 @@ model PlanType {
   priorPlanDocuments PriorPlanDocument[]
   bestPracticeDocs   BestPracticeDocument[] @relation("BestPracticeDocs")
   formTemplates      FormTemplate[]         @relation("FormTemplates")
+  artifactComparisons ArtifactComparison[]
 
   @@unique([jurisdictionId, code])
   @@index([code])
@@ -270,11 +273,34 @@ model PlanSchema {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  planTypeId String
-  planType   PlanType       @relation(fields: [planTypeId], references: [id])
-  instances  PlanInstance[]
+  planTypeId   String
+  planType     PlanType          @relation(fields: [planTypeId], references: [id])
+  instances    PlanInstance[]
+  fieldConfigs PlanFieldConfig[]
 
   @@index([planTypeId, isActive])
+}
+
+// ============================================
+// PLAN FIELD CONFIG MODEL (Field Requirement Overrides)
+// ============================================
+
+model PlanFieldConfig {
+  id           String     @id @default(cuid())
+  planSchema   PlanSchema @relation(fields: [planSchemaId], references: [id], onDelete: Cascade)
+  planSchemaId String
+
+  sectionKey   String     // References section.key in schema
+  fieldKey     String     // References field.key in schema
+
+  // If null, use required flag from schemaJson
+  isRequired   Boolean?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([planSchemaId, sectionKey, fieldKey])
+  @@index([planSchemaId])
 }
 
 // ============================================
@@ -300,6 +326,7 @@ model PlanInstance {
   goals        Goal[]
   serviceLogs  ServiceLog[]
   behaviorPlan BehaviorPlan?
+  artifactComparisons ArtifactComparison[]
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -639,5 +666,37 @@ model StudentAccess {
 
   @@unique([userId, studentId])
   @@index([userId])
+  @@index([studentId])
+}
+
+// ============================================
+// ARTIFACT COMPARISON MODEL (Artifact Compare Feature)
+// ============================================
+
+model ArtifactComparison {
+  id               String   @id @default(uuid())
+  planInstanceId   String
+  studentId        String
+  planTypeId       String
+
+  artifactDate     DateTime
+  description      String?  @db.Text
+
+  baselineFileUrl  String
+  compareFileUrl   String
+
+  analysisText     String?  @db.Text
+
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  planInstance     PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  student          Student      @relation(fields: [studentId], references: [id])
+  planType         PlanType     @relation(fields: [planTypeId], references: [id])
+  createdBy        AppUser      @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+
+  @@index([planInstanceId])
   @@index([studentId])
 }

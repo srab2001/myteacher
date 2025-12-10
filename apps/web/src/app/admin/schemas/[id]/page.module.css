@@ -338,3 +338,105 @@
   text-align: center;
   color: var(--muted);
 }
+
+/* Field Editor Styles */
+.fieldEditorContainer {
+  padding: 1rem 1.5rem;
+}
+
+.editorHint {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.editorSection {
+  margin-bottom: 1.5rem;
+}
+
+.editorSection:last-child {
+  margin-bottom: 0;
+}
+
+.editorSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.editorSectionHeader h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.editorFieldsList {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.editorField {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+
+.editorField:last-child {
+  border-bottom: none;
+}
+
+.editorField:hover {
+  background: white;
+}
+
+.editorField.hasOverride {
+  background: #fef3c7;
+}
+
+.editorField input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.editorFieldLabel {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.editorFieldKey {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.editorFieldType {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.overrideBadge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+}

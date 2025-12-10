@@ -94,6 +94,8 @@ export interface BehaviorEventSummary {
   totalCount: number;
   totalDurationSeconds: number;
   averageRating: number;
+  averageCount?: number;
+  averageDurationSeconds?: number;
 }
 
 export interface PlanSchema {
@@ -426,6 +428,35 @@ export interface SchemaPlanInstance {
   planTypeName: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// Schema Field Configuration Types
+export interface SchemaFieldConfig {
+  key: string;
+  label: string;
+  type: string;
+  schemaRequired: boolean;
+  effectiveRequired: boolean;
+  hasOverride: boolean;
+}
+
+export interface SchemaSectionConfig {
+  key: string;
+  title: string;
+  order?: number;
+  fields: SchemaFieldConfig[];
+}
+
+export interface SchemaFieldsResponse {
+  id: string;
+  planTypeCode: PlanTypeCode;
+  sections: SchemaSectionConfig[];
+}
+
+export interface FieldConfigUpdate {
+  sectionKey: string;
+  fieldKey: string;
+  isRequired: boolean;
 }
 
 class ApiClient {
@@ -992,6 +1023,26 @@ class ApiClient {
     return this.fetch(`/api/admin/schemas/${schemaId}/plans${queryString ? `?${queryString}` : ''}`);
   }
 
+  async getSchemaFields(schemaId: string): Promise<SchemaFieldsResponse> {
+    return this.fetch(`/api/admin/schemas/${schemaId}/fields`);
+  }
+
+  async updateSchemaFields(schemaId: string, updates: FieldConfigUpdate[]): Promise<{ success: boolean; message: string }> {
+    return this.fetch(`/api/admin/schemas/${schemaId}/fields`, {
+      method: 'PATCH',
+      body: JSON.stringify({ updates }),
+    });
+  }
+
+  // PDF Export URLs
+  getIepPdfUrl(studentId: string, planId: string): string {
+    return `${API_BASE}/api/plans/students/${studentId}/plans/${planId}/iep-pdf`;
+  }
+
+  get504PdfUrl(studentId: string, planId: string): string {
+    return `${API_BASE}/api/plans/students/${studentId}/plans/${planId}/504-pdf`;
+  }
+
   // Phase 5: Admin User Management API
   async getAdminUsers(filters?: {
     role?: AdminUserRole;
@@ -1064,6 +1115,120 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Admin Student Management
+  async getAdminStudents(params?: { search?: string; limit?: number; offset?: number }): Promise<{
+    students: AdminStudent[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const queryString = new URLSearchParams();
+    if (params?.search) queryString.set('search', params.search);
+    if (params?.limit) queryString.set('limit', params.limit.toString());
+    if (params?.offset) queryString.set('offset', params.offset.toString());
+    return this.fetch(`/api/admin/students${queryString.toString() ? `?${queryString}` : ''}`);
+  }
+
+  async createStudent(data: {
+    recordId: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth?: string;
+    grade?: string;
+    schoolName?: string;
+    districtName?: string;
+  }): Promise<{ student: AdminStudent }> {
+    return this.fetch('/api/admin/students', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============================================
+  // Artifact Compare API
+  // ============================================
+
+  async getArtifactComparisons(planId: string): Promise<{ comparisons: ArtifactComparison[] }> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare`);
+  }
+
+  async getArtifactComparison(planId: string, comparisonId: string): Promise<ArtifactComparison> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare/${comparisonId}`);
+  }
+
+  async createArtifactComparison(
+    planId: string,
+    data: {
+      artifactDate: string;
+      description?: string;
+      baselineFile: File;
+      compareFile: File;
+    }
+  ): Promise<ArtifactComparison> {
+    const formData = new FormData();
+    formData.append('artifactDate', data.artifactDate);
+    if (data.description) {
+      formData.append('description', data.description);
+    }
+    formData.append('baselineFile', data.baselineFile);
+    formData.append('compareFile', data.compareFile);
+
+    const response = await fetch(`${API_BASE}/api/plans/${planId}/artifact-compare`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async runArtifactComparison(planId: string, comparisonId: string, force?: boolean): Promise<ArtifactComparison> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare/${comparisonId}/compare`, {
+      method: 'POST',
+      body: JSON.stringify({ force: force ?? false }),
+    });
+  }
+
+  async deleteArtifactComparison(planId: string, comparisonId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/plans/${planId}/artifact-compare/${comparisonId}`, {
+      method: 'DELETE',
+    });
+  }
+}
+
+export interface AdminStudent {
+  id: string;
+  recordId: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string | null;
+  grade: string | null;
+  schoolName: string | null;
+  districtName: string | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+// Artifact Compare Types
+export interface ArtifactComparison {
+  id: string;
+  planInstanceId?: string;
+  artifactDate: string;
+  description: string | null;
+  baselineFileUrl: string;
+  compareFileUrl: string;
+  analysisText: string | null;
+  studentName?: string;
+  planTypeCode?: string;
+  planTypeName?: string;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export const api = new ApiClient();

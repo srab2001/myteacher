@@ -51,16 +51,37 @@ export default function StudentDetailPage() {
 
   const loadStudent = useCallback(async () => {
     try {
-      const [studentRes, statusRes, priorPlansRes, plansRes] = await Promise.all([
-        api.getStudent(studentId),
+      // Fetch student first - this is required
+      const studentRes = await api.getStudent(studentId);
+      setStudent(studentRes.student);
+
+      // Fetch other data in parallel, but handle failures gracefully
+      const [statusRes, priorPlansRes, plansRes] = await Promise.allSettled([
         api.getStudentStatus(studentId),
         api.getStudentPriorPlans(studentId),
         api.getStudentPlans(studentId),
       ]);
-      setStudent(studentRes.student);
-      setStatusData(statusRes);
-      setPriorPlans(priorPlansRes.priorPlans);
-      setStudentPlans(plansRes.plans);
+
+      if (statusRes.status === 'fulfilled') {
+        setStatusData(statusRes.value);
+      } else {
+        console.error('Failed to load status:', statusRes.reason);
+        setStatusData({ current: [], history: [] });
+      }
+
+      if (priorPlansRes.status === 'fulfilled') {
+        setPriorPlans(priorPlansRes.value.priorPlans);
+      } else {
+        console.error('Failed to load prior plans:', priorPlansRes.reason);
+        setPriorPlans([]);
+      }
+
+      if (plansRes.status === 'fulfilled') {
+        setStudentPlans(plansRes.value.plans);
+      } else {
+        console.error('Failed to load plans:', plansRes.reason);
+        setStudentPlans([]);
+      }
     } catch (err) {
       console.error('Failed to load student:', err);
     } finally {

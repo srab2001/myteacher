@@ -686,7 +686,7 @@ router.get('/schemas/:id', requireAdmin, async (req, res) => {
       include: {
         planType: { select: { code: true, name: true } },
         jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
-        _count: { select: { planInstances: true } },
+        _count: { select: { instances: true } },
       },
     });
 
@@ -705,7 +705,7 @@ router.get('/schemas/:id', requireAdmin, async (req, res) => {
         jurisdictionId: schema.jurisdictionId,
         jurisdictionName: schema.jurisdiction?.districtName || 'Global',
         isActive: schema.isActive,
-        planCount: schema._count.planInstances,
+        planCount: schema._count.instances,
         fields: schema.fields, // Full field definitions JSON
         createdAt: schema.createdAt,
         updatedAt: schema.updatedAt,
@@ -714,6 +714,131 @@ router.get('/schemas/:id', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Schema fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch schema' });
+  }
+});
+
+// GET /admin/schemas/:id/fields - Get schema fields with effective required flags
+router.get('/schemas/:id/fields', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+      include: {
+        planType: { select: { code: true, name: true } },
+        fieldConfigs: true,
+      },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    // Build override map
+    const overrideMap = new Map<string, boolean>();
+    for (const config of schema.fieldConfigs) {
+      if (config.isRequired !== null) {
+        overrideMap.set(`${config.sectionKey}:${config.fieldKey}`, config.isRequired);
+      }
+    }
+
+    // Parse schema fields
+    const schemaFields = schema.fields as {
+      sections?: Array<{
+        key: string;
+        title: string;
+        order?: number;
+        fields?: Array<{
+          key: string;
+          label: string;
+          type: string;
+          required?: boolean;
+          placeholder?: string;
+        }>;
+      }>;
+    };
+
+    const sections = (schemaFields.sections || []).map(section => ({
+      key: section.key,
+      title: section.title,
+      order: section.order,
+      fields: (section.fields || []).map(field => {
+        const overrideKey = `${section.key}:${field.key}`;
+        const override = overrideMap.get(overrideKey);
+        return {
+          key: field.key,
+          label: field.label,
+          type: field.type,
+          schemaRequired: !!field.required,
+          effectiveRequired: override !== undefined ? override : !!field.required,
+          hasOverride: override !== undefined,
+        };
+      }),
+    }));
+
+    res.json({
+      id: schema.id,
+      planTypeCode: schema.planType.code,
+      sections,
+    });
+  } catch (error) {
+    console.error('Schema fields fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch schema fields' });
+  }
+});
+
+// PATCH /admin/schemas/:id/fields - Update field requirement overrides
+router.patch('/schemas/:id/fields', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bodySchema = z.object({
+      updates: z.array(z.object({
+        sectionKey: z.string(),
+        fieldKey: z.string(),
+        isRequired: z.boolean(),
+      })),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    // Upsert each field config
+    for (const update of data.updates) {
+      await prisma.planFieldConfig.upsert({
+        where: {
+          planSchemaId_sectionKey_fieldKey: {
+            planSchemaId: id,
+            sectionKey: update.sectionKey,
+            fieldKey: update.fieldKey,
+          },
+        },
+        create: {
+          planSchemaId: id,
+          sectionKey: update.sectionKey,
+          fieldKey: update.fieldKey,
+          isRequired: update.isRequired,
+        },
+        update: {
+          isRequired: update.isRequired,
+        },
+      });
+    }
+
+    res.json({ success: true, message: `Updated ${data.updates.length} field configurations` });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Schema fields update error:', error);
+    res.status(500).json({ error: 'Failed to update schema fields' });
   }
 });
 
@@ -965,7 +1090,7 @@ router.get('/users', requireManageUsersPermission, async (req, res) => {
       ];
     }
 
-    const users = await prisma.user.findMany({
+    const users = await prisma.appUser.findMany({
       where,
       include: {
         permission: true,
@@ -1022,7 +1147,7 @@ router.post('/users', requireManageUsersPermission, async (req, res) => {
     const data = bodySchema.parse(req.body);
 
     // Check if user with email already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.appUser.findUnique({
       where: { email: data.email },
     });
 
@@ -1041,7 +1166,7 @@ router.post('/users', requireManageUsersPermission, async (req, res) => {
     }
 
     // Create user with permissions
-    const user = await prisma.user.create({
+    const user = await prisma.appUser.create({
       data: {
         email: data.email,
         displayName: data.displayName,
@@ -1097,7 +1222,7 @@ router.get('/users/:userId', requireManageUsersPermission, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
       include: {
         permission: true,
@@ -1163,7 +1288,7 @@ router.patch('/users/:userId', requireManageUsersPermission, async (req, res) =>
 
     const data = bodySchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
     });
 
@@ -1181,7 +1306,7 @@ router.patch('/users/:userId', requireManageUsersPermission, async (req, res) =>
       }
     }
 
-    const updated = await prisma.user.update({
+    const updated = await prisma.appUser.update({
       where: { id: userId },
       data: {
         displayName: data.displayName,
@@ -1239,7 +1364,7 @@ router.patch('/users/:userId/permissions', requireManageUsersPermission, async (
 
     const data = bodySchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
       include: { permission: true },
     });
@@ -1287,6 +1412,121 @@ router.patch('/users/:userId/permissions', requireManageUsersPermission, async (
 });
 
 // ============================================
+// STUDENT MANAGEMENT
+// ============================================
+
+// GET /admin/students - List all students
+router.get('/students', requireManageUsersPermission, async (req, res) => {
+  try {
+    const { search, limit = '50', offset = '0' } = req.query;
+
+    const where: { OR?: Array<{ firstName?: { contains: string; mode: 'insensitive' }; lastName?: { contains: string; mode: 'insensitive' }; recordId?: { contains: string; mode: 'insensitive' } }> } = {};
+
+    if (search && typeof search === 'string') {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { recordId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [students, total] = await Promise.all([
+      prisma.student.findMany({
+        where,
+        orderBy: { lastName: 'asc' },
+        take: parseInt(limit as string),
+        skip: parseInt(offset as string),
+        select: {
+          id: true,
+          recordId: true,
+          firstName: true,
+          lastName: true,
+          dateOfBirth: true,
+          grade: true,
+          schoolName: true,
+          districtName: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
+      prisma.student.count({ where }),
+    ]);
+
+    res.json({
+      students: students.map(s => ({
+        ...s,
+        dateOfBirth: s.dateOfBirth?.toISOString().split('T')[0] || null,
+      })),
+      total,
+      limit: parseInt(limit as string),
+      offset: parseInt(offset as string),
+    });
+  } catch (error) {
+    console.error('Students list error:', error);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
+});
+
+// POST /admin/students - Create a new student
+router.post('/students', requireManageUsersPermission, async (req, res) => {
+  try {
+    const createStudentSchema = z.object({
+      recordId: z.string().min(1, 'Record ID is required'),
+      firstName: z.string().min(1, 'First name is required'),
+      lastName: z.string().min(1, 'Last name is required'),
+      dateOfBirth: z.string().optional(),
+      grade: z.string().optional(),
+      schoolName: z.string().optional(),
+      districtName: z.string().optional(),
+    });
+
+    const data = createStudentSchema.parse(req.body);
+
+    // Check if recordId already exists
+    const existing = await prisma.student.findFirst({
+      where: { recordId: data.recordId },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: `Student with Record ID "${data.recordId}" already exists` });
+    }
+
+    const student = await prisma.student.create({
+      data: {
+        recordId: data.recordId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+        grade: data.grade || null,
+        schoolName: data.schoolName || null,
+        districtName: data.districtName || null,
+        isActive: true,
+      },
+    });
+
+    res.status(201).json({
+      student: {
+        id: student.id,
+        recordId: student.recordId,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        dateOfBirth: student.dateOfBirth?.toISOString().split('T')[0] || null,
+        grade: student.grade,
+        schoolName: student.schoolName,
+        districtName: student.districtName,
+        isActive: student.isActive,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Student create error:', error);
+    res.status(500).json({ error: 'Failed to create student' });
+  }
+});
+
+// ============================================
 // STUDENT ACCESS MANAGEMENT
 // ============================================
 
@@ -1295,7 +1535,7 @@ router.get('/users/:userId/students', requireManageUsersPermission, async (req, 
   try {
     const { userId } = req.params;
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
       include: { permission: true },
     });
@@ -1368,7 +1608,7 @@ router.post('/users/:userId/students', requireManageUsersPermission, async (req,
     const data = bodySchema.parse(req.body);
 
     // Verify user exists
-    const user = await prisma.user.findUnique({
+    const user = await prisma.appUser.findUnique({
       where: { id: userId },
     });
 

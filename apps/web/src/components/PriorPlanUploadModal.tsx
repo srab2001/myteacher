@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { PlanTypeCode } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import styles from './PriorPlanUploadModal.module.css';
 
 const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
@@ -135,11 +136,10 @@ export function PriorPlanUploadModal({ onClose, onUpload }: PriorPlanUploadModal
 
           {/* Notes */}
           <div className={styles.field}>
-            <label className={styles.label}>Notes (optional)</label>
-            <textarea
-              className={styles.textarea}
+            <DictationTextArea
+              label="Notes (optional)"
               value={notes}
-              onChange={e => setNotes(e.target.value)}
+              onChange={setNotes}
               placeholder="Add any notes about this document..."
               rows={2}
             />

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan, BehaviorTarget, BehaviorMeasurementType } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import styles from './page.module.css';
 
 type NewTarget = {
@@ -341,36 +342,33 @@ export default function BehaviorTargetsPage() {
               </div>
 
               <div className={styles.formRow}>
-                <label>Operational Definition *</label>
-                <textarea
-                  className="form-textarea"
-                  rows={4}
+                <DictationTextArea
+                  label="Operational Definition *"
                   value={newTarget.definition}
-                  onChange={e => setNewTarget(prev => ({ ...prev, definition: e.target.value }))}
+                  onChange={(value) => setNewTarget(prev => ({ ...prev, definition: value }))}
                   placeholder="A clear, observable, measurable description of the behavior..."
+                  rows={4}
                 />
                 <span className={styles.hint}>Describe exactly what the behavior looks like so anyone can identify it</span>
               </div>
 
               <div className={styles.formRow}>
-                <label>Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={3}
+                <DictationTextArea
+                  label="Examples"
                   value={newTarget.examples}
-                  onChange={e => setNewTarget(prev => ({ ...prev, examples: e.target.value }))}
+                  onChange={(value) => setNewTarget(prev => ({ ...prev, examples: value }))}
                   placeholder="Specific instances that count as this behavior..."
+                  rows={3}
                 />
               </div>
 
               <div className={styles.formRow}>
-                <label>Non-Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={3}
+                <DictationTextArea
+                  label="Non-Examples"
                   value={newTarget.nonExamples}
-                  onChange={e => setNewTarget(prev => ({ ...prev, nonExamples: e.target.value }))}
+                  onChange={(value) => setNewTarget(prev => ({ ...prev, nonExamples: value }))}
                   placeholder="Similar behaviors that do NOT count as this behavior..."
+                  rows={3}
                 />
               </div>
             </div>
@@ -427,32 +425,29 @@ export default function BehaviorTargetsPage() {
               </div>
 
               <div className={styles.formRow}>
-                <label>Operational Definition *</label>
-                <textarea
-                  className="form-textarea"
-                  rows={4}
+                <DictationTextArea
+                  label="Operational Definition *"
                   value={editingTarget.definition}
-                  onChange={e => setEditingTarget(prev => prev ? { ...prev, definition: e.target.value } : null)}
+                  onChange={(value) => setEditingTarget(prev => prev ? { ...prev, definition: value } : null)}
+                  rows={4}
                 />
               </div>
 
               <div className={styles.formRow}>
-                <label>Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={3}
+                <DictationTextArea
+                  label="Examples"
                   value={editingTarget.examples || ''}
-                  onChange={e => setEditingTarget(prev => prev ? { ...prev, examples: e.target.value } : null)}
+                  onChange={(value) => setEditingTarget(prev => prev ? { ...prev, examples: value } : null)}
+                  rows={3}
                 />
               </div>
 
               <div className={styles.formRow}>
-                <label>Non-Examples</label>
-                <textarea
-                  className="form-textarea"
-                  rows={3}
+                <DictationTextArea
+                  label="Non-Examples"
                   value={editingTarget.nonExamples || ''}
-                  onChange={e => setEditingTarget(prev => prev ? { ...prev, nonExamples: e.target.value } : null)}
+                  onChange={(value) => setEditingTarget(prev => prev ? { ...prev, nonExamples: value } : null)}
+                  rows={3}
                 />
               </div>
             </div>

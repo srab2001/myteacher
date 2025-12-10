@@ -96,18 +96,24 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
         done: (error: Error | null, user?: AppUser) => void
       ) => {
         try {
+          console.log('Google OAuth callback - profile received:', profile.id);
           const email = profile.emails?.[0]?.value;
           if (!email) {
+            console.error('Google OAuth - No email in profile');
             return done(new Error('No email found in Google profile'));
           }
+          console.log('Google OAuth - email:', email);
 
           // Try to find existing user by googleId
+          console.log('Google OAuth - searching for user by googleId:', profile.id);
           let user = await prisma.appUser.findUnique({
             where: { googleId: profile.id },
           });
+          console.log('Google OAuth - existing user found:', !!user);
 
           if (!user) {
             // Create new user
+            console.log('Google OAuth - creating new user');
             user = await prisma.appUser.create({
               data: {
                 googleId: profile.id,
@@ -116,10 +122,12 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
                 avatarUrl: profile.photos?.[0]?.value,
               },
             });
+            console.log('Google OAuth - new user created:', user.id);
           }
 
           return done(null, user);
         } catch (error) {
+          console.error('Google OAuth callback error:', error);
           return done(error as Error);
         }
       }

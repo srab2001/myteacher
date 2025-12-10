@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
+import { ServicesListEditor, ServiceItem } from '@/components/iep/ServicesListEditor';
+import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -22,6 +25,7 @@ export default function IEPInterviewPage() {
   const [generationAvailable, setGenerationAvailable] = useState(false);
   const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
+  const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -162,6 +166,13 @@ export default function IEPInterviewPage() {
         <div className={styles.headerInfo}>
           <h1>IEP: {plan.student.firstName} {plan.student.lastName}</h1>
           <span className={styles.status}>{plan.status}</span>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => setArtifactWizardOpen(true)}
+            style={{ marginLeft: 'auto' }}
+          >
+            Artifact Compare
+          </button>
         </div>
       </header>
 
@@ -265,14 +276,22 @@ export default function IEPInterviewPage() {
                               </button>
                             </div>
                           )}
-                          <textarea
-                            className="form-textarea"
-                            rows={5}
+                          <DictationTextArea
                             value={(formData[field.key] as string) || ''}
-                            onChange={e => handleFieldChange(field.key, e.target.value)}
+                            onChange={(value) => handleFieldChange(field.key, value)}
                             placeholder={field.placeholder}
+                            rows={5}
                           />
                         </div>
+                      )}
+
+                      {field.type === 'services_table' && (
+                        <ServicesListEditor
+                          label={field.label}
+                          required={field.required}
+                          value={(formData[field.key] as ServiceItem[]) || []}
+                          onChange={(value) => handleFieldChange(field.key, value)}
+                        />
                       )}
 
                       {field.type === 'boolean' && (
@@ -339,8 +358,15 @@ export default function IEPInterviewPage() {
         </main>
       </div>
 
-      {/* Print View Link */}
+      {/* Print View Link and PDF Download */}
       <div className={styles.printLink}>
+        <a
+          href={api.getIepPdfUrl(studentId, planId)}
+          className="btn btn-primary"
+          style={{ marginRight: '0.5rem' }}
+        >
+          Download IEP PDF
+        </a>
         <button
           className="btn btn-outline"
           onClick={() => router.push(`/students/${studentId}/plans/${planId}/print`)}
@@ -348,6 +374,16 @@ export default function IEPInterviewPage() {
           View Printable IEP
         </button>
       </div>
+
+      {/* Artifact Compare Wizard */}
+      <ArtifactCompareWizard
+        studentId={studentId}
+        planId={planId}
+        planTypeCode="IEP"
+        studentName={`${plan.student.firstName} ${plan.student.lastName}`}
+        isOpen={artifactWizardOpen}
+        onClose={() => setArtifactWizardOpen(false)}
+      />
     </div>
   );
 }
