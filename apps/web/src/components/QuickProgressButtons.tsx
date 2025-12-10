@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ProgressLevel } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import styles from './QuickProgressButtons.module.css';
 
 interface QuickProgressButtonsProps {
@@ -69,13 +70,12 @@ export function QuickProgressButtons({ onSelect }: QuickProgressButtonsProps) {
             {option?.label}
           </span>
         </div>
-        <textarea
-          className={styles.commentInput}
-          placeholder="Add a note (optional)..."
+        <DictationTextArea
           value={comment}
-          onChange={e => setComment(e.target.value)}
+          onChange={setComment}
+          placeholder="Add a note (optional)..."
           rows={2}
-          autoFocus
+          className={styles.commentInput}
         />
         <div className={styles.commentActions}>
           <button

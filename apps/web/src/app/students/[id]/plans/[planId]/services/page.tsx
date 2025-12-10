@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
 import { api, ServiceLog, ServiceType, ServiceSetting, ServiceSummary } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import styles from './page.module.css';
 
 const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
@@ -257,11 +258,10 @@ export default function ServicesPage() {
 
               {/* Notes */}
               <div className={styles.formGroup}>
-                <label className={styles.label}>Notes (optional)</label>
-                <textarea
-                  className={styles.textarea}
+                <DictationTextArea
+                  label="Notes (optional)"
                   value={formNotes}
-                  onChange={e => setFormNotes(e.target.value)}
+                  onChange={setFormNotes}
                   placeholder="Add any notes about this session..."
                   rows={2}
                 />
