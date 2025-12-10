@@ -126,6 +126,8 @@ model AppUser {
   districtName  String?
   schoolName    String?
   isOnboarded   Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -167,6 +169,7 @@ model Jurisdiction {
   users     AppUser[]
   planTypes PlanType[]
   students  Student[]
+  planSchemas      PlanSchema[]           @relation("PlanSchemaJurisdiction")
   bestPracticeDocs BestPracticeDocument[] @relation("BestPracticeJurisdiction")
   formTemplates    FormTemplate[]         @relation("FormTemplateJurisdiction")
 
@@ -187,6 +190,7 @@ model Student {
   dateOfBirth   DateTime
   grade         String
   schoolName    String
+  districtName  String?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -273,10 +277,12 @@ model PlanSchema {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  planTypeId   String
-  planType     PlanType          @relation(fields: [planTypeId], references: [id])
-  instances    PlanInstance[]
-  fieldConfigs PlanFieldConfig[]
+  planTypeId     String
+  planType       PlanType          @relation(fields: [planTypeId], references: [id])
+  jurisdictionId String?
+  jurisdiction   Jurisdiction?     @relation("PlanSchemaJurisdiction", fields: [jurisdictionId], references: [id])
+  instances      PlanInstance[]
+  fieldConfigs   PlanFieldConfig[]
 
   @@index([planTypeId, isActive])
 }
@@ -657,7 +663,9 @@ model StudentAccess {
   id        String   @id @default(uuid())
   userId    String
   studentId String
-  grantedAt DateTime @default(now())
+  canEdit   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  grantedAt DateTime  @default(now())
   expiresAt DateTime? // Optional expiration
 
   // Relations
