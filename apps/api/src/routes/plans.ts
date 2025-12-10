@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requireStudentAccess, requirePlanAccess, requireCreatePlanPermission, requireUpdatePlanPermission } from '../middleware/permissions.js';
+import { generateIepPdf, generate504Pdf, getStudentInfoForPlan } from '../services/pdfExport.js';
 
 const router = Router();
 
@@ -335,6 +336,94 @@ router.get('/students/:studentId/plans', requireAuth, requireOnboarded, requireS
   } catch (error) {
     console.error('Plans fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch plans' });
+  }
+});
+
+// ============================================
+// PDF EXPORT ROUTES
+// ============================================
+
+// Generate IEP PDF for a plan
+router.get('/students/:studentId/plans/:planId/iep-pdf', requireAuth, requireOnboarded, requireStudentAccess('studentId'), requirePlanAccess('planId'), async (req, res) => {
+  try {
+    const { planId, studentId } = req.params;
+
+    // Verify plan belongs to student and is IEP type
+    const plan = await prisma.planInstance.findUnique({
+      where: { id: planId },
+      include: {
+        planType: true,
+        student: true,
+      },
+    });
+
+    if (!plan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    if (plan.studentId !== studentId) {
+      return res.status(403).json({ error: 'Plan does not belong to this student' });
+    }
+
+    if (plan.planType.code !== 'IEP') {
+      return res.status(400).json({ error: 'This is not an IEP plan' });
+    }
+
+    // Generate PDF
+    const pdfBytes = await generateIepPdf(planId);
+
+    // Set response headers
+    const fileName = `IEP-${plan.student.lastName}-${plan.student.firstName}-${planId.slice(0, 8)}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBytes.length);
+
+    res.send(Buffer.from(pdfBytes));
+  } catch (error) {
+    console.error('IEP PDF generation error:', error);
+    res.status(500).json({ error: 'Failed to generate IEP PDF' });
+  }
+});
+
+// Generate 504 PDF for a plan
+router.get('/students/:studentId/plans/:planId/504-pdf', requireAuth, requireOnboarded, requireStudentAccess('studentId'), requirePlanAccess('planId'), async (req, res) => {
+  try {
+    const { planId, studentId } = req.params;
+
+    // Verify plan belongs to student and is 504 type
+    const plan = await prisma.planInstance.findUnique({
+      where: { id: planId },
+      include: {
+        planType: true,
+        student: true,
+      },
+    });
+
+    if (!plan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    if (plan.studentId !== studentId) {
+      return res.status(403).json({ error: 'Plan does not belong to this student' });
+    }
+
+    if (plan.planType.code !== 'FIVE_OH_FOUR') {
+      return res.status(400).json({ error: 'This is not a 504 plan' });
+    }
+
+    // Generate PDF
+    const pdfBytes = await generate504Pdf(planId);
+
+    // Set response headers
+    const fileName = `504-${plan.student.lastName}-${plan.student.firstName}-${planId.slice(0, 8)}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBytes.length);
+
+    res.send(Buffer.from(pdfBytes));
+  } catch (error) {
+    console.error('504 PDF generation error:', error);
+    res.status(500).json({ error: 'Failed to generate 504 PDF' });
   }
 });
 

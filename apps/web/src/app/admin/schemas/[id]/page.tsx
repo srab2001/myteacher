@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, AdminSchema, SchemaPlanInstance, PlanTypeCode } from '@/lib/api';
+import { api, AdminSchema, SchemaPlanInstance, PlanTypeCode, SchemaSectionConfig, FieldConfigUpdate } from '@/lib/api';
 import styles from './page.module.css';
 
 const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
@@ -27,6 +27,13 @@ export default function SchemaDetailPage() {
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+
+  // Field Configuration State
+  const [fieldSections, setFieldSections] = useState<SchemaSectionConfig[]>([]);
+  const [loadingFields, setLoadingFields] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<FieldConfigUpdate[]>([]);
+  const [savingFields, setSavingFields] = useState(false);
+  const [showFieldEditor, setShowFieldEditor] = useState(false);
 
   const canManageDocs = user?.role === 'ADMIN';
   const plansPerPage = 10;
@@ -64,12 +71,71 @@ export default function SchemaDetailPage() {
     }
   }, [schemaId]);
 
+  const loadFieldConfigs = useCallback(async () => {
+    setLoadingFields(true);
+    try {
+      const result = await api.getSchemaFields(schemaId);
+      setFieldSections(result.sections);
+      setPendingChanges([]);
+    } catch (err) {
+      console.error('Failed to load field configs:', err);
+    } finally {
+      setLoadingFields(false);
+    }
+  }, [schemaId]);
+
+  const handleFieldRequiredChange = (sectionKey: string, fieldKey: string, isRequired: boolean) => {
+    // Update pending changes
+    setPendingChanges(prev => {
+      const existing = prev.findIndex(c => c.sectionKey === sectionKey && c.fieldKey === fieldKey);
+      if (existing >= 0) {
+        const updated = [...prev];
+        updated[existing] = { sectionKey, fieldKey, isRequired };
+        return updated;
+      }
+      return [...prev, { sectionKey, fieldKey, isRequired }];
+    });
+
+    // Update local state
+    setFieldSections(prev => prev.map(section => {
+      if (section.key !== sectionKey) return section;
+      return {
+        ...section,
+        fields: section.fields.map(field => {
+          if (field.key !== fieldKey) return field;
+          return { ...field, effectiveRequired: isRequired, hasOverride: true };
+        }),
+      };
+    }));
+  };
+
+  const saveFieldConfigs = async () => {
+    if (pendingChanges.length === 0) return;
+    setSavingFields(true);
+    try {
+      await api.updateSchemaFields(schemaId, pendingChanges);
+      setPendingChanges([]);
+      await loadFieldConfigs(); // Refresh
+    } catch (err) {
+      console.error('Failed to save field configs:', err);
+      setError('Failed to save field configurations');
+    } finally {
+      setSavingFields(false);
+    }
+  };
+
   useEffect(() => {
     if (user?.isOnboarded && canManageDocs && schemaId) {
       loadSchema();
       loadPlans(1);
     }
   }, [user, canManageDocs, schemaId, loadSchema, loadPlans]);
+
+  useEffect(() => {
+    if (showFieldEditor && fieldSections.length === 0) {
+      loadFieldConfigs();
+    }
+  }, [showFieldEditor, fieldSections.length, loadFieldConfigs]);
 
   const totalPages = Math.ceil(plansTotal / plansPerPage);
 
@@ -211,6 +277,72 @@ export default function SchemaDetailPage() {
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      {/* Field Requirements Editor */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2>Field Requirements</h2>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {pendingChanges.length > 0 && (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={saveFieldConfigs}
+                disabled={savingFields}
+              >
+                {savingFields ? 'Saving...' : `Save ${pendingChanges.length} Changes`}
+              </button>
+            )}
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => setShowFieldEditor(!showFieldEditor)}
+            >
+              {showFieldEditor ? 'Hide Editor' : 'Edit Required Fields'}
+            </button>
+          </div>
+        </div>
+
+        {showFieldEditor && (
+          loadingFields ? (
+            <div className="loading-container">
+              <div className="spinner" />
+            </div>
+          ) : (
+            <div className={styles.fieldEditorContainer}>
+              <p className={styles.editorHint}>
+                Check the boxes to mark fields as required. Changes are highlighted until saved.
+              </p>
+              {fieldSections.map((section, sectionIndex) => (
+                <div key={section.key} className={styles.editorSection}>
+                  <div className={styles.editorSectionHeader}>
+                    <span className={styles.sectionNumber}>{sectionIndex + 1}</span>
+                    <h4>{section.title}</h4>
+                  </div>
+                  <div className={styles.editorFieldsList}>
+                    {section.fields.map(field => (
+                      <label
+                        key={field.key}
+                        className={`${styles.editorField} ${field.hasOverride ? styles.hasOverride : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={field.effectiveRequired}
+                          onChange={(e) => handleFieldRequiredChange(section.key, field.key, e.target.checked)}
+                        />
+                        <span className={styles.editorFieldLabel}>{field.label}</span>
+                        <span className={styles.editorFieldKey}>{field.key}</span>
+                        <span className={styles.editorFieldType}>{field.type}</span>
+                        {field.hasOverride && (
+                          <span className={styles.overrideBadge}>Modified</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </section>
 

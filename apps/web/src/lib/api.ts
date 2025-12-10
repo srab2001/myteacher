@@ -430,6 +430,35 @@ export interface SchemaPlanInstance {
   updatedAt: string;
 }
 
+// Schema Field Configuration Types
+export interface SchemaFieldConfig {
+  key: string;
+  label: string;
+  type: string;
+  schemaRequired: boolean;
+  effectiveRequired: boolean;
+  hasOverride: boolean;
+}
+
+export interface SchemaSectionConfig {
+  key: string;
+  title: string;
+  order?: number;
+  fields: SchemaFieldConfig[];
+}
+
+export interface SchemaFieldsResponse {
+  id: string;
+  planTypeCode: PlanTypeCode;
+  sections: SchemaSectionConfig[];
+}
+
+export interface FieldConfigUpdate {
+  sectionKey: string;
+  fieldKey: string;
+  isRequired: boolean;
+}
+
 class ApiClient {
   private async fetch<T>(url: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${url}`, {
@@ -992,6 +1021,26 @@ class ApiClient {
     if (limit !== undefined) params.append('limit', String(limit));
     const queryString = params.toString();
     return this.fetch(`/api/admin/schemas/${schemaId}/plans${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getSchemaFields(schemaId: string): Promise<SchemaFieldsResponse> {
+    return this.fetch(`/api/admin/schemas/${schemaId}/fields`);
+  }
+
+  async updateSchemaFields(schemaId: string, updates: FieldConfigUpdate[]): Promise<{ success: boolean; message: string }> {
+    return this.fetch(`/api/admin/schemas/${schemaId}/fields`, {
+      method: 'PATCH',
+      body: JSON.stringify({ updates }),
+    });
+  }
+
+  // PDF Export URLs
+  getIepPdfUrl(studentId: string, planId: string): string {
+    return `${API_BASE}/api/plans/students/${studentId}/plans/${planId}/iep-pdf`;
+  }
+
+  get504PdfUrl(studentId: string, planId: string): string {
+    return `${API_BASE}/api/plans/students/${studentId}/plans/${planId}/504-pdf`;
   }
 
   // Phase 5: Admin User Management API

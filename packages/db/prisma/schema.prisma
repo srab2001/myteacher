@@ -270,11 +270,34 @@ model PlanSchema {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  planTypeId String
-  planType   PlanType       @relation(fields: [planTypeId], references: [id])
-  instances  PlanInstance[]
+  planTypeId   String
+  planType     PlanType          @relation(fields: [planTypeId], references: [id])
+  instances    PlanInstance[]
+  fieldConfigs PlanFieldConfig[]
 
   @@index([planTypeId, isActive])
+}
+
+// ============================================
+// PLAN FIELD CONFIG MODEL (Field Requirement Overrides)
+// ============================================
+
+model PlanFieldConfig {
+  id           String     @id @default(cuid())
+  planSchema   PlanSchema @relation(fields: [planSchemaId], references: [id], onDelete: Cascade)
+  planSchemaId String
+
+  sectionKey   String     // References section.key in schema
+  fieldKey     String     // References field.key in schema
+
+  // If null, use required flag from schemaJson
+  isRequired   Boolean?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([planSchemaId, sectionKey, fieldKey])
+  @@index([planSchemaId])
 }
 
 // ============================================

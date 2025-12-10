@@ -349,8 +349,15 @@ export default function IEPInterviewPage() {
         </main>
       </div>
 
-      {/* Print View Link */}
+      {/* Print View Link and PDF Download */}
       <div className={styles.printLink}>
+        <a
+          href={api.getIepPdfUrl(studentId, planId)}
+          className="btn btn-primary"
+          style={{ marginRight: '0.5rem' }}
+        >
+          Download IEP PDF
+        </a>
         <button
           className="btn btn-outline"
           onClick={() => router.push(`/students/${studentId}/plans/${planId}/print`)}

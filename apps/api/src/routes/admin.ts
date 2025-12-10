@@ -686,7 +686,7 @@ router.get('/schemas/:id', requireAdmin, async (req, res) => {
       include: {
         planType: { select: { code: true, name: true } },
         jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
-        _count: { select: { planInstances: true } },
+        _count: { select: { instances: true } },
       },
     });
 
@@ -705,7 +705,7 @@ router.get('/schemas/:id', requireAdmin, async (req, res) => {
         jurisdictionId: schema.jurisdictionId,
         jurisdictionName: schema.jurisdiction?.districtName || 'Global',
         isActive: schema.isActive,
-        planCount: schema._count.planInstances,
+        planCount: schema._count.instances,
         fields: schema.fields, // Full field definitions JSON
         createdAt: schema.createdAt,
         updatedAt: schema.updatedAt,
@@ -714,6 +714,131 @@ router.get('/schemas/:id', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Schema fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch schema' });
+  }
+});
+
+// GET /admin/schemas/:id/fields - Get schema fields with effective required flags
+router.get('/schemas/:id/fields', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+      include: {
+        planType: { select: { code: true, name: true } },
+        fieldConfigs: true,
+      },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    // Build override map
+    const overrideMap = new Map<string, boolean>();
+    for (const config of schema.fieldConfigs) {
+      if (config.isRequired !== null) {
+        overrideMap.set(`${config.sectionKey}:${config.fieldKey}`, config.isRequired);
+      }
+    }
+
+    // Parse schema fields
+    const schemaFields = schema.fields as {
+      sections?: Array<{
+        key: string;
+        title: string;
+        order?: number;
+        fields?: Array<{
+          key: string;
+          label: string;
+          type: string;
+          required?: boolean;
+          placeholder?: string;
+        }>;
+      }>;
+    };
+
+    const sections = (schemaFields.sections || []).map(section => ({
+      key: section.key,
+      title: section.title,
+      order: section.order,
+      fields: (section.fields || []).map(field => {
+        const overrideKey = `${section.key}:${field.key}`;
+        const override = overrideMap.get(overrideKey);
+        return {
+          key: field.key,
+          label: field.label,
+          type: field.type,
+          schemaRequired: !!field.required,
+          effectiveRequired: override !== undefined ? override : !!field.required,
+          hasOverride: override !== undefined,
+        };
+      }),
+    }));
+
+    res.json({
+      id: schema.id,
+      planTypeCode: schema.planType.code,
+      sections,
+    });
+  } catch (error) {
+    console.error('Schema fields fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch schema fields' });
+  }
+});
+
+// PATCH /admin/schemas/:id/fields - Update field requirement overrides
+router.patch('/schemas/:id/fields', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bodySchema = z.object({
+      updates: z.array(z.object({
+        sectionKey: z.string(),
+        fieldKey: z.string(),
+        isRequired: z.boolean(),
+      })),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    // Upsert each field config
+    for (const update of data.updates) {
+      await prisma.planFieldConfig.upsert({
+        where: {
+          planSchemaId_sectionKey_fieldKey: {
+            planSchemaId: id,
+            sectionKey: update.sectionKey,
+            fieldKey: update.fieldKey,
+          },
+        },
+        create: {
+          planSchemaId: id,
+          sectionKey: update.sectionKey,
+          fieldKey: update.fieldKey,
+          isRequired: update.isRequired,
+        },
+        update: {
+          isRequired: update.isRequired,
+        },
+      });
+    }
+
+    res.json({ success: true, message: `Updated ${data.updates.length} field configurations` });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Schema fields update error:', error);
+    res.status(500).json({ error: 'Failed to update schema fields' });
   }
 });
 

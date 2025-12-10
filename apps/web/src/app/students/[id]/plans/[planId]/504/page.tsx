@@ -412,8 +412,15 @@ export default function FiveOhFourInterviewPage() {
         </main>
       </div>
 
-      {/* Print View Link */}
+      {/* Print View Link and PDF Download */}
       <div className={styles.printLink}>
+        <a
+          href={api.get504PdfUrl(studentId, planId)}
+          className="btn btn-primary"
+          style={{ marginRight: '0.5rem' }}
+        >
+          Download 504 PDF
+        </a>
         <button
           className="btn btn-outline"
           onClick={() => router.push(`/students/${studentId}/plans/${planId}/print`)}
