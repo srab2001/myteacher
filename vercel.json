@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "installCommand": "npm install -g pnpm@8 && pnpm install",
   "buildCommand": "pnpm --filter @myteacher/web build",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": ".next"
 }
