@@ -1,0 +1,41 @@
+services:
+  # Express API
+  - type: web
+    name: myteacher-api
+    runtime: node
+    plan: free
+    buildCommand: pnpm install && cd packages/db && pnpm exec prisma generate && cd ../../apps/api && pnpm build
+    startCommand: cd apps/api && node dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: myteacher-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://myteacher-web.onrender.com
+
+  # Next.js Web
+  - type: web
+    name: myteacher-web
+    runtime: node
+    plan: free
+    buildCommand: pnpm install && cd apps/web && pnpm build
+    startCommand: cd apps/web && pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://myteacher-api.onrender.com
+
+databases:
+  - name: myteacher-db
+    plan: free
+    databaseName: myteacher
+    user: myteacher

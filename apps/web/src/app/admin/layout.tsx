@@ -52,11 +52,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className={styles.mainLayout}>
         <aside className={styles.sidebar}>
           <nav className={styles.sideNav}>
+            <Link href="/admin/users" className={styles.navLink}>
+              User Management
+            </Link>
+            <div className={styles.divider} />
             <Link href="/admin/documents/best-practice" className={styles.navLink}>
               Best Practice Documents
             </Link>
             <Link href="/admin/documents/templates" className={styles.navLink}>
               Form Templates
+            </Link>
+            <Link href="/admin/schemas" className={styles.navLink}>
+              Plan Schemas
             </Link>
             <div className={styles.divider} />
             <Link href="/dashboard" className={styles.navLink}>

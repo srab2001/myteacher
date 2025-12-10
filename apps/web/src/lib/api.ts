@@ -54,6 +54,48 @@ export type WorkSampleRating = 'BELOW_TARGET' | 'NEAR_TARGET' | 'MEETS_TARGET' |
 export type ServiceType = 'SPECIAL_EDUCATION' | 'SPEECH_LANGUAGE' | 'OCCUPATIONAL_THERAPY' | 'PHYSICAL_THERAPY' | 'COUNSELING' | 'BEHAVIORAL_SUPPORT' | 'READING_SPECIALIST' | 'PARAPROFESSIONAL' | 'OTHER';
 export type ServiceSetting = 'GENERAL_EDUCATION' | 'SPECIAL_EDUCATION' | 'RESOURCE_ROOM' | 'THERAPY_ROOM' | 'COMMUNITY' | 'HOME' | 'OTHER';
 
+// Phase 3 Behavior Types
+export type BehaviorMeasurementType = 'FREQUENCY' | 'DURATION' | 'INTERVAL' | 'RATING';
+
+export interface BehaviorTarget {
+  id: string;
+  code: string;
+  name: string;
+  definition: string;
+  examples: string | null;
+  nonExamples: string | null;
+  measurementType: BehaviorMeasurementType;
+  isActive: boolean;
+  events: BehaviorEvent[];
+}
+
+export interface BehaviorEvent {
+  id: string;
+  eventDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  count: number | null;
+  rating: number | null;
+  durationSeconds: number | null;
+  contextJson: Record<string, unknown> | null;
+  createdAt: string;
+  recordedBy?: { displayName: string };
+}
+
+export interface BehaviorPlan {
+  id: string;
+  summary: string | null;
+  planInstance: Plan;
+  targets: BehaviorTarget[];
+}
+
+export interface BehaviorEventSummary {
+  totalEvents: number;
+  totalCount: number;
+  totalDurationSeconds: number;
+  averageRating: number;
+}
+
 export interface PlanSchema {
   id: string;
   version: number;
@@ -215,6 +257,175 @@ export interface Jurisdiction {
   stateName: string;
   districtCode: string;
   districtName: string;
+}
+
+// Phase 4: Status Summary Types
+export interface StudentStatusSummary {
+  studentId: string;
+  recordId: string;
+  firstName: string;
+  lastName: string;
+  gradeLevel: string;
+  overallStatus: {
+    code: 'ON_TRACK' | 'WATCH' | 'CONCERN' | 'URGENT';
+    summary: string | null;
+    effectiveDate: string;
+  } | null;
+  hasActiveIEP: boolean;
+  hasActive504: boolean;
+  hasActiveBehaviorPlan: boolean;
+  activePlanDates: {
+    iepStart: string | null;
+    iepEnd: string | null;
+    sec504Start: string | null;
+    sec504End: string | null;
+    behaviorStart: string | null;
+  };
+}
+
+// Phase 4: IEP Progress Report Types
+export interface GoalProgressReport {
+  goalId: string;
+  goalCode: string;
+  area: GoalArea;
+  annualGoalText: string;
+  baselineValue: number | null;
+  targetValue: number | null;
+  targetDate: string | null;
+  progressSummary: {
+    totalRecords: number;
+    latestValue: number | null;
+    latestDate: string | null;
+    firstValue: number | null;
+    trend: 'improving' | 'stable' | 'declining' | 'insufficient_data';
+    isOnTrack: boolean | null;
+  };
+  recentProgress: Array<{
+    id: string;
+    date: string;
+    percentCorrect: number | null;
+    trials: number | null;
+    notes: string | null;
+  }>;
+}
+
+export interface IEPProgressReport {
+  studentId: string;
+  studentName: string;
+  planId: string;
+  planStatus: string;
+  planStartDate: string;
+  planEndDate: string | null;
+  totalGoals: number;
+  goals: GoalProgressReport[];
+}
+
+// Phase 4: Service Minutes Report Types
+export interface ServiceMinutesReport {
+  studentId: string;
+  studentName: string;
+  planId: string;
+  dateRange: {
+    from: string;
+    to: string;
+  };
+  summary: {
+    totalMinutes: number;
+    totalSessions: number;
+    averageMinutesPerSession: number;
+  };
+  services: Array<{
+    serviceType: string;
+    totalMinutes: number;
+    sessionCount: number;
+    logs: Array<{
+      id: string;
+      date: string;
+      minutes: number;
+      notes: string | null;
+      provider: string | null;
+    }>;
+  }>;
+}
+
+// Phase 5: Admin User Management Types
+export type AdminUserRole = 'TEACHER' | 'CASE_MANAGER' | 'ADMIN';
+
+export interface AdminPermissions {
+  canCreatePlans: boolean;
+  canUpdatePlans: boolean;
+  canReadAll: boolean;
+  canManageUsers: boolean;
+  canManageDocs: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: AdminUserRole;
+  isActive: boolean;
+  jurisdictionId: string | null;
+  jurisdictionName: string | null;
+  permissions: AdminPermissions | null;
+  studentAccessCount?: number;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  studentAccess: StudentAccessEntry[];
+}
+
+export interface StudentAccessEntry {
+  id: string;
+  studentId: string;
+  recordId: string;
+  firstName?: string;
+  lastName?: string;
+  studentName: string;
+  grade: string;
+  schoolName?: string;
+  isActive?: boolean;
+  canEdit: boolean;
+  grantedAt: string;
+}
+
+export interface StudentAccessResponse {
+  canReadAll: boolean;
+  studentAccess: StudentAccessEntry[];
+  message?: string;
+}
+
+// Phase 4: Admin Schema Types
+export interface AdminSchema {
+  id: string;
+  name: string;
+  description: string | null;
+  version: number;
+  planType: PlanTypeCode;
+  planTypeName: string;
+  jurisdictionId: string | null;
+  jurisdictionName: string;
+  isActive: boolean;
+  planCount: number;
+  fields?: PlanSchema['fields'];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SchemaPlanInstance {
+  id: string;
+  status: string;
+  startDate: string;
+  endDate: string | null;
+  studentId: string;
+  studentName: string;
+  studentGrade: string;
+  planType: PlanTypeCode;
+  planTypeName: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 class ApiClient {
@@ -650,6 +861,208 @@ class ApiClient {
   // Admin: Jurisdictions
   async getAdminJurisdictions(): Promise<{ jurisdictions: Jurisdiction[] }> {
     return this.fetch('/api/admin/jurisdictions');
+  }
+
+  // Phase 3: Behavior Plan API
+  async getBehaviorPlan(planId: string): Promise<{ behaviorPlan: BehaviorPlan }> {
+    return this.fetch(`/api/behavior-plans/plans/${planId}`);
+  }
+
+  async getBehaviorTargets(planId: string): Promise<{ targets: BehaviorTarget[] }> {
+    return this.fetch(`/api/behavior-plans/plans/${planId}/targets`);
+  }
+
+  async createBehaviorTarget(planId: string, data: {
+    code: string;
+    name: string;
+    definition: string;
+    examples?: string;
+    nonExamples?: string;
+    measurementType: BehaviorMeasurementType;
+  }): Promise<{ target: BehaviorTarget }> {
+    return this.fetch(`/api/behavior-plans/plans/${planId}/targets`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateBehaviorTarget(targetId: string, data: Partial<{
+    name: string;
+    definition: string;
+    examples: string;
+    nonExamples: string;
+    measurementType: BehaviorMeasurementType;
+    isActive: boolean;
+  }>): Promise<{ target: BehaviorTarget }> {
+    return this.fetch(`/api/behavior-targets/targets/${targetId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteBehaviorTarget(targetId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/behavior-targets/targets/${targetId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getBehaviorEvents(targetId: string, from?: string, to?: string): Promise<{
+    events: BehaviorEvent[];
+    summary: BehaviorEventSummary;
+    measurementType: BehaviorMeasurementType;
+  }> {
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    const queryString = params.toString();
+    return this.fetch(`/api/behavior-targets/targets/${targetId}/events${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async createBehaviorEvent(targetId: string, data: {
+    eventDate: string;
+    startTime?: string;
+    endTime?: string;
+    count?: number;
+    rating?: number;
+    durationSeconds?: number;
+    contextJson?: Record<string, unknown>;
+  }): Promise<{ event: BehaviorEvent }> {
+    return this.fetch(`/api/behavior-targets/targets/${targetId}/events`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteBehaviorEvent(eventId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/behavior-events/events/${eventId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Phase 4: Status Summary API
+  async getStudentStatusSummary(): Promise<{ students: StudentStatusSummary[] }> {
+    return this.fetch('/api/students/status-summary');
+  }
+
+  // Phase 4: Reports API
+  async getIEPProgressReport(studentId: string, from?: string, to?: string): Promise<IEPProgressReport> {
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    const queryString = params.toString();
+    return this.fetch(`/api/reports/students/${studentId}/iep-progress${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getServiceMinutesReport(studentId: string, from?: string, to?: string): Promise<ServiceMinutesReport> {
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    const queryString = params.toString();
+    return this.fetch(`/api/reports/students/${studentId}/services${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Phase 4: Admin Schema API
+  async getAdminSchemas(filters?: {
+    planType?: PlanTypeCode;
+    jurisdictionId?: string;
+    activeOnly?: boolean;
+  }): Promise<{ schemas: AdminSchema[] }> {
+    const params = new URLSearchParams();
+    if (filters?.planType) params.append('planType', filters.planType);
+    if (filters?.jurisdictionId) params.append('jurisdictionId', filters.jurisdictionId);
+    if (filters?.activeOnly !== undefined) params.append('activeOnly', String(filters.activeOnly));
+    const queryString = params.toString();
+    return this.fetch(`/api/admin/schemas${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAdminSchema(schemaId: string): Promise<{ schema: AdminSchema }> {
+    return this.fetch(`/api/admin/schemas/${schemaId}`);
+  }
+
+  async getSchemaPlans(schemaId: string, page?: number, limit?: number): Promise<{
+    plans: SchemaPlanInstance[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', String(page));
+    if (limit !== undefined) params.append('limit', String(limit));
+    const queryString = params.toString();
+    return this.fetch(`/api/admin/schemas/${schemaId}/plans${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Phase 5: Admin User Management API
+  async getAdminUsers(filters?: {
+    role?: AdminUserRole;
+    search?: string;
+  }): Promise<{ users: AdminUser[] }> {
+    const params = new URLSearchParams();
+    if (filters?.role) params.append('role', filters.role);
+    if (filters?.search) params.append('search', filters.search);
+    const queryString = params.toString();
+    return this.fetch(`/api/admin/users${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAdminUser(userId: string): Promise<{ user: AdminUserDetail }> {
+    return this.fetch(`/api/admin/users/${userId}`);
+  }
+
+  async createAdminUser(data: {
+    email: string;
+    displayName: string;
+    role: AdminUserRole;
+    jurisdictionId?: string | null;
+    permissions?: Partial<AdminPermissions>;
+  }): Promise<{ user: AdminUser }> {
+    return this.fetch('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminUser(userId: string, data: {
+    displayName?: string;
+    role?: AdminUserRole;
+    isActive?: boolean;
+    jurisdictionId?: string | null;
+  }): Promise<{ user: AdminUser }> {
+    return this.fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminUserPermissions(userId: string, permissions: Partial<AdminPermissions>): Promise<{ permissions: AdminPermissions }> {
+    return this.fetch(`/api/admin/users/${userId}/permissions`, {
+      method: 'PATCH',
+      body: JSON.stringify(permissions),
+    });
+  }
+
+  // Phase 5: Student Access Management API
+  async getUserStudentAccess(userId: string): Promise<StudentAccessResponse> {
+    return this.fetch(`/api/admin/users/${userId}/students`);
+  }
+
+  async addStudentAccess(userId: string, recordId: string, canEdit?: boolean): Promise<{ studentAccess: StudentAccessEntry }> {
+    return this.fetch(`/api/admin/users/${userId}/students`, {
+      method: 'POST',
+      body: JSON.stringify({ recordId, canEdit: canEdit ?? false }),
+    });
+  }
+
+  async updateStudentAccess(userId: string, accessId: string, canEdit: boolean): Promise<{ studentAccess: StudentAccessEntry }> {
+    return this.fetch(`/api/admin/users/${userId}/students/${accessId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ canEdit }),
+    });
+  }
+
+  async removeStudentAccess(userId: string, accessId: string): Promise<{ success: boolean; message: string }> {
+    return this.fetch(`/api/admin/users/${userId}/students/${accessId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

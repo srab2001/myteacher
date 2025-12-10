@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { useRouter, useParams } from 'next/navigation';
 import { AuthProvider } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -21,10 +21,10 @@ jest.mock('@/lib/api', () => ({
 
 // Mock date-fns
 jest.mock('date-fns', () => ({
-  format: jest.fn((date, formatStr) => '2024-01-15'),
-  startOfWeek: jest.fn((date) => new Date('2024-01-14')),
-  endOfWeek: jest.fn((date) => new Date('2024-01-20')),
-  addDays: jest.fn((date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000)),
+  format: jest.fn(() => '2024-01-15'),
+  startOfWeek: jest.fn(() => new Date('2024-01-14')),
+  endOfWeek: jest.fn(() => new Date('2024-01-20')),
+  addDays: jest.fn((date: Date, days: number) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000)),
 }));
 
 const mockUser = {

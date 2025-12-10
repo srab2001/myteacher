@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import passport from 'passport';
+import bcrypt from 'bcryptjs';
 import { env } from '../config/env.js';
 import { requireAuth } from '../middleware/auth.js';
+import { prisma } from '../lib/db.js';
 
 const router = Router();
 
@@ -18,46 +20,56 @@ router.post('/login', (req, res, next) => {
       if (err) {
         return next(err);
       }
-      return res.json({
-        user: {
-          id: user.id,
-          email: user.email,
-          displayName: user.displayName,
-          avatarUrl: user.avatarUrl,
-          role: user.role,
-          stateCode: user.stateCode,
-          districtName: user.districtName,
-          schoolName: user.schoolName,
-          isOnboarded: user.isOnboarded,
-        },
+      // Save session explicitly before responding (important for async stores)
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('Session save error:', saveErr);
+          return next(saveErr);
+        }
+        return res.json({
+          user: {
+            id: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            avatarUrl: user.avatarUrl,
+            role: user.role,
+            stateCode: user.stateCode,
+            districtName: user.districtName,
+            schoolName: user.schoolName,
+            isOnboarded: user.isOnboarded,
+          },
+        });
       });
     });
   })(req, res, next);
 });
 
-// Initiate Google OAuth
-router.get(
-  '/google',
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-  })
-);
+// Google OAuth routes (only if configured)
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL) {
+  // Initiate Google OAuth
+  router.get(
+    '/google',
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+    })
+  );
 
-// Google OAuth callback
-router.get(
-  '/google/callback',
-  passport.authenticate('google', {
-    failureRedirect: `${env.FRONTEND_URL}/login?error=auth_failed`,
-  }),
-  (req, res) => {
-    // Redirect based on onboarding status
-    if (req.user?.isOnboarded) {
-      res.redirect(`${env.FRONTEND_URL}/dashboard`);
-    } else {
-      res.redirect(`${env.FRONTEND_URL}/onboarding`);
+  // Google OAuth callback
+  router.get(
+    '/google/callback',
+    passport.authenticate('google', {
+      failureRedirect: `${env.FRONTEND_URL}/login?error=auth_failed`,
+    }),
+    (req, res) => {
+      // Redirect based on onboarding status
+      if (req.user?.isOnboarded) {
+        res.redirect(`${env.FRONTEND_URL}/dashboard`);
+      } else {
+        res.redirect(`${env.FRONTEND_URL}/onboarding`);
+      }
     }
-  }
-);
+  );
+}
 
 // Logout
 router.post('/logout', (req, res, next) => {
@@ -90,6 +102,47 @@ router.get('/me', requireAuth, (req, res) => {
       isOnboarded: req.user!.isOnboarded,
     },
   });
+});
+
+// Password reset endpoint (protected by reset key)
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { username, newPassword, resetKey } = req.body;
+
+    // Verify reset key (use SESSION_SECRET as the reset key for simplicity)
+    const expectedKey = env.SESSION_SECRET;
+    if (!resetKey || resetKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid reset key' });
+    }
+
+    if (!username || !newPassword) {
+      return res.status(400).json({ error: 'Username and new password are required' });
+    }
+
+    // Find user
+    const user = await prisma.appUser.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    await prisma.appUser.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    console.log('Password reset successful for user:', username);
+    return res.json({ success: true, message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    return res.status(500).json({ error: 'Failed to reset password' });
+  }
 });
 
 export default router;

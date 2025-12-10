@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prisma } from '@myteacher/db';
+import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 
 const router = Router();

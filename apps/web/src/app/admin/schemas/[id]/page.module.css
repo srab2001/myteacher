@@ -1,0 +1,340 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.pageHeader {
+  margin-bottom: 1.5rem;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  margin-bottom: 0.75rem;
+}
+
+.backBtn:hover {
+  text-decoration: underline;
+}
+
+.headerMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.pageHeader h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.description {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.accessDenied {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.accessDenied h2 {
+  margin-bottom: 0.5rem;
+}
+
+.accessDenied p {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.statusBadge.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.statusBadge.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Info Cards */
+.infoCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.infoCard {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.infoLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.infoValue {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.metaInfo {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+/* Sections */
+.section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionHeader h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.count {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* JSON Viewer */
+.jsonViewer {
+  padding: 1rem;
+  background: #1e1e1e;
+  overflow-x: auto;
+  max-height: 600px;
+}
+
+.jsonViewer pre {
+  color: #d4d4d4;
+  font-family: monospace;
+  font-size: 0.8125rem;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Schema Sections List */
+.sectionsList {
+  padding: 1rem;
+}
+
+.schemaSection {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.schemaSection:last-child {
+  margin-bottom: 0;
+}
+
+.schemaSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  background: var(--background);
+}
+
+.sectionNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.schemaSectionHeader h4 {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.sectionKey {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: monospace;
+}
+
+.fieldCountBadge {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Fields List */
+.fieldsList {
+  padding: 0.5rem 1rem 1rem 1rem;
+}
+
+.fieldItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+
+.fieldItem:last-child {
+  border-bottom: none;
+}
+
+.fieldKey {
+  font-family: monospace;
+  color: var(--primary);
+  min-width: 150px;
+}
+
+.fieldLabel {
+  flex: 1;
+}
+
+.fieldType {
+  color: var(--muted);
+  background: var(--background);
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.requiredBadge {
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Plans Table */
+.plansTable {
+  overflow-x: auto;
+}
+
+.plansTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.plansTable th,
+.plansTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.plansTable th {
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--background);
+  white-space: nowrap;
+}
+
+.plansTable tbody tr:hover {
+  background: var(--background);
+}
+
+.plansTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.studentName {
+  font-weight: 500;
+}
+
+.planStatusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.planStatusBadge.draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.planStatusBadge.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.planStatusBadge.expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.pageInfo {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* Empty State */
+.emptyMessage {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--muted);
+}

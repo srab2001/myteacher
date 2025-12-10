@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { prisma, PlanTypeCode, IngestionStatus } from '@myteacher/db';
+import { prisma, PlanTypeCode, IngestionStatus } from '../lib/db.js';
 
 // Section tag patterns for different plan types
 const SECTION_PATTERNS: Record<string, { pattern: RegExp; tag: string }[]> = {
@@ -78,7 +78,8 @@ async function extractText(filePath: string): Promise<string> {
   if (ext === '.pdf') {
     // Dynamic import for pdf-parse
     try {
-      const pdfParse = (await import('pdf-parse')).default;
+      const pdfModule = await import('pdf-parse');
+      const pdfParse = (pdfModule.default || pdfModule) as unknown as (buffer: Buffer) => Promise<{ text: string }>;
       const dataBuffer = fs.readFileSync(filePath);
       const data = await pdfParse(dataBuffer);
       return data.text;

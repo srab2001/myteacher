@@ -24,7 +24,8 @@ export function DictationModal({ goalName, onClose, onSave }: DictationModalProp
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     // Check for browser support
@@ -36,23 +37,21 @@ export function DictationModal({ goalName, onClose, onSave }: DictationModalProp
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognitionRef.current.onresult = (event: any) => {
         let finalTranscript = '';
-        let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcriptPart = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcriptPart + ' ';
-          } else {
-            interimTranscript += transcriptPart;
+            finalTranscript += event.results[i][0].transcript + ' ';
           }
         }
 
         setTranscript(prev => prev + finalTranscript);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsRecording(false);
         if (event.error === 'not-allowed') {
@@ -201,7 +200,9 @@ export function DictationModal({ goalName, onClose, onSave }: DictationModalProp
 // Add type declarations for Web Speech API
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    SpeechRecognition: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    webkitSpeechRecognition: any;
   }
 }

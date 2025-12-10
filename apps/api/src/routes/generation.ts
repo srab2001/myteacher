@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma } from '@myteacher/db';
+import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { generateDraftContent, hasReferenceContent, getGeneratableSections } from '../services/contentGeneration.js';
 import { queryChunksForGeneration } from '../services/ingestion.js';

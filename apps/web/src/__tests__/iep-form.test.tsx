@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { useRouter, useParams } from 'next/navigation';
 import { AuthProvider } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -140,8 +140,6 @@ describe('Schema Sections', () => {
 
 describe('Field Types', () => {
   it('handles different field types', () => {
-    const fieldTypes = ['text', 'textarea', 'select', 'date', 'number', 'checkbox'];
-
     const studentInfoSection = mockSchema.fields.sections[0];
 
     expect(studentInfoSection.fields[0].type).toBe('select');

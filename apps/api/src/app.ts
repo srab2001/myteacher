@@ -3,10 +3,19 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import pg from 'pg';
 import passport from './config/passport.js';
 import { env } from './config/env.js';
 
 import path from 'path';
+
+// PostgreSQL session store
+const PgSession = connectPgSimple(session);
+const pgPool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -20,9 +29,13 @@ import workSampleRoutes from './routes/worksamples.js';
 import priorPlanRoutes from './routes/priorplans.js';
 import adminRoutes from './routes/admin.js';
 import generationRoutes from './routes/generation.js';
+import behaviorRoutes from './routes/behavior.js';
 
 export function createApp(): Express {
   const app = express();
+
+  // Trust proxy - required for secure cookies behind Vercel/proxies
+  app.set('trust proxy', 1);
 
   // Security middleware
   app.use(helmet());
@@ -38,17 +51,24 @@ export function createApp(): Express {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
-  // Session configuration
+  // Session configuration with PostgreSQL store for serverless
   app.use(
     session({
+      store: new PgSession({
+        pool: pgPool,
+        tableName: 'session',
+        createTableIfMissing: true,
+      }),
+      name: 'myteacher.sid',
       secret: env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
+      proxy: true,
       cookie: {
         secure: env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        sameSite: env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       },
     })
   );
@@ -82,6 +102,9 @@ export function createApp(): Express {
   app.use('/api', priorPlanRoutes); // For /api/students/:id/prior-plans routes
   app.use('/api/admin', adminRoutes); // Admin routes
   app.use('/api', generationRoutes); // Content generation routes
+  app.use('/api/behavior-plans', behaviorRoutes); // Behavior plan routes
+  app.use('/api/behavior-targets', behaviorRoutes); // Behavior target routes
+  app.use('/api/behavior-events', behaviorRoutes); // Behavior event routes
 
   // 404 handler
   app.use((_req, res) => {

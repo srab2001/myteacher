@@ -1,4 +1,4 @@
-import { prisma, PriorPlanSource, PlanTypeCode } from '@myteacher/db';
+import { prisma, PriorPlanSource, PlanTypeCode } from '../lib/db.js';
 
 // Mock environment
 jest.mock('../config/env.js', () => ({
@@ -15,7 +15,7 @@ jest.mock('../config/env.js', () => ({
 }));
 
 // Mock Prisma
-jest.mock('@myteacher/db', () => ({
+jest.mock('../lib/db.js', () => ({
   prisma: {
     priorPlanDocument: {
       findMany: jest.fn(),

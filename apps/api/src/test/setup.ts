@@ -1,5 +1,5 @@
 // Jest test setup file
-import { prisma } from '@myteacher/db';
+import { prisma } from '../lib/db.js';
 
 // Clean up after all tests
 afterAll(async () => {

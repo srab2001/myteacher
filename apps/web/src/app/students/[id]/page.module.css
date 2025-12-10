@@ -64,6 +64,11 @@
   gap: 1rem;
 }
 
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .noStatus {
   color: var(--muted);
   font-size: 0.875rem;
@@ -312,4 +317,75 @@
 
 .deleteBtn:hover {
   text-decoration: underline;
+}
+
+/* Plan Tiles */
+.planTilesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.planTile {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--background);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.planTileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.planTileHeader h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.planTileStatus {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.planTileStatus.draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.planTileStatus.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.planTileStatus.expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.planTileDate {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.planTileEmpty {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.planTileActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: auto;
 }

@@ -20,7 +20,7 @@ export default function IEPInterviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [generationAvailable, setGenerationAvailable] = useState(false);
-  const [generatingSections, setGeneratingSections] = useState<string[]>([]);
+  const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
 
   useEffect(() => {

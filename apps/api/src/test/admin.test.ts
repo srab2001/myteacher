@@ -1,4 +1,4 @@
-import { prisma, PlanTypeCode, UserRole } from '@myteacher/db';
+import { prisma, PlanTypeCode, UserRole } from '../lib/db.js';
 
 // Mock environment
 jest.mock('../config/env.js', () => ({
@@ -15,7 +15,7 @@ jest.mock('../config/env.js', () => ({
 }));
 
 // Mock Prisma
-jest.mock('@myteacher/db', () => ({
+jest.mock('../lib/db.js', () => ({
   prisma: {
     bestPracticeDocument: {
       findMany: jest.fn(),

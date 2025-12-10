@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, ServiceType, ServiceSetting } from '@myteacher/db';
+import { prisma, ServiceType, ServiceSetting } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 
 const router = Router();

@@ -4,8 +4,11 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "module": "NodeNext",
-    "moduleResolution": "NodeNext"
+    "moduleResolution": "NodeNext",
+    "noImplicitReturns": false,
+    "noUncheckedIndexedAccess": false,
+    "strict": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "api/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

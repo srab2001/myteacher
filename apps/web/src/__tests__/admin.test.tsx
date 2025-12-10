@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 import { AuthProvider } from '@/lib/auth-context';
 import { api } from '@/lib/api';

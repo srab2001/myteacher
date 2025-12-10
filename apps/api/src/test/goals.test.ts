@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../app.js';
-import { prisma } from '@myteacher/db';
+import { prisma } from '../lib/db.js';
 
 // Mock environment variables for tests
 jest.mock('../config/env.js', () => ({
@@ -17,7 +17,7 @@ jest.mock('../config/env.js', () => ({
 }));
 
 // Mock Prisma
-jest.mock('@myteacher/db', () => ({
+jest.mock('../lib/db.js', () => ({
   prisma: {
     appUser: {
       findUnique: jest.fn(),
