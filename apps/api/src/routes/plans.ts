@@ -69,6 +69,26 @@ router.post('/students/:studentId/plans/:planTypeCode', requireAuth, requireOnbo
       });
     }
 
+    // Prefill student information fields for all plan types
+    const studentInfoFields = [
+      { fieldKey: 'student_name', value: `${student.firstName} ${student.lastName}` },
+      { fieldKey: 'grade_level', value: student.grade || '' },
+      { fieldKey: 'date_of_birth', value: student.dateOfBirth ? student.dateOfBirth.toISOString().split('T')[0] : '' },
+    ];
+
+    // Create field values for student info
+    await Promise.all(
+      studentInfoFields.map(field =>
+        prisma.planFieldValue.create({
+          data: {
+            planInstanceId: plan.id,
+            fieldKey: field.fieldKey,
+            value: field.value,
+          },
+        })
+      )
+    );
+
     res.status(201).json({
       plan: {
         id: plan.id,

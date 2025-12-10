@@ -97,14 +97,11 @@ export function StatusModal({ studentName, onClose, onSubmit }: StatusModalProps
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = '';
-      let interimTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
         }
       }
 

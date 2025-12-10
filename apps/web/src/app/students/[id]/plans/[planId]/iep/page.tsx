@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
+import { ServicesListEditor, ServiceItem } from '@/components/iep/ServicesListEditor';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -265,14 +267,22 @@ export default function IEPInterviewPage() {
                               </button>
                             </div>
                           )}
-                          <textarea
-                            className="form-textarea"
-                            rows={5}
+                          <DictationTextArea
                             value={(formData[field.key] as string) || ''}
-                            onChange={e => handleFieldChange(field.key, e.target.value)}
+                            onChange={(value) => handleFieldChange(field.key, value)}
                             placeholder={field.placeholder}
+                            rows={5}
                           />
                         </div>
+                      )}
+
+                      {field.type === 'services_table' && (
+                        <ServicesListEditor
+                          label={field.label}
+                          required={field.required}
+                          value={(formData[field.key] as ServiceItem[]) || []}
+                          onChange={(value) => handleFieldChange(field.key, value)}
+                        />
                       )}
 
                       {field.type === 'boolean' && (

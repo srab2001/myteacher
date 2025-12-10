@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan } from '@/lib/api';
+import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import styles from '../iep/page.module.css';
 
 export default function BehaviorPlanInterviewPage() {
@@ -253,12 +254,11 @@ export default function BehaviorPlanInterviewPage() {
                             </button>
                           </div>
                         )}
-                        <textarea
-                          className="form-textarea"
-                          rows={5}
+                        <DictationTextArea
                           value={(formData[field.key] as string) || ''}
-                          onChange={e => handleFieldChange(field.key, e.target.value)}
+                          onChange={(value) => handleFieldChange(field.key, value)}
                           placeholder={field.placeholder}
+                          rows={5}
                         />
                       </div>
                     )}
