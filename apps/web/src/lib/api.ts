@@ -1229,6 +1229,195 @@ class ApiClient {
       body: JSON.stringify({ planId }),
     });
   }
+
+  // ============================================
+  // Goal Wizard API
+  // ============================================
+
+  // Present Levels
+  async getPresentLevelsHelpers(studentId: string, goalArea?: string): Promise<PresentLevelsHelpers> {
+    const params = new URLSearchParams();
+    if (goalArea) params.append('goalArea', goalArea);
+    const queryString = params.toString();
+    return this.fetch(`/api/students/${studentId}/present-levels/helpers${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async generatePresentLevels(studentId: string, goalArea?: string, planId?: string): Promise<PresentLevelData> {
+    return this.fetch(`/api/students/${studentId}/present-levels/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ goalArea, planId }),
+    });
+  }
+
+  async getGoalContext(studentId: string, goalArea?: string): Promise<{
+    student: { id: string; firstName: string; lastName: string; grade: string };
+    recentStatuses: Array<{ scope: string; code: string; summary: string | null; effectiveDate: string }>;
+    artifactComparisons: Array<{ id: string; artifactDate: string; description: string | null; analysisText: string | null }>;
+    existingGoals: Array<{ id: string; area: string; annualGoalText: string }>;
+  }> {
+    const params = new URLSearchParams();
+    if (goalArea) params.append('goalArea', goalArea);
+    const queryString = params.toString();
+    return this.fetch(`/api/students/${studentId}/goal-context${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Goal Templates
+  async getGoalTemplates(area?: string, gradeBand?: string): Promise<{ templates: Record<string, GoalTemplate[]> | GoalTemplate[] }> {
+    const params = new URLSearchParams();
+    if (area) params.append('area', area);
+    if (gradeBand) params.append('gradeBand', gradeBand);
+    const queryString = params.toString();
+    return this.fetch(`/api/goal-templates${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Goal Draft Generation
+  async generateGoalDraft(data: {
+    planId: string;
+    goalArea: string;
+    userPrompt?: string;
+    templateId?: string;
+    linkedArtifactIds?: string[];
+    presentLevels?: {
+      currentPerformance: string;
+      strengthsNoted: string[];
+      challengesNoted: string[];
+      recentProgress: string;
+      dataSourceSummary: string;
+    };
+  }): Promise<{ draft: GoalDraft }> {
+    return this.fetch('/api/goal-wizard/draft', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Wizard Sessions
+  async startWizardSession(planId: string, goalArea: string, linkedArtifactIds?: string[]): Promise<{ sessionId: string; message: string }> {
+    return this.fetch('/api/goal-wizard/session/start', {
+      method: 'POST',
+      body: JSON.stringify({ planId, goalArea, linkedArtifactIds }),
+    });
+  }
+
+  async sendWizardMessage(sessionId: string, message: string): Promise<{ response: string; currentDraft: GoalDraft | null }> {
+    return this.fetch(`/api/goal-wizard/session/${sessionId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+
+  async getWizardSession(sessionId: string): Promise<{ goalArea: string; currentDraft: GoalDraft | null; messageCount: number }> {
+    return this.fetch(`/api/goal-wizard/session/${sessionId}`);
+  }
+
+  async saveWizardDraft(sessionId: string): Promise<{ goalId: string; message: string }> {
+    return this.fetch(`/api/goal-wizard/session/${sessionId}/save`, {
+      method: 'POST',
+    });
+  }
+
+  // Goal Validation
+  async quickValidateGoal(goalText: string): Promise<QuickValidationResult> {
+    return this.fetch('/api/goal-wizard/validate/quick', {
+      method: 'POST',
+      body: JSON.stringify({ goalText }),
+    });
+  }
+
+  async validateGoal(data: {
+    annualGoalText: string;
+    area: string;
+    objectives?: Array<{ objectiveText: string; measurementCriteria?: string }>;
+    baselineDescription?: string;
+    studentGrade?: string;
+  }): Promise<ValidationResult> {
+    return this.fetch('/api/goal-wizard/validate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async validateGoalWithAI(data: {
+    annualGoalText: string;
+    area: string;
+    objectives?: Array<{ objectiveText: string; measurementCriteria?: string }>;
+    baselineDescription?: string;
+    studentGrade?: string;
+  }): Promise<ValidationResult> {
+    return this.fetch('/api/goal-wizard/validate/ai', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async improveGoal(data: {
+    annualGoalText: string;
+    area: string;
+    baselineDescription?: string;
+    studentGrade?: string;
+  }): Promise<{ improvedGoal: string; explanation: string }> {
+    return this.fetch('/api/goal-wizard/improve', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Goal Artifact Links
+  async linkArtifactToGoal(goalId: string, artifactComparisonId: string, relevanceNote?: string): Promise<{ link: GoalArtifactLink }> {
+    return this.fetch(`/api/goals/${goalId}/artifacts`, {
+      method: 'POST',
+      body: JSON.stringify({ artifactComparisonId, relevanceNote }),
+    });
+  }
+
+  async getGoalArtifacts(goalId: string): Promise<{ artifacts: GoalArtifactLink[] }> {
+    return this.fetch(`/api/goals/${goalId}/artifacts`);
+  }
+
+  async unlinkArtifactFromGoal(goalId: string, linkId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/goals/${goalId}/artifacts/${linkId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Goal Objectives
+  async getGoalObjectives(goalId: string): Promise<{ objectives: GoalObjective[] }> {
+    return this.fetch(`/api/goals/${goalId}/objectives`);
+  }
+
+  async addGoalObjective(goalId: string, data: {
+    objectiveText: string;
+    measurementCriteria?: string;
+    targetDate?: string;
+  }): Promise<{ objective: GoalObjective }> {
+    return this.fetch(`/api/goals/${goalId}/objectives`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateGoalObjective(goalId: string, objectiveId: string, data: {
+    objectiveText?: string;
+    measurementCriteria?: string;
+    targetDate?: string;
+  }): Promise<{ objective: GoalObjective }> {
+    return this.fetch(`/api/goals/${goalId}/objectives/${objectiveId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async completeGoalObjective(goalId: string, objectiveId: string): Promise<{ objective: GoalObjective }> {
+    return this.fetch(`/api/goals/${goalId}/objectives/${objectiveId}/complete`, {
+      method: 'POST',
+    });
+  }
+
+  async finalizeGoal(goalId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/goals/${goalId}/finalize`, {
+      method: 'POST',
+    });
+  }
 }
 
 export interface AdminStudent {
@@ -1280,6 +1469,91 @@ export interface ReferenceSchool {
   name: string;
   schoolType: SchoolType;
   districtId: string;
+}
+
+// Goal Wizard Types
+export interface PresentLevelData {
+  area: string;
+  currentPerformance: string;
+  strengthsNoted: string[];
+  challengesNoted: string[];
+  recentProgress: string;
+  dataSourceSummary: string;
+  suggestedGoalAreas?: string[];
+}
+
+export interface PresentLevelsHelpers {
+  statusSummary: Record<string, { latestCode: string; latestSummary: string | null }>;
+  artifactHighlights: Array<{ date: string; summary: string }>;
+  progressTrend: string;
+}
+
+export interface GoalObjective {
+  id?: string;
+  sequence: number;
+  objectiveText: string;
+  measurementCriteria?: string;
+  targetDate?: string;
+  isCompleted?: boolean;
+}
+
+export interface GoalDraft {
+  goalArea: string;
+  annualGoalText: string;
+  objectives: Array<{
+    sequence: number;
+    objectiveText: string;
+    measurementCriteria: string;
+    suggestedTargetWeeks: number;
+  }>;
+  baselineDescription: string;
+  measurementMethod: string;
+  progressSchedule: string;
+  comarReference: string | null;
+  rationale: string;
+}
+
+export interface GoalTemplate {
+  template: string;
+  comarRef: string;
+}
+
+export interface ValidationIssue {
+  type: 'error' | 'warning' | 'suggestion';
+  code: string;
+  message: string;
+  comarReference?: string;
+  suggestion?: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  score: number;
+  issues: ValidationIssue[];
+  comarCompliance: {
+    measurable: boolean;
+    gradeAligned: boolean;
+    needsBased: boolean;
+    geAccessEnabled: boolean;
+  };
+  suggestions: string[];
+}
+
+export interface QuickValidationResult {
+  status: 'good' | 'needs-work' | 'incomplete';
+  hints: string[];
+}
+
+export interface GoalArtifactLink {
+  linkId: string;
+  relevanceNote: string | null;
+  linkedAt: string;
+  id: string;
+  artifactDate: string;
+  description: string | null;
+  analysisText: string | null;
+  baselineFileUrl: string;
+  compareFileUrl: string;
 }
 
 // Artifact Compare Types

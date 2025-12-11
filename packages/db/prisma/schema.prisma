@@ -172,6 +172,7 @@ model Jurisdiction {
   planSchemas      PlanSchema[]           @relation("PlanSchemaJurisdiction")
   bestPracticeDocs BestPracticeDocument[] @relation("BestPracticeJurisdiction")
   formTemplates    FormTemplate[]         @relation("FormTemplateJurisdiction")
+  goalTemplates    GoalTemplate[]         @relation("GoalTemplateJurisdiction")
 
   @@unique([stateCode, districtCode])
   @@index([stateCode])
@@ -367,22 +368,102 @@ model Goal {
   area             GoalArea
   baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
   annualGoalText   String    @db.Text
-  shortTermObjectives Json?  // Array of short-term objectives
+  shortTermObjectives Json?  // Array of short-term objectives (legacy, use GoalObjective relation)
   progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
   targetDate       DateTime?
   isActive         Boolean   @default(true)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  // Present Levels and Wizard fields
+  presentLevelJson    Json?      // Structured present levels data from wizard
+  draftStatus         String?    // WIZARD_DRAFT, REVIEW, FINALIZED
+  comarAlignmentJson  Json?      // COMAR compliance validation data
+  templateSourceId    String?    // Reference to template used if any
+
   // Relations
   planInstanceId String
   planInstance   PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
   progressRecords GoalProgress[]
   workSamples    WorkSample[]
+  objectives     GoalObjective[]
+  artifactLinks  GoalArtifactLink[]
 
   @@unique([planInstanceId, goalCode])
   @@index([planInstanceId])
   @@index([area])
+  @@index([draftStatus])
+}
+
+// ============================================
+// GOAL OBJECTIVE MODEL (Short-Term Objectives)
+// ============================================
+
+model GoalObjective {
+  id           String   @id @default(uuid())
+  sequence     Int      // Order of the objective (1, 2, 3...)
+  objectiveText String  @db.Text
+  targetDate   DateTime?
+  measurementCriteria String? @db.Text // How progress will be measured
+  isCompleted  Boolean  @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  goalId String
+  goal   Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, sequence])
+  @@index([goalId])
+}
+
+// ============================================
+// GOAL ARTIFACT LINK MODEL (Links Artifact Comparisons to Goals)
+// ============================================
+
+model GoalArtifactLink {
+  id                   String   @id @default(uuid())
+  relevanceNote        String?  @db.Text // Why this artifact is relevant to this goal
+  linkedAt             DateTime @default(now())
+
+  // Relations
+  goalId               String
+  goal                 Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  artifactComparisonId String
+  artifactComparison   ArtifactComparison @relation(fields: [artifactComparisonId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, artifactComparisonId])
+  @@index([goalId])
+  @@index([artifactComparisonId])
+}
+
+// ============================================
+// GOAL TEMPLATE MODEL (Pre-built Goal Templates)
+// ============================================
+
+model GoalTemplate {
+  id                 String    @id @default(uuid())
+  title              String    // Short descriptive title
+  area               GoalArea
+  gradeBand          String?   // e.g., "K-2", "3-5", "6-8", "9-12"
+  goalTextTemplate   String    @db.Text // Template text with placeholders
+  objectivesTemplate Json?     // Array of objective templates
+  comarReference     String?   // Maryland COMAR reference (e.g., "13A.05.01.09")
+  measurementSuggestions Json? // Suggested measurement methods
+  isActive           Boolean   @default(true)
+  usageCount         Int       @default(0) // Track popularity
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  jurisdictionId     String?
+  jurisdiction       Jurisdiction? @relation("GoalTemplateJurisdiction", fields: [jurisdictionId], references: [id])
+
+  @@index([area])
+  @@index([gradeBand])
+  @@index([isActive])
+  @@index([jurisdictionId])
 }
 
 // ============================================
@@ -683,9 +764,9 @@ model StudentAccess {
 
 model ArtifactComparison {
   id               String   @id @default(uuid())
-  planInstanceId   String
+  planInstanceId   String?
   studentId        String
-  planTypeId       String
+  planTypeId       String?
 
   artifactDate     DateTime
   description      String?  @db.Text
@@ -700,10 +781,11 @@ model ArtifactComparison {
   updatedAt        DateTime @updatedAt
 
   // Relations
-  planInstance     PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  student          Student      @relation(fields: [studentId], references: [id])
-  planType         PlanType     @relation(fields: [planTypeId], references: [id])
-  createdBy        AppUser      @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+  planInstance     PlanInstance? @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  student          Student       @relation(fields: [studentId], references: [id])
+  planType         PlanType?     @relation(fields: [planTypeId], references: [id])
+  createdBy        AppUser       @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+  goalLinks        GoalArtifactLink[]
 
   @@index([planInstanceId])
   @@index([studentId])

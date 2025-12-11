@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan } from '@/lib/api';
+import { api, Plan, ArtifactComparison } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import { ServicesListEditor, ServiceItem } from '@/components/iep/ServicesListEditor';
 import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
 import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
+import { GoalWizardPanel } from '@/components/goals/GoalWizardPanel';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -27,6 +28,8 @@ export default function IEPInterviewPage() {
   const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
   const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
+  const [goalWizardOpen, setGoalWizardOpen] = useState(false);
+  const [availableArtifacts, setAvailableArtifacts] = useState<ArtifactComparison[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -70,6 +73,23 @@ export default function IEPInterviewPage() {
       checkGeneration();
     }
   }, [planId]);
+
+  // Load available artifacts for goal wizard
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        const result = await api.getStudentArtifactCompares(studentId);
+        setAvailableArtifacts(result.comparisons || []);
+      } catch (err) {
+        // Artifacts not available - silently fail
+        console.error('Failed to load artifacts:', err);
+      }
+    };
+
+    if (studentId) {
+      loadArtifacts();
+    }
+  }, [studentId]);
 
   const handleGenerateDraft = async (sectionKey: string, fieldKey: string) => {
     setGeneratingFields(prev => new Set(prev).add(fieldKey));
@@ -204,13 +224,21 @@ export default function IEPInterviewPage() {
 
               {currentSectionData.isGoalsSection ? (
                 <div className={styles.goalsSection}>
-                  <p>Manage goals in the Goals tab after saving the IEP.</p>
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => router.push(`/students/${studentId}/plans/${planId}/goals`)}
-                  >
-                    Manage Goals →
-                  </button>
+                  <p>Use the Goal Wizard to create COMAR-compliant goals with AI assistance, or manage existing goals.</p>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setGoalWizardOpen(true)}
+                    >
+                      Goal Wizard
+                    </button>
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => router.push(`/students/${studentId}/plans/${planId}/goals`)}
+                    >
+                      Manage Goals →
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className={styles.fields}>
@@ -402,6 +430,23 @@ export default function IEPInterviewPage() {
         isOpen={artifactWizardOpen}
         onClose={() => setArtifactWizardOpen(false)}
       />
+
+      {/* Goal Wizard Panel */}
+      {goalWizardOpen && (
+        <div className={styles.goalWizardOverlay}>
+          <GoalWizardPanel
+            planId={planId}
+            studentId={studentId}
+            studentGrade={plan.student.grade}
+            availableArtifacts={availableArtifacts}
+            onClose={() => setGoalWizardOpen(false)}
+            onGoalCreated={(goalId) => {
+              setGoalWizardOpen(false);
+              router.push(`/students/${studentId}/plans/${planId}/goals`);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

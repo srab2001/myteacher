@@ -33,6 +33,7 @@ import generationRoutes from './routes/generation.js';
 import behaviorRoutes from './routes/behavior.js';
 import artifactCompareRoutes from './routes/artifactCompare.js';
 import referenceRoutes from './routes/reference.js';
+import goalWizardRoutes from './routes/goalWizard.js';
 
 export function createApp(): Express {
   const app = express();
@@ -111,6 +112,8 @@ export function createApp(): Express {
   app.use('/api', artifactCompareRoutes); // Artifact compare routes (/api/plans/:planId/artifact-compare)
   app.use('/api/artifact-compare', artifactCompareRoutes); // For /api/artifact-compare/students/:studentId/artifact-compares
   app.use('/api/reference', referenceRoutes); // Reference data routes (states, districts, schools)
+  app.use('/api', goalWizardRoutes); // Goal wizard routes (present levels, draft, validation)
+  app.use('/api/goal-wizard', goalWizardRoutes); // Alternative mounting point
 
   // 404 handler
   app.use((_req, res) => {
