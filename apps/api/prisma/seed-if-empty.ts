@@ -6,21 +6,22 @@ async function main() {
   // Check if reference data already exists
   const stateCount = await prisma.state.count();
   const planTypeCount = await prisma.planType.count();
+  const jurisdictionCount = await prisma.jurisdiction.count();
 
-  // Always seed plan types if missing (even if states exist)
+  // Determine what needs seeding
   const needsPlanTypes = planTypeCount === 0;
+  const needsJurisdictions = jurisdictionCount === 0;
   const needsFullSeed = stateCount === 0;
 
-  if (!needsFullSeed && !needsPlanTypes) {
+  if (!needsFullSeed && !needsPlanTypes && !needsJurisdictions) {
     console.log('Reference data already exists, skipping seed.');
     return;
   }
 
-  if (needsFullSeed) {
-    console.log('No reference data found, running full seed...\n');
-  } else if (needsPlanTypes) {
-    console.log('Plan types missing, seeding plan types...\n');
-  }
+  console.log('Seeding missing data...');
+  console.log(`  States: ${stateCount > 0 ? 'exist' : 'missing'}`);
+  console.log(`  Jurisdictions: ${jurisdictionCount > 0 ? 'exist' : 'missing'}`);
+  console.log(`  PlanTypes: ${planTypeCount > 0 ? 'exist' : 'missing'}\n`);
 
   // ============================================
   // SEED STATES (only if full seed needed)
@@ -174,48 +175,55 @@ async function main() {
     }
     console.log(`  Created ${hcpssSchools.length} Howard County schools`);
   }
-
-  // ============================================
-  // SEED JURISDICTIONS (Legacy compatibility)
-  // ============================================
-  console.log('\nSeeding jurisdictions (legacy)...');
-
-  const marylandDistricts = [
-    { districtCode: 'AACPS', districtName: 'Anne Arundel County Public Schools' },
-    { districtCode: 'BCPS', districtName: 'Baltimore County Public Schools' },
-    { districtCode: 'BCPSS', districtName: 'Baltimore City Public Schools' },
-    { districtCode: 'CCPS', districtName: 'Carroll County Public Schools' },
-    { districtCode: 'FCPS', districtName: 'Frederick County Public Schools' },
-    { districtCode: 'HCPSS', districtName: 'Howard County Public School System' },
-    { districtCode: 'MCPS', districtName: 'Montgomery County Public Schools' },
-    { districtCode: 'PGCPS', districtName: "Prince George's County Public Schools" },
-    { districtCode: 'WCPS', districtName: 'Washington County Public Schools' },
-    { districtCode: 'HCPS', districtName: 'Harford County Public Schools' },
-  ];
-
-  for (const district of marylandDistricts) {
-    await prisma.jurisdiction.upsert({
-      where: { id: `md-${district.districtCode.toLowerCase()}` },
-      update: {},
-      create: {
-        id: `md-${district.districtCode.toLowerCase()}`,
-        stateCode: 'MD',
-        stateName: 'Maryland',
-        districtCode: district.districtCode,
-        districtName: district.districtName,
-      },
-    });
-  }
-  console.log(`  Created ${marylandDistricts.length} Maryland jurisdictions`);
   } // end if (needsFullSeed)
+
+  // ============================================
+  // SEED JURISDICTIONS (always if missing)
+  // ============================================
+  if (needsFullSeed || needsJurisdictions) {
+    console.log('\nSeeding jurisdictions...');
+
+    const marylandDistricts = [
+      { districtCode: 'AACPS', districtName: 'Anne Arundel County Public Schools' },
+      { districtCode: 'BCPS', districtName: 'Baltimore County Public Schools' },
+      { districtCode: 'BCPSS', districtName: 'Baltimore City Public Schools' },
+      { districtCode: 'CCPS', districtName: 'Carroll County Public Schools' },
+      { districtCode: 'FCPS', districtName: 'Frederick County Public Schools' },
+      { districtCode: 'HCPSS', districtName: 'Howard County Public School System' },
+      { districtCode: 'MCPS', districtName: 'Montgomery County Public Schools' },
+      { districtCode: 'PGCPS', districtName: "Prince George's County Public Schools" },
+      { districtCode: 'WCPS', districtName: 'Washington County Public Schools' },
+      { districtCode: 'HCPS', districtName: 'Harford County Public Schools' },
+    ];
+
+    for (const district of marylandDistricts) {
+      await prisma.jurisdiction.upsert({
+        where: { id: `md-${district.districtCode.toLowerCase()}` },
+        update: {},
+        create: {
+          id: `md-${district.districtCode.toLowerCase()}`,
+          stateCode: 'MD',
+          stateName: 'Maryland',
+          districtCode: district.districtCode,
+          districtName: district.districtName,
+        },
+      });
+    }
+    console.log(`  Created ${marylandDistricts.length} Maryland jurisdictions`);
+  }
 
   // ============================================
   // SEED PLAN TYPES AND SCHEMAS (always if missing)
   // ============================================
-  console.log('\nSeeding plan types and schemas...');
+  if (needsPlanTypes || needsJurisdictions || needsFullSeed) {
+    console.log('\nSeeding plan types and schemas...');
 
-  // Get all jurisdictions to create plan types for each
-  const jurisdictions = await prisma.jurisdiction.findMany();
+    // Get all jurisdictions to create plan types for each
+    const jurisdictions = await prisma.jurisdiction.findMany();
+
+    if (jurisdictions.length === 0) {
+      console.log('  Warning: No jurisdictions found. Cannot create plan types.');
+    }
 
   for (const jurisdiction of jurisdictions) {
     // Create IEP plan type
@@ -433,6 +441,7 @@ async function main() {
 
     console.log(`  Created plan types and schemas for ${jurisdiction.districtName}`);
   }
+  } // end if (needsPlanTypes || needsJurisdictions || needsFullSeed)
 
   console.log('\nSeeding complete!');
 }
