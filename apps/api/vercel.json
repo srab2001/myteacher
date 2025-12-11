@@ -1,10 +1,10 @@
 {
   "version": 2,
   "installCommand": "npm install --ignore-scripts && npm run postinstall",
-  "buildCommand": "npm run build",
   "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@3.0.0"
+    "api/index.ts": {
+      "runtime": "@vercel/node@3.0.0",
+      "includeFiles": "src/**,prisma/**,node_modules/**"
     }
   },
   "rewrites": [
