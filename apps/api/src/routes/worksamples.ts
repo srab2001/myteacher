@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, WorkSampleRating } from '../lib/db.js';
+import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import multer from 'multer';
 import path from 'path';
@@ -144,7 +144,7 @@ router.get('/:goalId/work-samples', requireAuth, requireOnboarded, async (req, r
 
 // Update work sample metadata
 const updateWorkSampleSchema = z.object({
-  rating: z.nativeEnum(WorkSampleRating).optional(),
+  rating: z.enum(['BELOW_TARGET', 'NEAR_TARGET', 'MEETS_TARGET', 'ABOVE_TARGET']).optional(),
   comment: z.string().optional(),
 });
 

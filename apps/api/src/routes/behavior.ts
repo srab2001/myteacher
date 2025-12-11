@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, BehaviorMeasurementType, Prisma } from '../lib/db.js';
+import { prisma, Prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requirePlanAccess, requireUpdatePlanPermission, requireBehaviorTargetAccess, requireBehaviorEventAccess } from '../middleware/permissions.js';
 
@@ -52,7 +52,7 @@ const createTargetSchema = z.object({
   definition: z.string().min(10),
   examples: z.string().optional(),
   nonExamples: z.string().optional(),
-  measurementType: z.nativeEnum(BehaviorMeasurementType),
+  measurementType: z.enum(['FREQUENCY', 'DURATION', 'INTERVAL', 'RATING']),
 });
 
 router.post('/plans/:planId/targets', requireAuth, requireOnboarded, requirePlanAccess('planId'), requireUpdatePlanPermission, async (req, res) => {

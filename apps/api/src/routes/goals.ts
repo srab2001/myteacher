@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, Prisma, GoalArea, ProgressLevel } from '../lib/db.js';
+import { prisma, Prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 
 const router = Router();
@@ -8,7 +8,7 @@ const router = Router();
 // Create a new goal for a plan
 const createGoalSchema = z.object({
   goalCode: z.string().min(1),
-  area: z.nativeEnum(GoalArea),
+  area: z.enum(['READING', 'WRITING', 'MATH', 'COMMUNICATION', 'SOCIAL_EMOTIONAL', 'BEHAVIOR', 'MOTOR_SKILLS', 'DAILY_LIVING', 'VOCATIONAL', 'OTHER']),
   annualGoalText: z.string().min(10),
   baselineJson: z.record(z.unknown()).optional(),
   shortTermObjectives: z.array(z.string()).optional(),
@@ -181,7 +181,7 @@ router.patch('/:goalId', requireAuth, requireOnboarded, async (req, res) => {
 
 // Quick progress entry (one-tap)
 const quickProgressSchema = z.object({
-  quickSelect: z.nativeEnum(ProgressLevel),
+  quickSelect: z.enum(['NOT_ADDRESSED', 'FULL_SUPPORT', 'SOME_SUPPORT', 'LOW_SUPPORT', 'MET_TARGET']),
   comment: z.string().optional(),
   date: z.string().optional(),
 });
@@ -232,7 +232,7 @@ router.post('/:goalId/progress/quick', requireAuth, requireOnboarded, async (req
 
 // Dictation progress entry
 const dictationProgressSchema = z.object({
-  quickSelect: z.nativeEnum(ProgressLevel),
+  quickSelect: z.enum(['NOT_ADDRESSED', 'FULL_SUPPORT', 'SOME_SUPPORT', 'LOW_SUPPORT', 'MET_TARGET']),
   comment: z.string().min(1), // Transcribed text
   measureJson: z.record(z.unknown()).optional(),
   date: z.string().optional(),
