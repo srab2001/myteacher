@@ -1476,7 +1476,6 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
       lastName: z.string().min(1, 'Last name is required'),
       dateOfBirth: z.string().optional(),
       grade: z.string().optional(),
-      schoolId: z.string().optional(),
       schoolName: z.string().optional(),
       districtName: z.string().optional(),
       jurisdictionId: z.string().optional(),
@@ -1514,28 +1513,6 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
       return res.status(400).json({ error: 'No jurisdiction found. Please provide a valid district name or jurisdiction ID.' });
     }
 
-    // If schoolId is provided, verify it exists and get school info
-    let schoolName = data.schoolName;
-    let districtName = data.districtName;
-
-    if (data.schoolId) {
-      const school = await prisma.school.findUnique({
-        where: { id: data.schoolId },
-        include: {
-          district: {
-            include: {
-              state: true,
-            },
-          },
-        },
-      });
-
-      if (school) {
-        schoolName = school.name;
-        districtName = school.district.name;
-      }
-    }
-
     const student = await prisma.student.create({
       data: {
         recordId,
@@ -1543,23 +1520,11 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
         lastName: data.lastName,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         grade: data.grade || null,
-        schoolId: data.schoolId || null,
-        schoolName: schoolName || null,
-        districtName: districtName || null,
+        schoolName: data.schoolName || null,
+        districtName: data.districtName || null,
         jurisdiction: { connect: { id: jurisdictionId } },
         teacher: { connect: { id: req.user!.id } },
         isActive: true,
-      },
-      include: {
-        school: {
-          include: {
-            district: {
-              include: {
-                state: true,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -1571,22 +1536,8 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
         lastName: student.lastName,
         dateOfBirth: student.dateOfBirth?.toISOString().split('T')[0] || null,
         grade: student.grade,
-        schoolId: student.schoolId,
         schoolName: student.schoolName,
         districtName: student.districtName,
-        school: student.school ? {
-          id: student.school.id,
-          name: student.school.name,
-          district: {
-            id: student.school.district.id,
-            name: student.school.district.name,
-            state: {
-              id: student.school.district.state.id,
-              code: student.school.district.state.code,
-              name: student.school.district.state.name,
-            },
-          },
-        } : null,
         isActive: student.isActive,
       },
     });
