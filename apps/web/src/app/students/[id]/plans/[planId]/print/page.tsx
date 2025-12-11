@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan, GoalArea, ProgressLevel, ServiceType, ServiceSetting } from '@/lib/api';
+import { api, Plan, GoalArea, ProgressLevel, ServiceType, ServiceSetting, ArtifactComparison } from '@/lib/api';
 import styles from './page.module.css';
 
 const GOAL_AREA_LABELS: Record<GoalArea, string> = {
@@ -57,6 +57,7 @@ export default function PrintIEPPage() {
   const planId = params.planId as string;
 
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [artifactComparisons, setArtifactComparisons] = useState<ArtifactComparison[]>([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
 
   useEffect(() => {
@@ -67,8 +68,12 @@ export default function PrintIEPPage() {
 
   const loadPlan = useCallback(async () => {
     try {
-      const { plan } = await api.getPlan(planId);
-      setPlan(plan);
+      const [planResult, comparisonsResult] = await Promise.all([
+        api.getPlan(planId),
+        api.getPlanArtifactCompares(planId).catch(() => ({ comparisons: [] })),
+      ]);
+      setPlan(planResult.plan);
+      setArtifactComparisons(comparisonsResult.comparisons || []);
     } catch (err) {
       console.error('Failed to load plan:', err);
     } finally {
@@ -321,6 +326,39 @@ export default function PrintIEPPage() {
             </>
           )}
         </section>
+
+        {/* Artifact Comparisons */}
+        {artifactComparisons.length > 0 && (
+          <section className={styles.section}>
+            <h2>Artifact Comparisons</h2>
+            <div className={styles.artifactsList}>
+              {artifactComparisons.map((comparison) => (
+                <div key={comparison.id} className={styles.artifactItem}>
+                  <div className={styles.artifactHeader}>
+                    <span className={styles.artifactDate}>
+                      {format(new Date(comparison.artifactDate), 'MMMM d, yyyy')}
+                    </span>
+                    {comparison.description && (
+                      <span className={styles.artifactDesc}>{comparison.description}</span>
+                    )}
+                  </div>
+                  {comparison.analysisText && (
+                    <div className={styles.artifactAnalysis}>
+                      <h4>Analysis</h4>
+                      <pre className={styles.analysisText}>{comparison.analysisText}</pre>
+                    </div>
+                  )}
+                  <div className={styles.artifactMeta}>
+                    <span>Created: {format(new Date(comparison.createdAt), 'MMM d, yyyy')}</span>
+                    {comparison.createdBy && typeof comparison.createdBy === 'string' && (
+                      <span> by {comparison.createdBy}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Signatures */}
         <section className={styles.section}>
