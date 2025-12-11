@@ -4,8 +4,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/db.js';
 import { env } from './env.js';
-// Import types for augmentation
-import '../types/express.js';
+// Note: Express.User type augmentation is in ../types/express.d.ts (auto-included by TypeScript)
 
 passport.serializeUser((user: Express.User, done) => {
   done(null, user.id);
