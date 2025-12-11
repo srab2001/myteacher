@@ -3,7 +3,7 @@
 
 import OpenAI from 'openai';
 import mammoth from 'mammoth';
-import { extractText } from 'unpdf';
+import PDFParser from 'pdf2json';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -95,12 +95,38 @@ export async function extractTextFromFile(
   // PDF files
   if (lowerMime === 'application/pdf' || lowerName.endsWith('.pdf')) {
     try {
-      const uint8Array = new Uint8Array(buffer);
-      const { text } = await extractText(uint8Array);
-      // text can be string[] (per-page) or string depending on options
-      if (Array.isArray(text)) {
-        return text.join('\n');
-      }
+      const text = await new Promise<string>((resolve, reject) => {
+        const pdfParser = new PDFParser();
+
+        pdfParser.on('pdfParser_dataReady', (pdfData) => {
+          // Extract text from all pages
+          const pages = pdfData.Pages || [];
+          const textParts: string[] = [];
+
+          for (const page of pages) {
+            const texts = page.Texts || [];
+            for (const textItem of texts) {
+              const runs = textItem.R || [];
+              for (const run of runs) {
+                if (run.T) {
+                  // Decode URI-encoded text
+                  textParts.push(decodeURIComponent(run.T));
+                }
+              }
+            }
+            textParts.push('\n'); // Page break
+          }
+
+          resolve(textParts.join(' ').trim());
+        });
+
+        pdfParser.on('pdfParser_dataError', (errData) => {
+          reject(new Error(errData.parserError?.toString() || 'PDF parsing failed'));
+        });
+
+        pdfParser.parseBuffer(buffer);
+      });
+
       return text || '';
     } catch (error) {
       console.error('PDF parsing error:', error);
