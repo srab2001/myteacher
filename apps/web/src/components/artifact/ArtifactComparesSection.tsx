@@ -10,17 +10,30 @@ interface ArtifactComparesSectionProps {
   studentId?: string;
   planId?: string;
   showPlanInfo?: boolean;
+  availablePlans?: Array<{ id: string; label: string; planTypeCode: string }>;
+  onAlignToPlan?: (comparisonId: string, planId: string) => Promise<void>;
+}
+
+// Helper to check if a URL points to an image file
+function isImageUrl(url: string): boolean {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+  const lowerUrl = url.toLowerCase();
+  return imageExtensions.some(ext => lowerUrl.includes(ext));
 }
 
 export function ArtifactComparesSection({
   studentId,
   planId,
   showPlanInfo = true,
+  availablePlans,
+  onAlignToPlan,
 }: ArtifactComparesSectionProps) {
   const [comparisons, setComparisons] = useState<ArtifactComparison[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedComparison, setSelectedComparison] = useState<ArtifactComparison | null>(null);
+  const [aligningId, setAligningId] = useState<string | null>(null);
+  const [selectedPlanForAlign, setSelectedPlanForAlign] = useState<string>('');
 
   useEffect(() => {
     async function loadComparisons() {
@@ -126,6 +139,61 @@ export function ArtifactComparesSection({
                 >
                   View Details
                 </button>
+                {/* Align to Plan functionality for unlinked comparisons */}
+                {!comparison.planInstanceId && availablePlans && availablePlans.length > 0 && onAlignToPlan && (
+                  aligningId === comparison.id ? (
+                    <div className={styles.alignForm}>
+                      <select
+                        className="form-select form-select-sm"
+                        value={selectedPlanForAlign}
+                        onChange={(e) => setSelectedPlanForAlign(e.target.value)}
+                      >
+                        <option value="">Select plan...</option>
+                        {availablePlans.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        disabled={!selectedPlanForAlign}
+                        onClick={async () => {
+                          if (selectedPlanForAlign) {
+                            await onAlignToPlan(comparison.id, selectedPlanForAlign);
+                            setAligningId(null);
+                            setSelectedPlanForAlign('');
+                            // Reload comparisons
+                            const result = studentId
+                              ? await api.getStudentArtifactCompares(studentId)
+                              : planId
+                                ? await api.getPlanArtifactCompares(planId)
+                                : { comparisons: [] };
+                            setComparisons(result.comparisons);
+                          }
+                        }}
+                      >
+                        Align
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => {
+                          setAligningId(null);
+                          setSelectedPlanForAlign('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-sm btn-outline"
+                      onClick={() => setAligningId(comparison.id)}
+                    >
+                      Align to Plan
+                    </button>
+                  )
+                )}
               </div>
             </div>
           ))}
@@ -169,23 +237,49 @@ export function ArtifactComparesSection({
 
               <div className={styles.detailSection}>
                 <h4>Files</h4>
-                <div className={styles.fileLinks}>
-                  <a
-                    href={selectedComparison.baselineFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.fileLink}
-                  >
-                    Baseline Artifact
-                  </a>
-                  <a
-                    href={selectedComparison.compareFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.fileLink}
-                  >
-                    Student Artifact
-                  </a>
+                <div className={styles.filesGrid}>
+                  <div className={styles.fileItem}>
+                    <span className={styles.fileLabel}>Baseline Artifact</span>
+                    {isImageUrl(selectedComparison.baselineFileUrl) ? (
+                      <div className={styles.imagePreview}>
+                        <img
+                          src={selectedComparison.baselineFileUrl}
+                          alt="Baseline artifact"
+                          className={styles.artifactImage}
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={selectedComparison.baselineFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.fileLink}
+                      >
+                        Download File
+                      </a>
+                    )}
+                  </div>
+                  <div className={styles.fileItem}>
+                    <span className={styles.fileLabel}>Student Artifact</span>
+                    {isImageUrl(selectedComparison.compareFileUrl) ? (
+                      <div className={styles.imagePreview}>
+                        <img
+                          src={selectedComparison.compareFileUrl}
+                          alt="Student artifact"
+                          className={styles.artifactImage}
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={selectedComparison.compareFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.fileLink}
+                      >
+                        Download File
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 

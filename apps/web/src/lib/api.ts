@@ -1222,6 +1222,13 @@ class ApiClient {
   async getPlanArtifactCompares(planId: string): Promise<{ comparisons: ArtifactComparison[] }> {
     return this.fetch(`/api/artifact-compare/plans/${planId}/artifact-compare`);
   }
+
+  async alignArtifactCompare(studentId: string, comparisonId: string, planId: string): Promise<ArtifactComparison> {
+    return this.fetch(`/api/artifact-compare/students/${studentId}/artifact-compares/${comparisonId}/align`, {
+      method: 'PATCH',
+      body: JSON.stringify({ planId }),
+    });
+  }
 }
 
 export interface AdminStudent {

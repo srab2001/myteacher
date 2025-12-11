@@ -490,7 +490,20 @@ export default function StudentDetailPage() {
             <div className={styles.sectionHeader}>
               <h3>Artifact Comparisons</h3>
             </div>
-            <ArtifactComparesSection studentId={studentId} showPlanInfo={true} />
+            <ArtifactComparesSection
+              studentId={studentId}
+              showPlanInfo={true}
+              availablePlans={studentPlans
+                .filter(p => p.status === 'DRAFT' || p.status === 'ACTIVE')
+                .map(p => ({
+                  id: p.id,
+                  label: `${p.planType} - ${format(new Date(p.startDate), 'MMM yyyy')}`,
+                  planTypeCode: p.planTypeCode,
+                }))}
+              onAlignToPlan={async (comparisonId, planId) => {
+                await api.alignArtifactCompare(studentId, comparisonId, planId);
+              }}
+            />
           </section>
         </div>
       </main>

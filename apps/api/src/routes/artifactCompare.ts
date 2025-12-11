@@ -527,6 +527,90 @@ router.get(
   }
 );
 
+// ============================================
+// PATCH /students/:studentId/artifact-compares/:comparisonId/align - Align comparison to a plan
+// ============================================
+router.patch(
+  '/students/:studentId/artifact-compares/:comparisonId/align',
+  requireAuth,
+  requireOnboarded,
+  requireStudentAccess('studentId'),
+  async (req, res, next) => {
+    try {
+      const { studentId, comparisonId } = req.params;
+      const { planId } = req.body;
+
+      if (!planId) {
+        return res.status(400).json({ error: 'planId is required' });
+      }
+
+      // Verify the comparison exists and belongs to this student
+      const comparison = await prisma.artifactComparison.findFirst({
+        where: {
+          id: comparisonId,
+          studentId,
+        },
+      });
+
+      if (!comparison) {
+        return res.status(404).json({ error: 'Artifact comparison not found' });
+      }
+
+      // Verify the plan exists and belongs to this student
+      const plan = await prisma.planInstance.findFirst({
+        where: {
+          id: planId,
+          studentId,
+        },
+        include: {
+          planType: true,
+        },
+      });
+
+      if (!plan) {
+        return res.status(404).json({ error: 'Plan not found or does not belong to this student' });
+      }
+
+      // Update the comparison to link to the plan
+      const updatedComparison = await prisma.artifactComparison.update({
+        where: { id: comparisonId },
+        data: {
+          planInstanceId: planId,
+          planTypeId: plan.planTypeId,
+        },
+        include: {
+          planType: {
+            select: { code: true, name: true },
+          },
+          planInstance: {
+            select: { id: true, label: true },
+          },
+          createdBy: {
+            select: { displayName: true },
+          },
+        },
+      });
+
+      res.json({
+        id: updatedComparison.id,
+        planInstanceId: updatedComparison.planInstanceId,
+        planLabel: updatedComparison.planInstance?.label,
+        planTypeCode: updatedComparison.planType.code,
+        planTypeName: updatedComparison.planType.name,
+        artifactDate: updatedComparison.artifactDate,
+        description: updatedComparison.description,
+        baselineFileUrl: updatedComparison.baselineFileUrl,
+        compareFileUrl: updatedComparison.compareFileUrl,
+        analysisText: updatedComparison.analysisText,
+        createdBy: updatedComparison.createdBy.displayName,
+        createdAt: updatedComparison.createdAt,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Helper function to get MIME type from filename
 function getMimeType(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
