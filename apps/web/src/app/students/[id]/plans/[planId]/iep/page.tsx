@@ -223,7 +223,10 @@ export default function IEPInterviewPage() {
             <div className={styles.section}>
               <h2>{currentSectionData.title}</h2>
 
-              {currentSectionData.isGoalsSection ? (
+              {/* Show Goal Wizard for goals sections - check isGoalsSection flag, section key, or goals field type */}
+              {(currentSectionData.isGoalsSection ||
+                currentSectionData.key === 'goals' ||
+                currentSectionData.fields?.some(f => f.type === 'goals')) ? (
                 <div className={styles.goalsSection}>
                   <p>Use the Goal Wizard to create COMAR-compliant goals with AI assistance, or manage existing goals.</p>
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
