@@ -5,28 +5,34 @@ const prisma = new PrismaClient();
 async function main() {
   // Check if reference data already exists
   const stateCount = await prisma.state.count();
+  const districtCount = await prisma.district.count();
+  const schoolCount = await prisma.school.count();
   const planTypeCount = await prisma.planType.count();
   const jurisdictionCount = await prisma.jurisdiction.count();
 
   // Determine what needs seeding
+  const needsStates = stateCount === 0;
+  const needsDistricts = districtCount === 0;
+  const needsSchools = schoolCount === 0;
   const needsPlanTypes = planTypeCount === 0;
   const needsJurisdictions = jurisdictionCount === 0;
-  const needsFullSeed = stateCount === 0;
 
-  if (!needsFullSeed && !needsPlanTypes && !needsJurisdictions) {
+  if (!needsStates && !needsDistricts && !needsSchools && !needsPlanTypes && !needsJurisdictions) {
     console.log('Reference data already exists, skipping seed.');
     return;
   }
 
   console.log('Seeding missing data...');
-  console.log(`  States: ${stateCount > 0 ? 'exist' : 'missing'}`);
-  console.log(`  Jurisdictions: ${jurisdictionCount > 0 ? 'exist' : 'missing'}`);
-  console.log(`  PlanTypes: ${planTypeCount > 0 ? 'exist' : 'missing'}\n`);
+  console.log(`  States: ${stateCount > 0 ? 'exist' : 'MISSING'}`);
+  console.log(`  Districts: ${districtCount > 0 ? 'exist' : 'MISSING'}`);
+  console.log(`  Schools: ${schoolCount > 0 ? 'exist' : 'MISSING'}`);
+  console.log(`  Jurisdictions: ${jurisdictionCount > 0 ? 'exist' : 'MISSING'}`);
+  console.log(`  PlanTypes: ${planTypeCount > 0 ? 'exist' : 'MISSING'}\n`);
 
   // ============================================
-  // SEED STATES (only if full seed needed)
+  // SEED STATES
   // ============================================
-  if (needsFullSeed) {
+  if (needsStates) {
   console.log('Seeding states...');
 
   const states = [
@@ -44,56 +50,77 @@ async function main() {
     stateRecords[state.code] = record.id;
     console.log(`  State: ${state.name} (${state.code})`);
   }
+  } // end if (needsStates)
 
   // ============================================
   // SEED DISTRICTS
   // ============================================
-  console.log('\nSeeding districts...');
+  if (needsDistricts) {
+    console.log('\nSeeding districts...');
 
-  const districts = [
-    // Maryland Districts
-    { stateCode: 'MD', code: 'HCPSS', name: 'Howard County Public School System' },
-    { stateCode: 'MD', code: 'AACPS', name: 'Anne Arundel County Public Schools' },
-    { stateCode: 'MD', code: 'BCPS', name: 'Baltimore County Public Schools' },
-    { stateCode: 'MD', code: 'BCPSS', name: 'Baltimore City Public Schools' },
-    { stateCode: 'MD', code: 'CCPS', name: 'Carroll County Public Schools' },
-    { stateCode: 'MD', code: 'FCPS', name: 'Frederick County Public Schools' },
-    { stateCode: 'MD', code: 'MCPS', name: 'Montgomery County Public Schools' },
-    { stateCode: 'MD', code: 'PGCPS', name: "Prince George's County Public Schools" },
-    { stateCode: 'MD', code: 'HCPS', name: 'Harford County Public Schools' },
-    // Virginia Districts
-    { stateCode: 'VA', code: 'FCPS', name: 'Fairfax County Public Schools' },
-    { stateCode: 'VA', code: 'LCPS', name: 'Loudoun County Public Schools' },
-    { stateCode: 'VA', code: 'PWCS', name: 'Prince William County Schools' },
-    // DC
-    { stateCode: 'DC', code: 'DCPS', name: 'District of Columbia Public Schools' },
-  ];
+    // Get existing states
+    const existingStates = await prisma.state.findMany();
+    const stateMap: Record<string, string> = {};
+    for (const s of existingStates) {
+      stateMap[s.code] = s.id;
+    }
 
-  const districtRecords: Record<string, string> = {};
+    const districts = [
+      // Maryland Districts
+      { stateCode: 'MD', code: 'HCPSS', name: 'Howard County Public School System' },
+      { stateCode: 'MD', code: 'AACPS', name: 'Anne Arundel County Public Schools' },
+      { stateCode: 'MD', code: 'BCPS', name: 'Baltimore County Public Schools' },
+      { stateCode: 'MD', code: 'BCPSS', name: 'Baltimore City Public Schools' },
+      { stateCode: 'MD', code: 'CCPS', name: 'Carroll County Public Schools' },
+      { stateCode: 'MD', code: 'FCPS', name: 'Frederick County Public Schools' },
+      { stateCode: 'MD', code: 'MCPS', name: 'Montgomery County Public Schools' },
+      { stateCode: 'MD', code: 'PGCPS', name: "Prince George's County Public Schools" },
+      { stateCode: 'MD', code: 'HCPS', name: 'Harford County Public Schools' },
+      // Virginia Districts
+      { stateCode: 'VA', code: 'FCPS', name: 'Fairfax County Public Schools' },
+      { stateCode: 'VA', code: 'LCPS', name: 'Loudoun County Public Schools' },
+      { stateCode: 'VA', code: 'PWCS', name: 'Prince William County Schools' },
+      // DC
+      { stateCode: 'DC', code: 'DCPS', name: 'District of Columbia Public Schools' },
+    ];
 
-  for (const district of districts) {
-    const stateId = stateRecords[district.stateCode];
-    if (!stateId) continue;
+    for (const district of districts) {
+      const stateId = stateMap[district.stateCode];
+      if (!stateId) {
+        console.log(`  Skipping ${district.name} - state ${district.stateCode} not found`);
+        continue;
+      }
 
-    const record = await prisma.district.create({
-      data: {
-        stateId,
-        code: district.code,
-        name: district.name,
-        isActive: true,
-      },
-    });
-    districtRecords[`${district.stateCode}-${district.code}`] = record.id;
-    console.log(`  District: ${district.name} (${district.stateCode})`);
-  }
+      await prisma.district.upsert({
+        where: {
+          stateId_code: { stateId, code: district.code },
+        },
+        update: {},
+        create: {
+          stateId,
+          code: district.code,
+          name: district.name,
+          isActive: true,
+        },
+      });
+      console.log(`  District: ${district.name} (${district.stateCode})`);
+    }
+  } // end if (needsDistricts)
 
   // ============================================
   // SEED SCHOOLS (Sample for HCPSS)
   // ============================================
-  console.log('\nSeeding schools (Howard County)...');
+  if (needsSchools) {
+    console.log('\nSeeding schools (Howard County)...');
 
-  const hcpssId = districtRecords['MD-HCPSS'];
-  if (hcpssId) {
+    // Find HCPSS district
+    const hcpssDistrict = await prisma.district.findFirst({
+      where: { code: 'HCPSS' },
+    });
+
+    if (!hcpssDistrict) {
+      console.log('  HCPSS district not found, skipping schools');
+    } else {
     const hcpssSchools: Array<{ name: string; schoolType: SchoolType }> = [
       // High Schools
       { name: 'Atholton High School', schoolType: 'HIGH' },
@@ -164,9 +191,13 @@ async function main() {
     ];
 
     for (const school of hcpssSchools) {
-      await prisma.school.create({
-        data: {
-          districtId: hcpssId,
+      await prisma.school.upsert({
+        where: {
+          districtId_name: { districtId: hcpssDistrict.id, name: school.name },
+        },
+        update: {},
+        create: {
+          districtId: hcpssDistrict.id,
           name: school.name,
           schoolType: school.schoolType,
           isActive: true,
@@ -174,13 +205,13 @@ async function main() {
       });
     }
     console.log(`  Created ${hcpssSchools.length} Howard County schools`);
-  }
-  } // end if (needsFullSeed)
+    }
+  } // end if (needsSchools)
 
   // ============================================
   // SEED JURISDICTIONS (always if missing)
   // ============================================
-  if (needsFullSeed || needsJurisdictions) {
+  if (needsJurisdictions) {
     console.log('\nSeeding jurisdictions...');
 
     const marylandDistricts = [
@@ -213,9 +244,9 @@ async function main() {
   }
 
   // ============================================
-  // SEED PLAN TYPES AND SCHEMAS (always if missing)
+  // SEED PLAN TYPES AND SCHEMAS (if missing)
   // ============================================
-  if (needsPlanTypes || needsJurisdictions || needsFullSeed) {
+  if (needsPlanTypes) {
     console.log('\nSeeding plan types and schemas...');
 
     // Get all jurisdictions to create plan types for each
@@ -441,7 +472,7 @@ async function main() {
 
     console.log(`  Created plan types and schemas for ${jurisdiction.districtName}`);
   }
-  } // end if (needsPlanTypes || needsJurisdictions || needsFullSeed)
+  } // end if (needsPlanTypes)
 
   console.log('\nSeeding complete!');
 }
