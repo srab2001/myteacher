@@ -43,3 +43,5 @@ apps/api/prisma/generated/
 # Misc
 *.tsbuildinfo
 .turbo/
+node-compile-cache/
+node-compile-cache/
