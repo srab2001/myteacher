@@ -367,6 +367,44 @@
   }
 }
 
+/* Artifact Compares Section */
+.artifactComparesContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-bottom: 5rem; /* Space for fixed print link */
+}
+
+.artifactComparesSection {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.artifactComparesSection h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.artifactSubsection {
+  margin-bottom: 2rem;
+}
+
+.artifactSubsection:last-child {
+  margin-bottom: 0;
+}
+
+.artifactSubsection h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
 @media (max-width: 768px) {
   .layout {
     flex-direction: column;
@@ -389,5 +427,9 @@
 
   .sectionBtn {
     white-space: nowrap;
+  }
+
+  .artifactComparesContainer {
+    padding: 1rem;
   }
 }

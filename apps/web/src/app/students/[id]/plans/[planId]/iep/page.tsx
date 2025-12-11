@@ -7,6 +7,7 @@ import { api, Plan } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import { ServicesListEditor, ServiceItem } from '@/components/iep/ServicesListEditor';
 import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
+import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -373,6 +374,23 @@ export default function IEPInterviewPage() {
         >
           View Printable IEP
         </button>
+      </div>
+
+      {/* Artifact Comparisons Section */}
+      <div className={styles.artifactComparesContainer}>
+        <div className={styles.artifactComparesSection}>
+          <h2>Artifact Compares</h2>
+
+          <div className={styles.artifactSubsection}>
+            <h3>This Plan</h3>
+            <ArtifactComparesSection planId={planId} />
+          </div>
+
+          <div className={styles.artifactSubsection}>
+            <h3>All Student Comparisons</h3>
+            <ArtifactComparesSection studentId={studentId} showPlanInfo={true} />
+          </div>
+        </div>
       </div>
 
       {/* Artifact Compare Wizard */}
