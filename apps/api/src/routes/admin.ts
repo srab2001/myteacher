@@ -1478,6 +1478,7 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
       grade: z.string().optional(),
       schoolName: z.string().optional(),
       districtName: z.string().optional(),
+      jurisdictionId: z.string().optional(),
     });
 
     const data = createStudentSchema.parse(req.body);
@@ -1491,6 +1492,33 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
       return res.status(409).json({ error: `Student with Record ID "${data.recordId}" already exists` });
     }
 
+    // Find jurisdiction - use provided ID, lookup by district name, or use user's jurisdiction
+    let jurisdictionId = data.jurisdictionId;
+
+    if (!jurisdictionId && data.districtName) {
+      // Try to find jurisdiction by district name (case-insensitive)
+      const jurisdiction = await prisma.jurisdiction.findFirst({
+        where: {
+          districtName: {
+            contains: data.districtName,
+            mode: 'insensitive',
+          },
+        },
+      });
+      if (jurisdiction) {
+        jurisdictionId = jurisdiction.id;
+      }
+    }
+
+    if (!jurisdictionId) {
+      // Fall back to user's jurisdiction
+      jurisdictionId = req.user?.jurisdictionId || undefined;
+    }
+
+    if (!jurisdictionId) {
+      return res.status(400).json({ error: 'No jurisdiction found. Please provide a valid district name or jurisdiction ID.' });
+    }
+
     const student = await prisma.student.create({
       data: {
         recordId: data.recordId,
@@ -1500,6 +1528,7 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
         grade: data.grade || null,
         schoolName: data.schoolName || null,
         districtName: data.districtName || null,
+        jurisdictionId: jurisdictionId,
         isActive: true,
       },
     });
