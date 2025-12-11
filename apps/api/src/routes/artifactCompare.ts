@@ -508,16 +508,16 @@ router.get(
       res.json({
         comparisons: comparisons.map((c) => ({
           id: c.id,
-          planInstanceId: c.planInstanceId,
+          planInstanceId: c.planInstanceId ?? null,
           planLabel: c.planInstance?.label ?? null,
-          planTypeCode: c.planType.code,
-          planTypeName: c.planType.name,
+          planTypeCode: c.planType?.code ?? 'UNKNOWN',
+          planTypeName: c.planType?.name ?? 'Unknown',
           artifactDate: c.artifactDate,
-          description: c.description,
+          description: c.description ?? null,
           baselineFileUrl: c.baselineFileUrl,
           compareFileUrl: c.compareFileUrl,
-          analysisText: c.analysisText,
-          createdBy: c.createdBy.displayName,
+          analysisText: c.analysisText ?? null,
+          createdBy: c.createdBy?.displayName ?? 'Unknown',
           createdAt: c.createdAt,
         })),
       });
