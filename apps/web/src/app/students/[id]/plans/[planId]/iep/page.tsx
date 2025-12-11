@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan, ArtifactComparison } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
@@ -232,12 +233,12 @@ export default function IEPInterviewPage() {
                     >
                       Goal Wizard
                     </button>
-                    <button
+                    <Link
+                      href={`/students/${studentId}/plans/${planId}/goals`}
                       className="btn btn-outline"
-                      onClick={() => router.push(`/students/${studentId}/plans/${planId}/goals`)}
                     >
                       Manage Goals →
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ) : (
