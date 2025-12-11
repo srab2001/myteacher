@@ -180,19 +180,92 @@ model Jurisdiction {
 }
 
 // ============================================
+// STATE MODEL (Reference Data)
+// ============================================
+
+model State {
+  id           String    @id @default(cuid())
+  code         String    @unique  // e.g., "MD", "VA", "DC"
+  name         String              // e.g., "Maryland", "Virginia"
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  districts    District[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+// ============================================
+// DISTRICT MODEL (Reference Data)
+// ============================================
+
+model District {
+  id           String    @id @default(cuid())
+  stateId      String
+  name         String              // e.g., "Howard County Public School System"
+  code         String              // e.g., "HCPSS"
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  state        State     @relation(fields: [stateId], references: [id])
+  schools      School[]
+
+  @@unique([stateId, code])
+  @@index([stateId])
+  @@index([isActive])
+}
+
+// ============================================
+// SCHOOL MODEL (Reference Data)
+// ============================================
+
+enum SchoolType {
+  ELEMENTARY
+  MIDDLE
+  HIGH
+  K8
+  K12
+  OTHER
+}
+
+model School {
+  id           String     @id @default(cuid())
+  districtId   String
+  name         String              // e.g., "Wilde Lake High School"
+  code         String?             // Optional school code
+  schoolType   SchoolType @default(OTHER)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  district     District   @relation(fields: [districtId], references: [id])
+  students     Student[]
+
+  @@unique([districtId, name])
+  @@index([districtId])
+  @@index([isActive])
+}
+
+// ============================================
 // STUDENT MODEL
 // ============================================
 
 model Student {
   id            String    @id @default(uuid())
-  recordId      String    @unique  // Stable, human-readable ID (e.g., "HCPSS-000123")
+  recordId      String    @unique  // System-generated ID (e.g., "STU-000123")
   externalId    String?             // External SIS ID if used
   firstName     String
   lastName      String
-  dateOfBirth   DateTime
-  grade         String
-  schoolName    String
-  districtName  String?
+  dateOfBirth   DateTime?
+  grade         String?
+  schoolName    String?             // Legacy field for backwards compatibility
+  districtName  String?             // Legacy field for backwards compatibility
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -202,6 +275,8 @@ model Student {
   jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
   teacherId      String
   teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
+  schoolId       String?
+  school         School?         @relation(fields: [schoolId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
@@ -212,6 +287,7 @@ model Student {
   @@index([externalId])
   @@index([lastName, firstName])
   @@index([teacherId])
+  @@index([schoolId])
 }
 
 // ============================================

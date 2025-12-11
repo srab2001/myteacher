@@ -1131,11 +1131,11 @@ class ApiClient {
   }
 
   async createStudent(data: {
-    recordId: string;
     firstName: string;
     lastName: string;
     dateOfBirth?: string;
     grade?: string;
+    schoolId?: string;
     schoolName?: string;
     districtName?: string;
   }): Promise<{ student: AdminStudent }> {
@@ -1143,6 +1143,19 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // Reference Data API (States, Districts, Schools)
+  async getReferenceStates(): Promise<ReferenceState[]> {
+    return this.fetch('/api/reference/states');
+  }
+
+  async getReferenceDistricts(stateId: string): Promise<ReferenceDistrict[]> {
+    return this.fetch(`/api/reference/states/${stateId}/districts`);
+  }
+
+  async getReferenceSchools(districtId: string): Promise<ReferenceSchool[]> {
+    return this.fetch(`/api/reference/districts/${districtId}/schools`);
   }
 
   // ============================================
@@ -1209,10 +1222,48 @@ export interface AdminStudent {
   lastName: string;
   dateOfBirth: string | null;
   grade: string | null;
+  schoolId: string | null;
   schoolName: string | null;
   districtName: string | null;
   isActive: boolean;
   createdAt?: string;
+  school?: {
+    id: string;
+    name: string;
+    district: {
+      id: string;
+      name: string;
+      state: {
+        id: string;
+        code: string;
+        name: string;
+      };
+    };
+  } | null;
+}
+
+// Reference Data Types
+export type SchoolType = 'ELEMENTARY' | 'MIDDLE' | 'HIGH' | 'K8' | 'K12' | 'OTHER';
+
+export interface ReferenceState {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface ReferenceDistrict {
+  id: string;
+  code: string;
+  name: string;
+  stateId: string;
+}
+
+export interface ReferenceSchool {
+  id: string;
+  code: string | null;
+  name: string;
+  schoolType: SchoolType;
+  districtId: string;
 }
 
 // Artifact Compare Types

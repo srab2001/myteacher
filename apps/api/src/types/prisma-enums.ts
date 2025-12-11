@@ -70,6 +70,14 @@ export type PriorPlanSource =
   | 'UPLOADED'
   | 'SIS_IMPORT';
 
+export type SchoolType =
+  | 'ELEMENTARY'
+  | 'MIDDLE'
+  | 'HIGH'
+  | 'K8'
+  | 'K12'
+  | 'OTHER';
+
 // Prisma namespace mock for InputJsonValue
 export namespace Prisma {
   export type InputJsonValue = string | number | boolean | null | { [key: string]: InputJsonValue } | InputJsonValue[];

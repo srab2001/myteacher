@@ -31,6 +31,7 @@ import adminRoutes from './routes/admin.js';
 import generationRoutes from './routes/generation.js';
 import behaviorRoutes from './routes/behavior.js';
 import artifactCompareRoutes from './routes/artifactCompare.js';
+import referenceRoutes from './routes/reference.js';
 
 export function createApp(): Express {
   const app = express();
@@ -107,6 +108,7 @@ export function createApp(): Express {
   app.use('/api/behavior-targets', behaviorRoutes); // Behavior target routes
   app.use('/api/behavior-events', behaviorRoutes); // Behavior event routes
   app.use('/api', artifactCompareRoutes); // Artifact compare routes (/api/plans/:planId/artifact-compare)
+  app.use('/api/reference', referenceRoutes); // Reference data routes (states, districts, schools)
 
   // 404 handler
   app.use((_req, res) => {
