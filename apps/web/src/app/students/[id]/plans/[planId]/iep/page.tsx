@@ -223,10 +223,27 @@ export default function IEPInterviewPage() {
             <div className={styles.section}>
               <h2>{currentSectionData.title}</h2>
 
-              {/* Show Goal Wizard for goals sections - check isGoalsSection flag, section key, or goals field type */}
+              {/* Debug: Log section data to help identify issues */}
+              {(() => {
+                const isGoals = currentSectionData.isGoalsSection ||
+                  currentSectionData.key === 'goals' ||
+                  currentSectionData.title?.toLowerCase().includes('goal') ||
+                  currentSectionData.fields?.some((f: { type?: string }) => f.type === 'goals');
+                console.log('Section check:', {
+                  key: currentSectionData.key,
+                  title: currentSectionData.title,
+                  isGoalsSection: currentSectionData.isGoalsSection,
+                  hasGoalsField: currentSectionData.fields?.some((f: { type?: string }) => f.type === 'goals'),
+                  isGoals
+                });
+                return null;
+              })()}
+
+              {/* Show Goal Wizard for goals sections - check multiple conditions for robustness */}
               {(currentSectionData.isGoalsSection ||
                 currentSectionData.key === 'goals' ||
-                currentSectionData.fields?.some(f => f.type === 'goals')) ? (
+                currentSectionData.title?.toLowerCase().includes('goal') ||
+                currentSectionData.fields?.some((f: { type?: string }) => f.type === 'goals')) ? (
                 <div className={styles.goalsSection}>
                   <p>Use the Goal Wizard to create COMAR-compliant goals with AI assistance, or manage existing goals.</p>
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -236,6 +253,7 @@ export default function IEPInterviewPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        console.log('Goal Wizard button clicked, setting goalWizardOpen to true');
                         setGoalWizardOpen(true);
                       }}
                     >
@@ -441,6 +459,10 @@ export default function IEPInterviewPage() {
       />
 
       {/* Goal Wizard Panel */}
+      {(() => {
+        console.log('Goal Wizard render check:', { goalWizardOpen, hasPlan: !!plan });
+        return null;
+      })()}
       {goalWizardOpen && plan && (
         <div className={styles.goalWizardOverlay} onClick={(e) => {
           // Only close if clicking the overlay itself, not the panel
