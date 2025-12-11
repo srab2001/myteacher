@@ -1,7 +1,5 @@
-// Use require for Prisma to avoid ESM/CJS bundling issues in serverless
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const { PrismaClient, Prisma } = require('@prisma/client');
+// Import from local generated folder for reliable serverless bundling
+import { PrismaClient, Prisma } from '../../prisma/generated/client/index.js';
 
 // Global prisma client for serverless
 const globalForPrisma = globalThis as unknown as {
