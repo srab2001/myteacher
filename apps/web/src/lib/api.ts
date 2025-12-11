@@ -981,7 +981,7 @@ class ApiClient {
     if (from) params.append('from', from);
     if (to) params.append('to', to);
     const queryString = params.toString();
-    return this.fetch(`/api/reports/students/${studentId}/iep-progress${queryString ? `?${queryString}` : ''}`);
+    return this.fetch(`/api/students/${studentId}/iep-progress${queryString ? `?${queryString}` : ''}`);
   }
 
   async getServiceMinutesReport(studentId: string, from?: string, to?: string): Promise<ServiceMinutesReport> {
@@ -989,7 +989,7 @@ class ApiClient {
     if (from) params.append('from', from);
     if (to) params.append('to', to);
     const queryString = params.toString();
-    return this.fetch(`/api/reports/students/${studentId}/services${queryString ? `?${queryString}` : ''}`);
+    return this.fetch(`/api/students/${studentId}/service-minutes${queryString ? `?${queryString}` : ''}`);
   }
 
   // Phase 4: Admin Schema API
