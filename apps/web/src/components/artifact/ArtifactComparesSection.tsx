@@ -51,8 +51,9 @@ export function ArtifactComparesSection({
           return;
         }
 
-        setComparisons(result.comparisons);
+        setComparisons(Array.isArray(result?.comparisons) ? result.comparisons : []);
       } catch (err) {
+        console.error('Failed to load artifact comparisons:', err);
         setError(mapApiErrorToMessage(err));
       } finally {
         setLoading(false);

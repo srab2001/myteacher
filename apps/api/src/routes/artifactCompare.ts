@@ -509,7 +509,7 @@ router.get(
         comparisons: comparisons.map((c) => ({
           id: c.id,
           planInstanceId: c.planInstanceId,
-          planLabel: c.planInstance.label,
+          planLabel: c.planInstance?.label ?? null,
           planTypeCode: c.planType.code,
           planTypeName: c.planType.name,
           artifactDate: c.artifactDate,
