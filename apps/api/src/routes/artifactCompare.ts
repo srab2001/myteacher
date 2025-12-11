@@ -497,7 +497,7 @@ router.get(
             select: { code: true, name: true },
           },
           planInstance: {
-            select: { id: true, label: true },
+            select: { id: true, status: true, startDate: true },
           },
           createdBy: {
             select: { displayName: true },
@@ -509,7 +509,7 @@ router.get(
         comparisons: comparisons.map((c) => ({
           id: c.id,
           planInstanceId: c.planInstanceId ?? null,
-          planLabel: c.planInstance?.label ?? null,
+          planLabel: c.planInstance ? `${c.planInstance.status} - ${new Date(c.planInstance.startDate).toLocaleDateString()}` : null,
           planTypeCode: c.planType?.code ?? 'UNKNOWN',
           planTypeName: c.planType?.name ?? 'Unknown',
           artifactDate: c.artifactDate,
@@ -583,7 +583,7 @@ router.patch(
             select: { code: true, name: true },
           },
           planInstance: {
-            select: { id: true, label: true },
+            select: { id: true, status: true, startDate: true },
           },
           createdBy: {
             select: { displayName: true },
@@ -594,7 +594,7 @@ router.patch(
       res.json({
         id: updatedComparison.id,
         planInstanceId: updatedComparison.planInstanceId,
-        planLabel: updatedComparison.planInstance?.label,
+        planLabel: updatedComparison.planInstance ? `${updatedComparison.planInstance.status} - ${new Date(updatedComparison.planInstance.startDate).toLocaleDateString()}` : null,
         planTypeCode: updatedComparison.planType.code,
         planTypeName: updatedComparison.planType.name,
         artifactDate: updatedComparison.artifactDate,
