@@ -218,7 +218,7 @@ export function ArtifactCompareWizard({
                   <input
                     ref={baselineInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx,.txt,.md,.rtf"
+                    accept=".pdf,.doc,.docx,.txt,.md,.rtf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                     onChange={(e) => handleFileChange(e, setBaselineFile)}
                     style={{ display: 'none' }}
                   />
@@ -250,7 +250,7 @@ export function ArtifactCompareWizard({
                   <input
                     ref={compareInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx,.txt,.md,.rtf"
+                    accept=".pdf,.doc,.docx,.txt,.md,.rtf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                     onChange={(e) => handleFileChange(e, setCompareFile)}
                     style={{ display: 'none' }}
                   />
@@ -278,7 +278,7 @@ export function ArtifactCompareWizard({
               </div>
 
               <p className={styles.fileNote}>
-                Supported formats: PDF, DOC, DOCX, TXT, MD, RTF
+                Supported formats: PDF, DOC, DOCX, TXT, MD, RTF, JPEG, PNG, GIF, WEBP
               </p>
 
               <div className={styles.actions}>
