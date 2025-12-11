@@ -843,6 +843,110 @@ router.patch('/schemas/:id/fields', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /admin/schemas/:id/fields - Add a new field to a schema section
+router.post('/schemas/:id/fields', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bodySchema = z.object({
+      sectionKey: z.string().min(1, 'Section key is required'),
+      fieldKey: z.string().min(1, 'Field key is required'),
+      label: z.string().min(1, 'Label is required'),
+      type: z.enum(['text', 'textarea', 'date', 'select', 'checkbox', 'number']),
+      required: z.boolean().default(false),
+      options: z.array(z.string()).optional(), // For select type
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    // Parse existing schema fields
+    const schemaFields = schema.fields as {
+      sections?: Array<{
+        key: string;
+        title: string;
+        order?: number;
+        isGoalsSection?: boolean;
+        fields?: Array<{
+          key: string;
+          label: string;
+          type: string;
+          required?: boolean;
+          placeholder?: string;
+          options?: string[];
+        }>;
+      }>;
+    };
+
+    if (!schemaFields.sections) {
+      return res.status(400).json({ error: 'Schema has no sections defined' });
+    }
+
+    // Find the target section
+    const sectionIndex = schemaFields.sections.findIndex(s => s.key === data.sectionKey);
+    if (sectionIndex === -1) {
+      return res.status(404).json({ error: `Section "${data.sectionKey}" not found in schema` });
+    }
+
+    // Check if field key already exists in section
+    const existingFields = schemaFields.sections[sectionIndex].fields || [];
+    if (existingFields.some(f => f.key === data.fieldKey)) {
+      return res.status(409).json({ error: `Field with key "${data.fieldKey}" already exists in this section` });
+    }
+
+    // Create the new field object
+    const newField: {
+      key: string;
+      label: string;
+      type: string;
+      required?: boolean;
+      options?: string[];
+    } = {
+      key: data.fieldKey,
+      label: data.label,
+      type: data.type,
+      required: data.required,
+    };
+
+    // Add options for select type
+    if (data.type === 'select' && data.options && data.options.length > 0) {
+      newField.options = data.options;
+    }
+
+    // Add the new field to the section
+    if (!schemaFields.sections[sectionIndex].fields) {
+      schemaFields.sections[sectionIndex].fields = [];
+    }
+    schemaFields.sections[sectionIndex].fields!.push(newField);
+
+    // Update the schema with the new fields
+    await prisma.planSchema.update({
+      where: { id },
+      data: {
+        fields: schemaFields,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Field "${data.label}" added to section "${schemaFields.sections[sectionIndex].title}"`
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Add field error:', error);
+    res.status(500).json({ error: 'Failed to add field' });
+  }
+});
+
 // POST /admin/schemas - Create a new schema version
 router.post('/schemas', requireAdmin, async (req, res) => {
   try {

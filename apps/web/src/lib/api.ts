@@ -1034,6 +1034,20 @@ class ApiClient {
     });
   }
 
+  async addSchemaField(schemaId: string, field: {
+    sectionKey: string;
+    fieldKey: string;
+    label: string;
+    type: string;
+    required: boolean;
+    options?: string[];
+  }): Promise<{ success: boolean; message: string }> {
+    return this.fetch(`/api/admin/schemas/${schemaId}/fields`, {
+      method: 'POST',
+      body: JSON.stringify(field),
+    });
+  }
+
   // PDF Export URLs
   getIepPdfUrl(studentId: string, planId: string): string {
     return `${API_BASE}/api/plans/students/${studentId}/plans/${planId}/iep-pdf`;

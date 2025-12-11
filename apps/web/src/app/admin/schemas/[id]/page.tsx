@@ -13,6 +13,23 @@ const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
   BEHAVIOR_PLAN: 'Behavior Plan',
 };
 
+const FIELD_TYPES = [
+  { value: 'text', label: 'Text Input' },
+  { value: 'textarea', label: 'Text Area (Multi-line)' },
+  { value: 'date', label: 'Date Picker' },
+  { value: 'select', label: 'Dropdown List' },
+  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'number', label: 'Number' },
+];
+
+interface NewFieldForm {
+  sectionKey: string;
+  label: string;
+  type: string;
+  required: boolean;
+  options: string; // comma-separated for select type
+}
+
 export default function SchemaDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -33,7 +50,18 @@ export default function SchemaDetailPage() {
   const [loadingFields, setLoadingFields] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<FieldConfigUpdate[]>([]);
   const [savingFields, setSavingFields] = useState(false);
-  const [showFieldEditor, setShowFieldEditor] = useState(false);
+  const [showFieldEditor, setShowFieldEditor] = useState(true); // Show by default
+
+  // Add Field Modal State
+  const [showAddFieldModal, setShowAddFieldModal] = useState(false);
+  const [newField, setNewField] = useState<NewFieldForm>({
+    sectionKey: '',
+    label: '',
+    type: 'text',
+    required: false,
+    options: '',
+  });
+  const [addingField, setAddingField] = useState(false);
 
   const canManageDocs = user?.role === 'ADMIN';
   const plansPerPage = 10;
@@ -124,18 +152,62 @@ export default function SchemaDetailPage() {
     }
   };
 
+  const openAddFieldModal = (sectionKey: string) => {
+    setNewField({
+      sectionKey,
+      label: '',
+      type: 'text',
+      required: false,
+      options: '',
+    });
+    setShowAddFieldModal(true);
+  };
+
+  const handleAddField = async () => {
+    if (!newField.label.trim()) {
+      setError('Field label is required');
+      return;
+    }
+
+    // Generate key from label
+    const fieldKey = newField.label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    setAddingField(true);
+    try {
+      await api.addSchemaField(schemaId, {
+        sectionKey: newField.sectionKey,
+        fieldKey,
+        label: newField.label.trim(),
+        type: newField.type,
+        required: newField.required,
+        options: newField.type === 'select'
+          ? newField.options.split(',').map(o => o.trim()).filter(o => o)
+          : undefined,
+      });
+
+      setShowAddFieldModal(false);
+      await loadSchema(); // Refresh schema
+      await loadFieldConfigs(); // Refresh field configs
+    } catch (err) {
+      console.error('Failed to add field:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add field');
+    } finally {
+      setAddingField(false);
+    }
+  };
+
   useEffect(() => {
     if (user?.isOnboarded && canManageDocs && schemaId) {
       loadSchema();
       loadPlans(1);
+      loadFieldConfigs(); // Load field configs immediately
     }
-  }, [user, canManageDocs, schemaId, loadSchema, loadPlans]);
+  }, [user, canManageDocs, schemaId, loadSchema, loadPlans, loadFieldConfigs]);
 
-  useEffect(() => {
-    if (showFieldEditor && fieldSections.length === 0) {
-      loadFieldConfigs();
-    }
-  }, [showFieldEditor, fieldSections.length, loadFieldConfigs]);
+  // Remove the separate useEffect for field editor since we now load by default
 
   const totalPages = Math.ceil(plansTotal / plansPerPage);
 
@@ -280,10 +352,10 @@ export default function SchemaDetailPage() {
         )}
       </section>
 
-      {/* Field Requirements Editor */}
+      {/* Field Configuration Editor */}
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2>Field Requirements</h2>
+          <h2>Edit Fields &amp; Requirements</h2>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {pendingChanges.length > 0 && (
               <button
@@ -294,33 +366,38 @@ export default function SchemaDetailPage() {
                 {savingFields ? 'Saving...' : `Save ${pendingChanges.length} Changes`}
               </button>
             )}
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => setShowFieldEditor(!showFieldEditor)}
-            >
-              {showFieldEditor ? 'Hide Editor' : 'Edit Required Fields'}
-            </button>
           </div>
         </div>
 
-        {showFieldEditor && (
-          loadingFields ? (
-            <div className="loading-container">
-              <div className="spinner" />
-            </div>
-          ) : (
-            <div className={styles.fieldEditorContainer}>
-              <p className={styles.editorHint}>
-                Check the boxes to mark fields as required. Changes are highlighted until saved.
-              </p>
-              {fieldSections.map((section, sectionIndex) => (
-                <div key={section.key} className={styles.editorSection}>
-                  <div className={styles.editorSectionHeader}>
-                    <span className={styles.sectionNumber}>{sectionIndex + 1}</span>
-                    <h4>{section.title}</h4>
-                  </div>
-                  <div className={styles.editorFieldsList}>
-                    {section.fields.map(field => (
+        {loadingFields ? (
+          <div className="loading-container">
+            <div className="spinner" />
+          </div>
+        ) : (
+          <div className={styles.fieldEditorContainer}>
+            <p className={styles.editorHint}>
+              Check the boxes to mark fields as required. Click &quot;+ Add Field&quot; to add new fields to a section.
+            </p>
+            {fieldSections.map((section, sectionIndex) => (
+              <div key={section.key} className={styles.editorSection}>
+                <div className={styles.editorSectionHeader}>
+                  <span className={styles.sectionNumber}>{sectionIndex + 1}</span>
+                  <h4>{section.title}</h4>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => openAddFieldModal(section.key)}
+                    style={{ marginLeft: 'auto' }}
+                  >
+                    + Add Field
+                  </button>
+                </div>
+                <div className={styles.editorFieldsList}>
+                  {section.fields.length === 0 ? (
+                    <div className={styles.editorField} style={{ justifyContent: 'center', color: 'var(--muted)' }}>
+                      No fields in this section. Click &quot;+ Add Field&quot; to add one.
+                    </div>
+                  ) : (
+                    section.fields.map(field => (
                       <label
                         key={field.key}
                         className={`${styles.editorField} ${field.hasOverride ? styles.hasOverride : ''}`}
@@ -337,12 +414,12 @@ export default function SchemaDetailPage() {
                           <span className={styles.overrideBadge}>Modified</span>
                         )}
                       </label>
-                    ))}
-                  </div>
+                    ))
+                  )}
                 </div>
-              ))}
-            </div>
-          )
+              </div>
+            ))}
+          </div>
         )}
       </section>
 
@@ -416,6 +493,98 @@ export default function SchemaDetailPage() {
           </>
         )}
       </section>
+
+      {/* Add Field Modal */}
+      {showAddFieldModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowAddFieldModal(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Add New Field</h3>
+              <button
+                className={styles.modalClose}
+                onClick={() => setShowAddFieldModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label>Field Label *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newField.label}
+                  onChange={e => setNewField({ ...newField, label: e.target.value })}
+                  placeholder="e.g., Student Phone Number"
+                />
+                <p className={styles.formHint}>
+                  This is the label that will be displayed to users.
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Field Type *</label>
+                <select
+                  className="form-select"
+                  value={newField.type}
+                  onChange={e => setNewField({ ...newField, type: e.target.value })}
+                >
+                  {FIELD_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {newField.type === 'select' && (
+                <div className={styles.formGroup}>
+                  <label>Dropdown Options *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newField.options}
+                    onChange={e => setNewField({ ...newField, options: e.target.value })}
+                    placeholder="Option 1, Option 2, Option 3"
+                  />
+                  <p className={styles.formHint}>
+                    Enter options separated by commas.
+                  </p>
+                </div>
+              )}
+
+              <div className={styles.formGroup}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={newField.required}
+                    onChange={e => setNewField({ ...newField, required: e.target.checked })}
+                  />
+                  Required field
+                </label>
+                <p className={styles.formHint}>
+                  If checked, users must fill in this field before saving.
+                </p>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button
+                className="btn btn-outline"
+                onClick={() => setShowAddFieldModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleAddField}
+                disabled={addingField || !newField.label.trim()}
+              >
+                {addingField ? 'Adding...' : 'Add Field'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
