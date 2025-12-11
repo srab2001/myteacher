@@ -493,7 +493,7 @@ export default function StudentDetailPage() {
             <ArtifactComparesSection
               studentId={studentId}
               showPlanInfo={true}
-              availablePlans={studentPlans
+              availablePlans={(studentPlans || [])
                 .filter(p => p.status === 'DRAFT' || p.status === 'ACTIVE')
                 .map(p => ({
                   id: p.id,

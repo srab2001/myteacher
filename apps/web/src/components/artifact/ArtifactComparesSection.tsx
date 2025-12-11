@@ -25,7 +25,7 @@ export function ArtifactComparesSection({
   studentId,
   planId,
   showPlanInfo = true,
-  availablePlans,
+  availablePlans = [],
   onAlignToPlan,
 }: ArtifactComparesSectionProps) {
   const [comparisons, setComparisons] = useState<ArtifactComparison[]>([]);
@@ -68,7 +68,7 @@ export function ArtifactComparesSection({
 
   if (loading) {
     return (
-      <div className={styles.loading}>
+      <div className={styles.loading || ''}>
         <div className="spinner" />
         <span>Loading artifact comparisons...</span>
       </div>
@@ -77,8 +77,8 @@ export function ArtifactComparesSection({
 
   if (error) {
     return (
-      <div className={styles.error}>
-        <p>{error}</p>
+      <div className={styles.error || ''}>
+        <p>{String(error)}</p>
       </div>
     );
   }
@@ -97,9 +97,9 @@ export function ArtifactComparesSection({
   };
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container || ''}>
       {comparisons.length === 0 ? (
-        <p className={styles.empty}>
+        <p className={styles.empty || ''}>
           No artifact comparisons yet. Use the &quot;Compare Artifacts&quot; feature on a plan to create one.
         </p>
       ) : (
