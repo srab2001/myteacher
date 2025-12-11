@@ -2,11 +2,17 @@
 // Handles ChatGPT-based comparison of baseline and student artifacts
 
 import OpenAI from 'openai';
-import * as pdfParseModule from 'pdf-parse';
 import mammoth from 'mammoth';
 
-// Handle both ESM and CJS exports
-const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+// Lazy-load pdf-parse to avoid pdfjs-dist crashing in serverless (no canvas/DOM)
+let pdfParse: ((buffer: Buffer) => Promise<{ text: string }>) | null = null;
+async function getPdfParse() {
+  if (!pdfParse) {
+    const pdfParseModule = await import('pdf-parse');
+    pdfParse = (pdfParseModule as any).default || pdfParseModule;
+  }
+  return pdfParse;
+}
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -98,7 +104,8 @@ export async function extractTextFromFile(
   // PDF files
   if (lowerMime === 'application/pdf' || lowerName.endsWith('.pdf')) {
     try {
-      const pdfData = await pdfParse(buffer);
+      const parser = await getPdfParse();
+      const pdfData = await parser(buffer);
       return pdfData.text || '';
     } catch (error) {
       console.error('PDF parsing error:', error);
