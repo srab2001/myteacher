@@ -5,8 +5,9 @@ import path from 'path';
 import fs from 'fs';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
-import { requirePlanAccess, requireUpdatePlanPermission } from '../middleware/permissions.js';
+import { requirePlanAccess, requireUpdatePlanPermission, requireStudentAccess } from '../middleware/permissions.js';
 import { compareArtifacts, compareArtifactsWithImages, extractTextFromFile, isImageMimeType } from '../services/artifactCompareService.js';
+import { Errors } from '../errors.js';
 
 const router = Router();
 
@@ -462,6 +463,66 @@ router.delete(
     } catch (error) {
       console.error('Artifact comparison delete error:', error);
       res.status(500).json({ error: 'Failed to delete artifact comparison' });
+    }
+  }
+);
+
+// ============================================
+// GET /students/:studentId/artifact-compares - List all comparisons for a student
+// ============================================
+router.get(
+  '/students/:studentId/artifact-compares',
+  requireAuth,
+  requireOnboarded,
+  requireStudentAccess('studentId'),
+  async (req, res, next) => {
+    try {
+      const { studentId } = req.params;
+
+      // Verify student exists
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+      });
+
+      if (!student) {
+        throw Errors.studentNotFound(studentId);
+      }
+
+      // Get all artifact comparisons for this student
+      const comparisons = await prisma.artifactComparison.findMany({
+        where: { studentId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          planType: {
+            select: { code: true, name: true },
+          },
+          planInstance: {
+            select: { id: true, label: true },
+          },
+          createdBy: {
+            select: { displayName: true },
+          },
+        },
+      });
+
+      res.json({
+        comparisons: comparisons.map((c) => ({
+          id: c.id,
+          planInstanceId: c.planInstanceId,
+          planLabel: c.planInstance.label,
+          planTypeCode: c.planType.code,
+          planTypeName: c.planType.name,
+          artifactDate: c.artifactDate,
+          description: c.description,
+          baselineFileUrl: c.baselineFileUrl,
+          compareFileUrl: c.compareFileUrl,
+          analysisText: c.analysisText,
+          createdBy: c.createdBy.displayName,
+          createdAt: c.createdAt,
+        })),
+      });
+    } catch (error) {
+      next(error);
     }
   }
 );

@@ -1213,6 +1213,15 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Student-level artifact compares
+  async getStudentArtifactCompares(studentId: string): Promise<{ comparisons: ArtifactComparison[] }> {
+    return this.fetch(`/api/artifact-compare/students/${studentId}/artifact-compares`);
+  }
+
+  async getPlanArtifactCompares(planId: string): Promise<{ comparisons: ArtifactComparison[] }> {
+    return this.fetch(`/api/artifact-compare/plans/${planId}/artifact-compare`);
+  }
 }
 
 export interface AdminStudent {
@@ -1270,16 +1279,17 @@ export interface ReferenceSchool {
 export interface ArtifactComparison {
   id: string;
   planInstanceId?: string;
+  planLabel?: string;
   artifactDate: string;
   description: string | null;
   baselineFileUrl: string;
   compareFileUrl: string;
   analysisText: string | null;
   studentName?: string;
-  planTypeCode?: string;
+  planTypeCode: string;
   planTypeName?: string;
   createdBy?: string;
-  createdAt?: string;
+  createdAt: string;
 }
 
 export const api = new ApiClient();
