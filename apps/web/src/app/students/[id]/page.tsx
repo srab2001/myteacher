@@ -485,6 +485,22 @@ export default function StudentDetailPage() {
             )}
           </section>
 
+          {/* IEP Reports Section - Independent Assessment Reviews */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3>IEP Reports</h3>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => router.push(`/students/${studentId}/iep-report/new`)}
+              >
+                Create IEP Report
+              </button>
+            </div>
+            <p className={styles.emptyMessage}>
+              Create a Review of Independent Assessment report when reviewing an independent educational evaluation (IEE).
+            </p>
+          </section>
+
           {/* Artifact Comparisons Section */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>

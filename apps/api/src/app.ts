@@ -34,6 +34,7 @@ import behaviorRoutes from './routes/behavior.js';
 import artifactCompareRoutes from './routes/artifactCompare.js';
 import referenceRoutes from './routes/reference.js';
 import goalWizardRoutes from './routes/goalWizard.js';
+import iepReportsRoutes from './routes/iepReports.js';
 
 export function createApp(): Express {
   const app = express();
@@ -114,6 +115,8 @@ export function createApp(): Express {
   app.use('/api/reference', referenceRoutes); // Reference data routes (states, districts, schools)
   app.use('/api', goalWizardRoutes); // Goal wizard routes (present levels, draft, validation)
   app.use('/api/goal-wizard', goalWizardRoutes); // Alternative mounting point
+  app.use('/api', iepReportsRoutes); // IEP Reports routes (Independent Assessment Reviews)
+  app.use('/api', iepReportsRoutes); // For /api/students/:studentId/iep-reports
 
   // 404 handler
   app.use((_req, res) => {

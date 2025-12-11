@@ -1432,6 +1432,191 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // ============================================
+  // IEP Independent Assessment Review (IEP Reports)
+  // Based on Howard County "Review of Independent Assessment" form
+  // ============================================
+
+  async getIEPReports(studentId: string): Promise<{ reviews: IEPIndependentAssessmentReview[] }> {
+    return this.fetch(`/api/students/${studentId}/iep-reports`);
+  }
+
+  async getIEPReport(reportId: string): Promise<{ review: IEPIndependentAssessmentReview }> {
+    return this.fetch(`/api/iep-reports/${reportId}`);
+  }
+
+  async createIEPReport(studentId: string, data: CreateIEPReportData): Promise<{ review: IEPIndependentAssessmentReview; message: string }> {
+    return this.fetch(`/api/students/${studentId}/iep-reports`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateIEPReport(reportId: string, data: Partial<CreateIEPReportData>): Promise<{ review: IEPIndependentAssessmentReview; message: string }> {
+    return this.fetch(`/api/iep-reports/${reportId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteIEPReport(reportId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/iep-reports/${reportId}`, {
+      method: 'DELETE',
+    });
+  }
+}
+
+// ============================================
+// IEP Independent Assessment Review Types
+// ============================================
+
+export type AssessmentType =
+  | 'AUDIOLOGICAL'
+  | 'EDUCATIONAL'
+  | 'OCCUPATIONAL_THERAPY'
+  | 'PHYSICAL_THERAPY'
+  | 'PSYCHOLOGICAL'
+  | 'SPEECH_LANGUAGE'
+  | 'OTHER';
+
+export interface IEPIndependentAssessmentReview {
+  id: string;
+  studentId: string;
+  planInstanceId?: string;
+
+  // Header
+  school?: string;
+  grade?: string;
+  dateOfBirth?: string;
+  dateOfReport?: string;
+  dateOfTeamReview?: string;
+  assessmentType: AssessmentType;
+  assessmentTypeOther?: string;
+
+  // Part I: Review by Qualified Personnel
+  schoolReviewerName?: string;
+  schoolReviewerTitle?: string;
+  schoolReviewerCredentials?: string;
+  examinerName?: string;
+  examinerTitle?: string;
+  examinerLicensed?: boolean;
+  examinerLicenseDetails?: string;
+  examinerQualified?: boolean;
+  examinerQualificationNotes?: string;
+  reportWrittenDatedSigned?: boolean;
+  materialsTechnicallySound?: boolean;
+  materialsFollowedInstructions?: boolean;
+  materialsInstructionsNotes?: string;
+  materialsLanguageAccurate?: boolean;
+  materialsLanguageNotes?: string;
+  materialsBiasFree?: boolean;
+  materialsBiasNotes?: string;
+  materialsValidPurpose?: boolean;
+  materialsValidNotes?: string;
+  resultsReflectAptitude?: boolean;
+  resultsReflectAptitudeNA?: boolean;
+  resultsNotes?: string;
+
+  // Part II: Review by Team
+  describesPerformanceAllAreas?: boolean;
+  performanceAreasNotes?: string;
+  includesVariedAssessmentData?: boolean;
+  assessmentDataNotes?: string;
+  includesInstructionalImplications?: boolean;
+  instructionalNotes?: string;
+
+  // Part III: Conclusions
+  findingsMatchData?: boolean;
+  findingsMatchDataNote?: string;
+  dataMatchExistingSchoolData?: boolean;
+  dataMatchExistingNote?: string;
+  recommendationsSupported?: boolean;
+  recommendationsToConsider?: string;
+  schoolAssessmentWaived?: boolean;
+  schoolAssessmentWaivedNote?: string;
+
+  // Part IV: IEP Teams Only
+  includesDataForIEPContent?: boolean;
+  iepContentNotes?: string;
+  disabilityConsistentWithCOMAR?: boolean;
+  comarDisabilityNotes?: string;
+
+  // Additional
+  additionalNotes?: string;
+  teamMembers?: Array<{ name: string; role: string }>;
+
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: { id: string; displayName: string };
+  student?: { id: string; firstName: string; lastName: string };
+  planInstance?: { id: string; startDate: string; status: string };
+}
+
+export interface CreateIEPReportData {
+  assessmentType: AssessmentType;
+  assessmentTypeOther?: string;
+  planInstanceId?: string;
+
+  // Header
+  school?: string;
+  grade?: string;
+  dateOfBirth?: string;
+  dateOfReport?: string;
+  dateOfTeamReview?: string;
+
+  // Part I
+  schoolReviewerName?: string;
+  schoolReviewerTitle?: string;
+  schoolReviewerCredentials?: string;
+  examinerName?: string;
+  examinerTitle?: string;
+  examinerLicensed?: boolean;
+  examinerLicenseDetails?: string;
+  examinerQualified?: boolean;
+  examinerQualificationNotes?: string;
+  reportWrittenDatedSigned?: boolean;
+  materialsTechnicallySound?: boolean;
+  materialsFollowedInstructions?: boolean;
+  materialsInstructionsNotes?: string;
+  materialsLanguageAccurate?: boolean;
+  materialsLanguageNotes?: string;
+  materialsBiasFree?: boolean;
+  materialsBiasNotes?: string;
+  materialsValidPurpose?: boolean;
+  materialsValidNotes?: string;
+  resultsReflectAptitude?: boolean;
+  resultsReflectAptitudeNA?: boolean;
+  resultsNotes?: string;
+
+  // Part II
+  describesPerformanceAllAreas?: boolean;
+  performanceAreasNotes?: string;
+  includesVariedAssessmentData?: boolean;
+  assessmentDataNotes?: string;
+  includesInstructionalImplications?: boolean;
+  instructionalNotes?: string;
+
+  // Part III
+  findingsMatchData?: boolean;
+  findingsMatchDataNote?: string;
+  dataMatchExistingSchoolData?: boolean;
+  dataMatchExistingNote?: string;
+  recommendationsSupported?: boolean;
+  recommendationsToConsider?: string;
+  schoolAssessmentWaived?: boolean;
+  schoolAssessmentWaivedNote?: string;
+
+  // Part IV
+  includesDataForIEPContent?: boolean;
+  iepContentNotes?: string;
+  disabilityConsistentWithCOMAR?: boolean;
+  comarDisabilityNotes?: string;
+
+  // Additional
+  additionalNotes?: string;
+  teamMembers?: Array<{ name: string; role: string }>;
 }
 
 export interface AdminStudent {

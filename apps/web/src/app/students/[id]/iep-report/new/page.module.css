@@ -1,0 +1,360 @@
+/* IEP Report Wizard Styles */
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: var(--color-error, #dc2626);
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--color-primary, #3b82f6);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.backBtn:hover {
+  text-decoration: underline;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.5rem;
+  color: var(--color-text, #111827);
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0;
+}
+
+/* Step Indicator */
+.stepIndicator {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--color-bg, #fff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.step:hover {
+  border-color: var(--color-primary, #3b82f6);
+}
+
+.step.active {
+  border-color: var(--color-primary, #3b82f6);
+  background: var(--color-primary-light, #eff6ff);
+}
+
+.step.completed {
+  border-color: var(--color-success, #10b981);
+}
+
+.stepNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-border, #e5e7eb);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.step.active .stepNumber {
+  background: var(--color-primary, #3b82f6);
+  color: white;
+}
+
+.step.completed .stepNumber {
+  background: var(--color-success, #10b981);
+  color: white;
+}
+
+.stepTitle {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Error Message */
+.errorMessage {
+  background: var(--color-error-light, #fef2f2);
+  border: 1px solid var(--color-error, #dc2626);
+  color: var(--color-error, #dc2626);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+/* Main Content */
+.main {
+  margin-bottom: 1.5rem;
+}
+
+.formSection {
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.formSection h2 {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+  color: var(--color-text, #111827);
+}
+
+.sectionDescription {
+  color: var(--color-text-secondary, #6b7280);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Read-only Section */
+.readOnlySection {
+  background: var(--color-bg-secondary, #f9fafb);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.readOnlySection h3 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.readOnlyFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.readOnlyFields .field {
+  margin: 0;
+}
+
+.readOnlyFields label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.readOnlyFields p {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text, #111827);
+}
+
+/* Field Group */
+.fieldGroup {
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  padding-top: 1.5rem;
+}
+
+.fieldGroup h3 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+  color: var(--color-text, #111827);
+}
+
+/* Field */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-text, #111827);
+}
+
+/* Radio Groups */
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radioGroup > label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-text, #111827);
+}
+
+.radioOptions {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.radioOptions label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.radioOptions input[type="radio"] {
+  cursor: pointer;
+}
+
+.radioGroup textarea {
+  margin-top: 0.5rem;
+}
+
+/* Footer Navigation */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.stepCount {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* Form Inputs */
+.container :global(.form-input),
+.container :global(.form-select),
+.container :global(.form-textarea) {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.container :global(.form-input):focus,
+.container :global(.form-select):focus,
+.container :global(.form-textarea):focus {
+  outline: none;
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.container :global(.form-textarea) {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Buttons */
+.container :global(.btn) {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.container :global(.btn-primary) {
+  background: var(--color-primary, #3b82f6);
+  color: white;
+  border: none;
+}
+
+.container :global(.btn-primary):hover:not(:disabled) {
+  background: var(--color-primary-dark, #2563eb);
+}
+
+.container :global(.btn-primary):disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.container :global(.btn-outline) {
+  background: transparent;
+  border: 1px solid var(--color-border, #d1d5db);
+  color: var(--color-text, #374151);
+}
+
+.container :global(.btn-outline):hover:not(:disabled) {
+  background: var(--color-bg-secondary, #f3f4f6);
+}
+
+.container :global(.btn-outline):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .stepIndicator {
+    flex-wrap: nowrap;
+  }
+
+  .step {
+    padding: 0.5rem;
+  }
+
+  .stepTitle {
+    display: none;
+  }
+
+  .radioOptions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .footer {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .stepCount {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+}
