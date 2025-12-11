@@ -3,16 +3,7 @@
 
 import OpenAI from 'openai';
 import mammoth from 'mammoth';
-
-// Lazy-load pdf-parse to avoid pdfjs-dist crashing in serverless (no canvas/DOM)
-let pdfParse: ((buffer: Buffer) => Promise<{ text: string }>) | null = null;
-async function getPdfParse() {
-  if (!pdfParse) {
-    const pdfParseModule = await import('pdf-parse');
-    pdfParse = (pdfParseModule as any).default || pdfParseModule;
-  }
-  return pdfParse;
-}
+import { extractText } from 'unpdf';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -104,9 +95,13 @@ export async function extractTextFromFile(
   // PDF files
   if (lowerMime === 'application/pdf' || lowerName.endsWith('.pdf')) {
     try {
-      const parser = await getPdfParse();
-      const pdfData = await parser(buffer);
-      return pdfData.text || '';
+      const uint8Array = new Uint8Array(buffer);
+      const { text } = await extractText(uint8Array);
+      // text can be string[] (per-page) or string depending on options
+      if (Array.isArray(text)) {
+        return text.join('\n');
+      }
+      return text || '';
     } catch (error) {
       console.error('PDF parsing error:', error);
       throw new Error('Failed to extract text from PDF');
