@@ -48,13 +48,16 @@ export function ArtifactComparesSection({
           result = await api.getPlanArtifactCompares(planId);
         } else {
           setComparisons([]);
+          setLoading(false);
           return;
         }
 
         setComparisons(Array.isArray(result?.comparisons) ? result.comparisons : []);
       } catch (err) {
         console.error('Failed to load artifact comparisons:', err);
-        setError(mapApiErrorToMessage(err));
+        // Ensure error is always a string
+        const errorMessage = mapApiErrorToMessage(err);
+        setError(typeof errorMessage === 'string' ? errorMessage : 'Failed to load comparisons');
       } finally {
         setLoading(false);
       }
@@ -108,10 +111,10 @@ export function ArtifactComparesSection({
                   <span className={styles.date}>
                     {format(new Date(comparison.artifactDate), 'MMM d, yyyy')}
                   </span>
-                  {showPlanInfo && (
+                  {showPlanInfo && comparison.planTypeCode && (
                     <span className={styles.planType}>
                       {getPlanTypeLabel(comparison.planTypeCode)}
-                      {comparison.planLabel && ` - ${comparison.planLabel}`}
+                      {comparison.planLabel && typeof comparison.planLabel === 'string' && ` - ${comparison.planLabel}`}
                     </span>
                   )}
                 </div>
@@ -124,13 +127,15 @@ export function ArtifactComparesSection({
                 </div>
               </div>
 
-              {comparison.description && (
+              {comparison.description && typeof comparison.description === 'string' && (
                 <p className={styles.description}>{comparison.description}</p>
               )}
 
               <div className={styles.itemMeta}>
                 <span>Created: {format(new Date(comparison.createdAt), 'MMM d, yyyy h:mm a')}</span>
-                {comparison.createdBy && <span> by {comparison.createdBy}</span>}
+                {comparison.createdBy && typeof comparison.createdBy === 'string' && (
+                  <span> by {comparison.createdBy}</span>
+                )}
               </div>
 
               <div className={styles.itemActions}>
