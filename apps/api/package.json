@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npx prisma@5.22.0 generate",
+    "build": "npx prisma@5.22.0 generate && npx prisma@5.22.0 db push --skip-generate",
     "postinstall": "npx prisma@5.22.0 generate",
     "prepare": "",
     "start": "node dist/index.js",
