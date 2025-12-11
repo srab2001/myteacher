@@ -786,3 +786,16 @@ model ArtifactComparison {
   @@index([planInstanceId])
   @@index([studentId])
 }
+
+// ============================================
+// SESSION MODEL (For connect-pg-simple)
+// ============================================
+
+model Session {
+  sid    String   @id @db.VarChar(255)
+  sess   Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], name: "IDX_session_expire")
+  @@map("session")
+}
