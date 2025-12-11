@@ -5,17 +5,27 @@ const prisma = new PrismaClient();
 async function main() {
   // Check if reference data already exists
   const stateCount = await prisma.state.count();
+  const planTypeCount = await prisma.planType.count();
 
-  if (stateCount > 0) {
+  // Always seed plan types if missing (even if states exist)
+  const needsPlanTypes = planTypeCount === 0;
+  const needsFullSeed = stateCount === 0;
+
+  if (!needsFullSeed && !needsPlanTypes) {
     console.log('Reference data already exists, skipping seed.');
     return;
   }
 
-  console.log('No reference data found, seeding...\n');
+  if (needsFullSeed) {
+    console.log('No reference data found, running full seed...\n');
+  } else if (needsPlanTypes) {
+    console.log('Plan types missing, seeding plan types...\n');
+  }
 
   // ============================================
-  // SEED STATES
+  // SEED STATES (only if full seed needed)
   // ============================================
+  if (needsFullSeed) {
   console.log('Seeding states...');
 
   const states = [
@@ -197,6 +207,232 @@ async function main() {
     });
   }
   console.log(`  Created ${marylandDistricts.length} Maryland jurisdictions`);
+  } // end if (needsFullSeed)
+
+  // ============================================
+  // SEED PLAN TYPES AND SCHEMAS (always if missing)
+  // ============================================
+  console.log('\nSeeding plan types and schemas...');
+
+  // Get all jurisdictions to create plan types for each
+  const jurisdictions = await prisma.jurisdiction.findMany();
+
+  for (const jurisdiction of jurisdictions) {
+    // Create IEP plan type
+    const iepType = await prisma.planType.upsert({
+      where: {
+        jurisdictionId_code: {
+          jurisdictionId: jurisdiction.id,
+          code: 'IEP',
+        },
+      },
+      update: {},
+      create: {
+        jurisdictionId: jurisdiction.id,
+        code: 'IEP',
+        name: 'Individualized Education Program',
+        description: 'IEP for students with disabilities',
+      },
+    });
+
+    // Create 504 plan type
+    const fiveOhFourType = await prisma.planType.upsert({
+      where: {
+        jurisdictionId_code: {
+          jurisdictionId: jurisdiction.id,
+          code: 'FIVE_OH_FOUR',
+        },
+      },
+      update: {},
+      create: {
+        jurisdictionId: jurisdiction.id,
+        code: 'FIVE_OH_FOUR',
+        name: '504 Plan',
+        description: 'Section 504 accommodation plan',
+      },
+    });
+
+    // Create Behavior plan type
+    const behaviorType = await prisma.planType.upsert({
+      where: {
+        jurisdictionId_code: {
+          jurisdictionId: jurisdiction.id,
+          code: 'BEHAVIOR_PLAN',
+        },
+      },
+      update: {},
+      create: {
+        jurisdictionId: jurisdiction.id,
+        code: 'BEHAVIOR_PLAN',
+        name: 'Behavior Intervention Plan',
+        description: 'Behavior support and intervention plan',
+      },
+    });
+
+    // Create schemas for each plan type
+    const iepSchema = {
+      sections: [
+        {
+          key: 'student_info',
+          title: 'Student Information',
+          fields: [
+            { key: 'student_name', label: 'Student Name', type: 'text', required: true },
+            { key: 'date_of_birth', label: 'Date of Birth', type: 'date', required: true },
+            { key: 'grade_level', label: 'Grade Level', type: 'text', required: true },
+          ],
+        },
+        {
+          key: 'present_levels',
+          title: 'Present Levels of Performance',
+          fields: [
+            { key: 'academic_performance', label: 'Academic Performance', type: 'textarea', required: true },
+            { key: 'functional_performance', label: 'Functional Performance', type: 'textarea', required: true },
+          ],
+        },
+        {
+          key: 'goals',
+          title: 'Annual Goals',
+          isGoalsSection: true,
+          fields: [],
+        },
+        {
+          key: 'services',
+          title: 'Special Education Services',
+          fields: [
+            { key: 'services_table', label: 'Services', type: 'services_table', required: false },
+          ],
+        },
+        {
+          key: 'accommodations',
+          title: 'Accommodations & Modifications',
+          fields: [
+            { key: 'accommodations_list', label: 'Accommodations', type: 'textarea', required: false },
+            { key: 'modifications_list', label: 'Modifications', type: 'textarea', required: false },
+          ],
+        },
+      ],
+    };
+
+    const fiveOhFourSchema = {
+      sections: [
+        {
+          key: 'student_info',
+          title: 'Student Information',
+          fields: [
+            { key: 'student_name', label: 'Student Name', type: 'text', required: true },
+            { key: 'date_of_birth', label: 'Date of Birth', type: 'date', required: true },
+            { key: 'grade_level', label: 'Grade Level', type: 'text', required: true },
+          ],
+        },
+        {
+          key: 'disability',
+          title: 'Disability Information',
+          fields: [
+            { key: 'disability_description', label: 'Nature of Disability', type: 'textarea', required: true },
+            { key: 'major_life_activity', label: 'Major Life Activity Affected', type: 'textarea', required: true },
+          ],
+        },
+        {
+          key: 'accommodations',
+          title: 'Accommodations',
+          fields: [
+            { key: 'classroom_accommodations', label: 'Classroom Accommodations', type: 'textarea', required: true },
+            { key: 'testing_accommodations', label: 'Testing Accommodations', type: 'textarea', required: false },
+          ],
+        },
+      ],
+    };
+
+    const behaviorSchema = {
+      sections: [
+        {
+          key: 'student_info',
+          title: 'Student Information',
+          fields: [
+            { key: 'student_name', label: 'Student Name', type: 'text', required: true },
+            { key: 'date_of_birth', label: 'Date of Birth', type: 'date', required: true },
+            { key: 'grade_level', label: 'Grade Level', type: 'text', required: true },
+          ],
+        },
+        {
+          key: 'behavior_summary',
+          title: 'Behavior Summary',
+          fields: [
+            { key: 'target_behaviors', label: 'Target Behaviors', type: 'textarea', required: true },
+            { key: 'function_of_behavior', label: 'Function of Behavior', type: 'textarea', required: true },
+          ],
+        },
+        {
+          key: 'interventions',
+          title: 'Interventions',
+          fields: [
+            { key: 'prevention_strategies', label: 'Prevention Strategies', type: 'textarea', required: true },
+            { key: 'replacement_behaviors', label: 'Replacement Behaviors', type: 'textarea', required: true },
+            { key: 'reinforcement_strategies', label: 'Reinforcement Strategies', type: 'textarea', required: false },
+          ],
+        },
+      ],
+    };
+
+    // Create IEP schema
+    await prisma.planSchema.upsert({
+      where: {
+        id: `${jurisdiction.id}-iep-v1`,
+      },
+      update: {},
+      create: {
+        id: `${jurisdiction.id}-iep-v1`,
+        planTypeId: iepType.id,
+        jurisdictionId: jurisdiction.id,
+        version: 1,
+        name: 'IEP Template v1',
+        description: 'Standard IEP template',
+        fields: iepSchema,
+        isActive: true,
+        effectiveFrom: new Date('2024-01-01'),
+      },
+    });
+
+    // Create 504 schema
+    await prisma.planSchema.upsert({
+      where: {
+        id: `${jurisdiction.id}-504-v1`,
+      },
+      update: {},
+      create: {
+        id: `${jurisdiction.id}-504-v1`,
+        planTypeId: fiveOhFourType.id,
+        jurisdictionId: jurisdiction.id,
+        version: 1,
+        name: '504 Plan Template v1',
+        description: 'Standard 504 Plan template',
+        fields: fiveOhFourSchema,
+        isActive: true,
+        effectiveFrom: new Date('2024-01-01'),
+      },
+    });
+
+    // Create Behavior Plan schema
+    await prisma.planSchema.upsert({
+      where: {
+        id: `${jurisdiction.id}-behavior-v1`,
+      },
+      update: {},
+      create: {
+        id: `${jurisdiction.id}-behavior-v1`,
+        planTypeId: behaviorType.id,
+        jurisdictionId: jurisdiction.id,
+        version: 1,
+        name: 'Behavior Plan Template v1',
+        description: 'Standard Behavior Intervention Plan template',
+        fields: behaviorSchema,
+        isActive: true,
+        effectiveFrom: new Date('2024-01-01'),
+      },
+    });
+
+    console.log(`  Created plan types and schemas for ${jurisdiction.districtName}`);
+  }
 
   console.log('\nSeeding complete!');
 }
