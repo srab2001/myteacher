@@ -228,8 +228,13 @@ export default function IEPInterviewPage() {
                   <p>Use the Goal Wizard to create COMAR-compliant goals with AI assistance, or manage existing goals.</p>
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                     <button
+                      type="button"
                       className="btn btn-primary"
-                      onClick={() => setGoalWizardOpen(true)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setGoalWizardOpen(true);
+                      }}
                     >
                       Goal Wizard
                     </button>
@@ -433,12 +438,17 @@ export default function IEPInterviewPage() {
       />
 
       {/* Goal Wizard Panel */}
-      {goalWizardOpen && (
-        <div className={styles.goalWizardOverlay}>
+      {goalWizardOpen && plan && (
+        <div className={styles.goalWizardOverlay} onClick={(e) => {
+          // Only close if clicking the overlay itself, not the panel
+          if (e.target === e.currentTarget) {
+            setGoalWizardOpen(false);
+          }
+        }}>
           <GoalWizardPanel
             planId={planId}
             studentId={studentId}
-            studentGrade={plan.student.grade}
+            studentGrade={plan.student?.grade}
             availableArtifacts={availableArtifacts}
             onClose={() => setGoalWizardOpen(false)}
             onGoalCreated={(goalId) => {
