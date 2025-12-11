@@ -1,6 +1,7 @@
-// Use default import for ESM compatibility with Prisma in serverless
-import pkg from '@prisma/client';
-const { PrismaClient, Prisma } = pkg;
+// Use require for Prisma to avoid ESM/CJS bundling issues in serverless
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { PrismaClient, Prisma } = require('@prisma/client');
 
 // Global prisma client for serverless
 const globalForPrisma = globalThis as unknown as {

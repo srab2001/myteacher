@@ -6,8 +6,10 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": [
+          "node_modules/.pnpm/**/.prisma/**",
+          "node_modules/.pnpm/**/libquery_engine*",
+          "node_modules/@prisma/**",
           "node_modules/.prisma/**",
-          "node_modules/@prisma/client/**",
           "prisma/schema.prisma"
         ]
       }
