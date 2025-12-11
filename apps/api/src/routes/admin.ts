@@ -650,7 +650,7 @@ router.get('/schemas', requireAdmin, async (req, res) => {
       include: {
         planType: { select: { code: true, name: true } },
         jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
-        _count: { select: { planInstances: true } },
+        _count: { select: { instances: true } },
       },
       orderBy: [{ planTypeId: 'asc' }, { version: 'desc' }],
     });
@@ -666,7 +666,7 @@ router.get('/schemas', requireAdmin, async (req, res) => {
         jurisdictionId: s.jurisdictionId,
         jurisdictionName: s.jurisdiction?.districtName || 'Global',
         isActive: s.isActive,
-        planCount: s._count.planInstances,
+        planCount: s._count.instances,
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,
       })),
@@ -1084,7 +1084,7 @@ router.patch('/schemas/:id', requireAdmin, async (req, res) => {
       include: {
         planType: { select: { code: true, name: true } },
         jurisdiction: { select: { id: true, districtName: true } },
-        _count: { select: { planInstances: true } },
+        _count: { select: { instances: true } },
       },
     });
 
@@ -1099,7 +1099,7 @@ router.patch('/schemas/:id', requireAdmin, async (req, res) => {
         jurisdictionId: updated.jurisdictionId,
         jurisdictionName: updated.jurisdiction?.districtName || 'Global',
         isActive: updated.isActive,
-        planCount: updated._count.planInstances,
+        planCount: updated._count.instances,
         fields: updated.fields,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
