@@ -3,9 +3,36 @@
 
 import OpenAI from 'openai';
 import mammoth from 'mammoth';
-import PDFParser from 'pdf2json';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+
+// Lazy-load PDF parser to avoid initialization issues in serverless
+async function parsePdfBuffer(buffer: Buffer): Promise<string> {
+  // Use pdf-parse with custom options to avoid DOM requirements
+  const pdfParse = (await import('pdf-parse')).default;
+
+  // Custom page render function that doesn't require canvas
+  const options = {
+    // Return raw text content
+    pagerender: function(pageData: { getTextContent: () => Promise<{ items: Array<{ str: string }> }> }) {
+      return pageData.getTextContent().then(function(textContent) {
+        let text = '';
+        for (const item of textContent.items) {
+          text += item.str + ' ';
+        }
+        return text;
+      });
+    }
+  };
+
+  try {
+    const data = await pdfParse(buffer, options);
+    return data.text || '';
+  } catch (error) {
+    console.error('pdf-parse error:', error);
+    throw error;
+  }
+}
 
 interface CompareArtifactsParams {
   studentName: string;
@@ -95,38 +122,7 @@ export async function extractTextFromFile(
   // PDF files
   if (lowerMime === 'application/pdf' || lowerName.endsWith('.pdf')) {
     try {
-      const text = await new Promise<string>((resolve, reject) => {
-        const pdfParser = new PDFParser();
-
-        pdfParser.on('pdfParser_dataReady', (pdfData) => {
-          // Extract text from all pages
-          const pages = pdfData.Pages || [];
-          const textParts: string[] = [];
-
-          for (const page of pages) {
-            const texts = page.Texts || [];
-            for (const textItem of texts) {
-              const runs = textItem.R || [];
-              for (const run of runs) {
-                if (run.T) {
-                  // Decode URI-encoded text
-                  textParts.push(decodeURIComponent(run.T));
-                }
-              }
-            }
-            textParts.push('\n'); // Page break
-          }
-
-          resolve(textParts.join(' ').trim());
-        });
-
-        pdfParser.on('pdfParser_dataError', (errData) => {
-          reject(new Error(errData.parserError?.toString() || 'PDF parsing failed'));
-        });
-
-        pdfParser.parseBuffer(buffer);
-      });
-
+      const text = await parsePdfBuffer(buffer);
       return text || '';
     } catch (error) {
       console.error('PDF parsing error:', error);
