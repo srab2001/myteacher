@@ -223,27 +223,65 @@ export default function IEPInterviewPage() {
             <div className={styles.section}>
               <h2>{currentSectionData.title}</h2>
 
-              {/* Debug: Log section data to help identify issues */}
+              {/* Determine if this is a goals section using multiple detection methods */}
               {(() => {
-                const isGoals = currentSectionData.isGoalsSection ||
-                  currentSectionData.key === 'goals' ||
-                  currentSectionData.title?.toLowerCase().includes('goal') ||
-                  currentSectionData.fields?.some((f: { type?: string }) => f.type === 'goals');
+                // Helper function to detect goals section
+                const detectGoalsSection = () => {
+                  // Method 1: Explicit flag
+                  if (currentSectionData.isGoalsSection === true) return true;
+
+                  // Method 2: Key-based detection
+                  const key = currentSectionData.key?.toLowerCase() || '';
+                  if (key === 'goals' || key === 'annual_goals' || key.includes('goal')) return true;
+
+                  // Method 3: Title-based detection
+                  const title = currentSectionData.title?.toLowerCase() || '';
+                  if (title.includes('goal') || title.includes('objective')) return true;
+
+                  // Method 4: Field type detection
+                  if (currentSectionData.fields?.some((f: { type?: string; key?: string }) =>
+                    f.type === 'goals' || f.key?.toLowerCase().includes('goal')
+                  )) return true;
+
+                  // Method 5: Order-based heuristic (goals is typically section 3 in Maryland IEP)
+                  // Only use this as a fallback when other methods fail
+                  if (currentSection === 2 && sections.length >= 5) {
+                    console.log('Using order-based heuristic for goals section detection');
+                    return true;
+                  }
+
+                  return false;
+                };
+
+                const isGoals = detectGoalsSection();
                 console.log('Section check:', {
+                  index: currentSection,
                   key: currentSectionData.key,
                   title: currentSectionData.title,
                   isGoalsSection: currentSectionData.isGoalsSection,
                   hasGoalsField: currentSectionData.fields?.some((f: { type?: string }) => f.type === 'goals'),
-                  isGoals
+                  detected: isGoals
                 });
                 return null;
               })()}
 
-              {/* Show Goal Wizard for goals sections - check multiple conditions for robustness */}
-              {(currentSectionData.isGoalsSection ||
-                currentSectionData.key === 'goals' ||
-                currentSectionData.title?.toLowerCase().includes('goal') ||
-                currentSectionData.fields?.some((f: { type?: string }) => f.type === 'goals')) ? (
+              {/* Show Goal Wizard for goals sections - comprehensive detection */}
+              {(() => {
+                // Comprehensive goals section detection
+                const key = currentSectionData.key?.toLowerCase() || '';
+                const title = currentSectionData.title?.toLowerCase() || '';
+                const isGoalsSection =
+                  currentSectionData.isGoalsSection === true ||
+                  key === 'goals' || key === 'annual_goals' || key.includes('goal') ||
+                  title.includes('goal') || title.includes('objective') ||
+                  currentSectionData.fields?.some((f: { type?: string; key?: string }) =>
+                    f.type === 'goals' || f.key?.toLowerCase().includes('goal')
+                  ) ||
+                  // Order-based fallback for section 3 in Maryland IEP format
+                  (currentSection === 2 && sections.length >= 5);
+
+                return isGoalsSection;
+              })() ? (
                 <div className={styles.goalsSection}>
                   <p>Use the Goal Wizard to create COMAR-compliant goals with AI assistance, or manage existing goals.</p>
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>

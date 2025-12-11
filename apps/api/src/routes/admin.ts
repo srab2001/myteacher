@@ -2215,6 +2215,84 @@ router.post('/districts/:districtId/schools', requireAdmin, async (req, res) => 
   }
 });
 
+// ============================================
+// SCHEMA MIGRATION UTILITIES
+// ============================================
+
+// POST /admin/schemas/migrate-goals-section - Add isGoalsSection flag to all IEP schemas
+router.post('/schemas/migrate-goals-section', requireAdmin, async (_req, res) => {
+  try {
+    // Find all IEP schemas
+    const iepSchemas = await prisma.planSchema.findMany({
+      where: {
+        planType: { code: 'IEP' }
+      },
+      include: {
+        planType: { select: { code: true } }
+      }
+    });
+
+    let updatedCount = 0;
+    const results: Array<{ schemaId: string; name: string; status: string }> = [];
+
+    for (const schema of iepSchemas) {
+      const fields = schema.fields as {
+        sections?: Array<{
+          key: string;
+          title: string;
+          order?: number;
+          isGoalsSection?: boolean;
+          fields?: Array<{
+            key: string;
+            type?: string;
+            label: string;
+          }>;
+        }>;
+      };
+
+      if (!fields.sections) {
+        results.push({ schemaId: schema.id, name: schema.name, status: 'skipped - no sections' });
+        continue;
+      }
+
+      let modified = false;
+
+      // Find goals section and add isGoalsSection flag
+      for (const section of fields.sections) {
+        const isGoalsSection =
+          section.key === 'goals' ||
+          section.title?.toLowerCase().includes('goal') ||
+          section.fields?.some(f => f.type === 'goals');
+
+        if (isGoalsSection && !section.isGoalsSection) {
+          section.isGoalsSection = true;
+          modified = true;
+        }
+      }
+
+      if (modified) {
+        await prisma.planSchema.update({
+          where: { id: schema.id },
+          data: { fields }
+        });
+        updatedCount++;
+        results.push({ schemaId: schema.id, name: schema.name, status: 'updated' });
+      } else {
+        results.push({ schemaId: schema.id, name: schema.name, status: 'already has flag' });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Updated ${updatedCount} of ${iepSchemas.length} IEP schemas with isGoalsSection flag`,
+      results
+    });
+  } catch (error) {
+    console.error('Schema migration error:', error);
+    res.status(500).json({ error: 'Failed to migrate schemas' });
+  }
+});
+
 // PATCH /admin/schools/:schoolId - Update a school
 router.patch('/schools/:schoolId', requireAdmin, async (req, res) => {
   try {
