@@ -1528,7 +1528,7 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
         grade: data.grade || null,
         schoolName: data.schoolName || null,
         districtName: data.districtName || null,
-        jurisdictionId: jurisdictionId,
+        jurisdiction: { connect: { id: jurisdictionId } },
         isActive: true,
       },
     });
