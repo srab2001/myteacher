@@ -211,13 +211,34 @@ export function GoalWizardPanel({
   };
 
   const saveGoal = async () => {
-    if (!sessionId) return;
+    if (!currentDraft || !selectedArea) return;
     setSaving(true);
     try {
-      const result = await api.saveWizardDraft(sessionId);
-      onGoalCreated(result.goalId);
+      // Generate a goal code (e.g., G1, G2, etc.)
+      const existingGoals = await api.getPlanGoals(planId);
+      const nextNumber = (existingGoals.goals?.length || 0) + 1;
+      const goalCode = `G${nextNumber}`;
+
+      // Create goal directly using the goals API
+      const result = await api.createGoal(planId, {
+        goalCode,
+        area: selectedArea,
+        annualGoalText: currentDraft.annualGoalText,
+        baselineJson: {
+          description: currentDraft.baselineDescription,
+          measurementMethod: currentDraft.measurementMethod,
+          rationale: currentDraft.rationale,
+          comarReference: currentDraft.comarReference,
+        },
+        shortTermObjectives: currentDraft.objectives.map(obj => obj.objectiveText),
+        progressSchedule: currentDraft.progressSchedule as 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly',
+      });
+
+      onGoalCreated(result.goal.id);
     } catch (error) {
       console.error('Failed to save goal:', error);
+      // Show error to user
+      alert('Failed to save goal. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -634,7 +655,7 @@ export function GoalWizardPanel({
             disabled={
               (currentStep === 'area' && !selectedArea) ||
               (currentStep === 'draft' && !currentDraft) ||
-              (currentStep === 'review' && (saving || !validation?.isValid))
+              (currentStep === 'review' && saving)
             }
           >
             {saving ? 'Saving...' : currentStep === 'review' ? 'Save Goal' : 'Next'}
