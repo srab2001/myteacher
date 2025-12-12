@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan, ArtifactComparison } from '@/lib/api';
+import { api, Plan, ArtifactComparison, FormFieldDefinition, School } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import { ServicesListEditor, ServiceItem } from '@/components/iep/ServicesListEditor';
 import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
 import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
 import { GoalWizardPanel } from '@/components/goals/GoalWizardPanel';
+import { DynamicFormField } from '@/components/forms/DynamicFormField';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -31,6 +32,11 @@ export default function IEPInterviewPage() {
   const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
   const [goalWizardOpen, setGoalWizardOpen] = useState(false);
   const [availableArtifacts, setAvailableArtifacts] = useState<ArtifactComparison[]>([]);
+
+  // Dynamic form fields from database
+  const [fieldDefinitions, setFieldDefinitions] = useState<FormFieldDefinition[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [useDynamicFields, setUseDynamicFields] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -56,6 +62,52 @@ export default function IEPInterviewPage() {
       loadPlan();
     }
   }, [user, planId, loadPlan]);
+
+  // Load dynamic field definitions and schools
+  useEffect(() => {
+    const loadFieldDefinitions = async () => {
+      try {
+        const [fieldsRes, schoolsRes] = await Promise.all([
+          api.getFormFieldDefinitions('IEP'),
+          api.getSchools(),
+        ]);
+        if (fieldsRes.fields && fieldsRes.fields.length > 0) {
+          setFieldDefinitions(fieldsRes.fields);
+          setUseDynamicFields(true);
+        }
+        setSchools(schoolsRes.schools || []);
+      } catch (err) {
+        // If field definitions not available, fall back to schema-based rendering
+        console.log('Dynamic fields not available, using schema-based rendering');
+      }
+    };
+
+    if (user?.isOnboarded) {
+      loadFieldDefinitions();
+    }
+  }, [user]);
+
+  // Group field definitions by section for navigation
+  const dynamicSections = useMemo(() => {
+    if (!useDynamicFields || fieldDefinitions.length === 0) return [];
+
+    const sectionMap = new Map<string, FormFieldDefinition[]>();
+    fieldDefinitions.forEach(field => {
+      if (!sectionMap.has(field.section)) {
+        sectionMap.set(field.section, []);
+      }
+      sectionMap.get(field.section)!.push(field);
+    });
+
+    // Sort sections by their first field's sectionOrder
+    return Array.from(sectionMap.entries())
+      .map(([name, fields]) => ({
+        name,
+        fields: fields.sort((a, b) => a.sortOrder - b.sortOrder),
+        order: fields[0]?.sectionOrder || 0,
+      }))
+      .sort((a, b) => a.order - b.order);
+  }, [fieldDefinitions, useDynamicFields]);
 
   // Check generation availability
   useEffect(() => {
@@ -111,8 +163,13 @@ export default function IEPInterviewPage() {
     }
   };
 
-  const sections = plan?.schema?.fields?.sections || [];
+  // Use dynamic sections if available, otherwise fall back to schema-based sections
+  const schemaSections = plan?.schema?.fields?.sections || [];
+  const sections = useDynamicFields && dynamicSections.length > 0
+    ? dynamicSections.map(s => ({ key: s.name.toLowerCase().replace(/\s+/g, '_'), title: s.name, fields: s.fields }))
+    : schemaSections;
   const currentSectionData = sections[currentSection];
+  const currentDynamicSection = useDynamicFields ? dynamicSections[currentSection] : null;
 
   const handleFieldChange = (fieldKey: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [fieldKey]: value }));
@@ -223,53 +280,27 @@ export default function IEPInterviewPage() {
             <div className={styles.section}>
               <h2>{currentSectionData.title}</h2>
 
-              {/* Determine if this is a goals section using multiple detection methods */}
+              {/* Show Goal Wizard for goals sections - only for schema-based sections */}
               {(() => {
-                // Helper function to detect goals section
-                const detectGoalsSection = () => {
-                  // Method 1: Explicit flag
-                  if (currentSectionData.isGoalsSection === true) return true;
+                // Skip goals detection for dynamic field sections
+                if (useDynamicFields && currentDynamicSection) return false;
 
-                  // Method 2: Key-based detection
-                  const key = currentSectionData.key?.toLowerCase() || '';
-                  if (key === 'goals' || key === 'annual_goals' || key.includes('goal')) return true;
+                // Use schema section for type-safe access
+                const schemaSection = schemaSections[currentSection];
+                if (!schemaSection) return false;
 
-                  // Method 3: Title-based detection
-                  const title = currentSectionData.title?.toLowerCase() || '';
-                  if (title.includes('goal') || title.includes('objective')) return true;
-
-                  // Method 4: Field type detection
-                  if (currentSectionData.fields?.some((f: { type?: string; key?: string }) =>
-                    f.type === 'goals' || f.key?.toLowerCase().includes('goal')
-                  )) return true;
-
-                  // Method 5: Order-based heuristic (goals is typically section 3 in Maryland IEP)
-                  // Only use this as a fallback when other methods fail
-                  if (currentSection === 2 && sections.length >= 5) {
-                    return true;
-                  }
-
-                  return false;
-                };
-
-                detectGoalsSection();
-                return null;
-              })()}
-
-              {/* Show Goal Wizard for goals sections - comprehensive detection */}
-              {(() => {
                 // Comprehensive goals section detection
-                const key = currentSectionData.key?.toLowerCase() || '';
-                const title = currentSectionData.title?.toLowerCase() || '';
+                const key = schemaSection.key?.toLowerCase() || '';
+                const title = schemaSection.title?.toLowerCase() || '';
                 const isGoalsSection =
-                  currentSectionData.isGoalsSection === true ||
+                  schemaSection.isGoalsSection === true ||
                   key === 'goals' || key === 'annual_goals' || key.includes('goal') ||
                   title.includes('goal') || title.includes('objective') ||
-                  currentSectionData.fields?.some((f: { type?: string; key?: string }) =>
+                  schemaSection.fields?.some((f: { type?: string; key?: string }) =>
                     f.type === 'goals' || f.key?.toLowerCase().includes('goal')
                   ) ||
                   // Order-based fallback for section 3 in Maryland IEP format
-                  (currentSection === 2 && sections.length >= 5);
+                  (currentSection === 2 && schemaSections.length >= 5);
 
                 return isGoalsSection;
               })() ? (
@@ -295,9 +326,26 @@ export default function IEPInterviewPage() {
                     </Link>
                   </div>
                 </div>
-              ) : (
+              ) : useDynamicFields && currentDynamicSection ? (
+                /* Dynamic Form Fields from Database */
                 <div className={styles.fields}>
-                  {currentSectionData.fields.map(field => (
+                  {currentDynamicSection.fields.map(field => (
+                    <DynamicFormField
+                      key={field.fieldKey}
+                      field={field}
+                      value={formData[field.fieldKey]}
+                      onChange={(value) => handleFieldChange(field.fieldKey, value)}
+                      user={user}
+                      schools={schools}
+                      disabled={plan?.status === 'FINALIZED'}
+                      showPermissionHint={true}
+                    />
+                  ))}
+                </div>
+              ) : schemaSections[currentSection] ? (
+                /* Schema-based Form Fields (fallback) */
+                <div className={styles.fields}>
+                  {schemaSections[currentSection].fields.map(field => (
                     <div key={field.key} className={styles.field}>
                       <label className={styles.label}>
                         {field.label}
@@ -396,7 +444,7 @@ export default function IEPInterviewPage() {
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
