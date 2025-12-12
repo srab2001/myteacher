@@ -1,4 +1,6 @@
-import { PrismaClient, PlanTypeCode, UserRole, GoalArea, ProgressLevel, ServiceType, ServiceSetting } from '@prisma/client';
+import { PrismaClient, PlanTypeCode, UserRole, GoalArea, ProgressLevel, ServiceType, ServiceSetting, FormType, ControlType, OptionsEditableBy } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -951,7 +953,163 @@ async function main() {
     }
   }
 
+  // Seed Form Field Definitions
+  await seedFormFieldDefinitions();
+
   console.log('🎉 Seed completed successfully!');
+}
+
+/**
+ * Seeds form field definitions from JSON file
+ */
+async function seedFormFieldDefinitions() {
+  console.log('📋 Seeding form field definitions...');
+
+  const seedFilePath = path.join(__dirname, '../seed/iep_field_definitions.seed.json');
+
+  if (!fs.existsSync(seedFilePath)) {
+    console.log('⚠️ Field definitions seed file not found, skipping...');
+    return;
+  }
+
+  const seedData = JSON.parse(fs.readFileSync(seedFilePath, 'utf-8'));
+
+  if (!seedData.fields || !Array.isArray(seedData.fields)) {
+    console.log('⚠️ Invalid seed data format, skipping...');
+    return;
+  }
+
+  const formType = seedData.formType as FormType;
+  let createdCount = 0;
+  let updatedCount = 0;
+
+  for (const field of seedData.fields) {
+    // Map control type string to enum
+    const controlType = field.controlType as ControlType;
+    const optionsEditableBy = (field.optionsEditableBy || 'NONE') as OptionsEditableBy;
+
+    // Upsert the field definition
+    const fieldDef = await prisma.formFieldDefinition.upsert({
+      where: {
+        formType_fieldKey: {
+          formType,
+          fieldKey: field.fieldKey,
+        },
+      },
+      update: {
+        section: field.section,
+        sectionOrder: field.sectionOrder || 0,
+        fieldLabel: field.fieldLabel,
+        controlType,
+        isRequired: field.isRequired || false,
+        valueEditableBy: field.valueEditableBy || [],
+        optionsEditableBy,
+        helpText: field.helpText || null,
+        placeholder: field.placeholder || null,
+        sortOrder: field.sortOrder || 0,
+      },
+      create: {
+        formType,
+        section: field.section,
+        sectionOrder: field.sectionOrder || 0,
+        fieldKey: field.fieldKey,
+        fieldLabel: field.fieldLabel,
+        controlType,
+        isRequired: field.isRequired || false,
+        valueEditableBy: field.valueEditableBy || [],
+        optionsEditableBy,
+        helpText: field.helpText || null,
+        placeholder: field.placeholder || null,
+        sortOrder: field.sortOrder || 0,
+      },
+    });
+
+    // Check if this was a create or update
+    const existingField = await prisma.formFieldDefinition.findUnique({
+      where: { id: fieldDef.id },
+      select: { createdAt: true, updatedAt: true },
+    });
+
+    if (existingField && existingField.createdAt.getTime() === existingField.updatedAt.getTime()) {
+      createdCount++;
+    } else {
+      updatedCount++;
+    }
+
+    // Seed options if provided
+    if (field.options && Array.isArray(field.options) && field.options.length > 0) {
+      for (const option of field.options) {
+        await prisma.formFieldOption.upsert({
+          where: {
+            fieldDefinitionId_value: {
+              fieldDefinitionId: fieldDef.id,
+              value: option.value,
+            },
+          },
+          update: {
+            label: option.label,
+            sortOrder: option.sortOrder || 0,
+            isDefault: option.isDefault || false,
+          },
+          create: {
+            fieldDefinitionId: fieldDef.id,
+            value: option.value,
+            label: option.label,
+            sortOrder: option.sortOrder || 0,
+            isDefault: option.isDefault || false,
+          },
+        });
+      }
+    }
+  }
+
+  console.log(`✅ Seeded form field definitions: ${createdCount} created, ${updatedCount} updated`);
+
+  // Seed some sample schools
+  await seedSchools();
+}
+
+/**
+ * Seeds sample schools for the school dropdown
+ */
+async function seedSchools() {
+  console.log('🏫 Seeding schools...');
+
+  const schools = [
+    { name: 'Centennial High School', code: 'CHS', stateCode: 'MD' },
+    { name: 'Wilde Lake High School', code: 'WLHS', stateCode: 'MD' },
+    { name: 'Howard High School', code: 'HHS', stateCode: 'MD' },
+    { name: 'Atholton High School', code: 'AHS', stateCode: 'MD' },
+    { name: 'Long Reach High School', code: 'LRHS', stateCode: 'MD' },
+    { name: 'Oakland Mills High School', code: 'OMHS', stateCode: 'MD' },
+    { name: 'Reservoir High School', code: 'RHS', stateCode: 'MD' },
+    { name: 'Hammond High School', code: 'HAHS', stateCode: 'MD' },
+    { name: 'Glenelg High School', code: 'GHS', stateCode: 'MD' },
+    { name: 'River Hill High School', code: 'RHHS', stateCode: 'MD' },
+    { name: 'Mt. Hebron High School', code: 'MHHS', stateCode: 'MD' },
+    { name: 'Marriotts Ridge High School', code: 'MRHS', stateCode: 'MD' },
+  ];
+
+  for (const school of schools) {
+    await prisma.school.upsert({
+      where: {
+        stateCode_code: {
+          stateCode: school.stateCode,
+          code: school.code,
+        },
+      },
+      update: {
+        name: school.name,
+      },
+      create: {
+        name: school.name,
+        code: school.code,
+        stateCode: school.stateCode,
+      },
+    });
+  }
+
+  console.log(`✅ Seeded ${schools.length} schools`);
 }
 
 main()

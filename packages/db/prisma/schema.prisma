@@ -18,6 +18,34 @@ enum UserRole {
   TEACHER
   CASE_MANAGER
   ADMIN
+  RELATED_SERVICE_PROVIDER
+  READ_ONLY
+}
+
+// ============================================
+// FORM FIELD DEFINITION ENUMS
+// ============================================
+
+enum FormType {
+  IEP
+  IEP_REPORT
+  FIVE_OH_FOUR
+}
+
+enum ControlType {
+  TEXT
+  TEXTAREA
+  DROPDOWN
+  RADIO
+  SIGNATURE
+  CHECKBOX
+  DATE
+}
+
+enum OptionsEditableBy {
+  ADMIN_ONLY
+  TEACHER_ALLOWED
+  NONE
 }
 
 enum PlanTypeCode {
@@ -1149,4 +1177,107 @@ model IEPIndependentAssessmentReview {
   @@index([planInstanceId])
   @@index([assessmentType])
   @@index([dateOfTeamReview])
+}
+
+// ============================================
+// SCHOOL MODEL (Admin-Managed School List)
+// ============================================
+
+model School {
+  id           String   @id @default(uuid())
+  stateCode    String?
+  districtId   String?
+  name         String
+  code         String?  // Optional school code (e.g., "HCPSS-001")
+  address      String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([stateCode, code])
+  @@index([stateCode])
+  @@index([districtId])
+  @@index([isActive])
+}
+
+// ============================================
+// FORM FIELD DEFINITION MODEL (IEP/IEP Report Field Definitions)
+// Stores the configuration for each field in the IEP and IEP Report forms
+// Only admin can create/update these records
+// ============================================
+
+model FormFieldDefinition {
+  id                 String           @id @default(uuid())
+  formType           FormType
+  section            String           // Section name (e.g., "Student Information", "Present Levels")
+  sectionOrder       Int              @default(0) // Order of section in form
+  fieldKey           String           // Stable key (e.g., "student_name", "plaa_academic_performance")
+  fieldLabel         String           // Display label
+  controlType        ControlType
+  isRequired         Boolean          @default(false)
+  valueEditableBy    Json             // Array of roles that can edit the value: ["ADMIN", "CASE_MANAGER", "TEACHER"]
+  optionsEditableBy  OptionsEditableBy @default(NONE)
+  helpText           String?          // Optional help text for the field
+  placeholder        String?          // Optional placeholder text
+  validationRegex    String?          // Optional regex for validation
+  minLength          Int?             // Minimum length for text fields
+  maxLength          Int?             // Maximum length for text fields
+  sortOrder          Int              @default(0) // Order of field within section
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  // Relations
+  options            FormFieldOption[]
+
+  @@unique([formType, fieldKey])
+  @@index([formType])
+  @@index([formType, section])
+  @@index([isActive])
+}
+
+// ============================================
+// FORM FIELD OPTION MODEL (Dropdown/Radio Options)
+// Stores options for dropdown and radio fields
+// Only admin can modify options where optionsEditableBy = ADMIN_ONLY
+// ============================================
+
+model FormFieldOption {
+  id                   String              @id @default(uuid())
+  value                String              // Stored value
+  label                String              // Display label
+  sortOrder            Int                 @default(0)
+  isActive             Boolean             @default(true)
+  isDefault            Boolean             @default(false) // Default selection
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  // Relations
+  fieldDefinitionId    String
+  fieldDefinition      FormFieldDefinition @relation(fields: [fieldDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldDefinitionId, value])
+  @@index([fieldDefinitionId])
+  @@index([isActive])
+}
+
+// ============================================
+// FORM FIELD VALUE MODEL (Student/Plan Field Values)
+// Stores the actual values entered for each field
+// Uses the existing PlanFieldValue model for plan-specific values
+// This model is for student-level values that aren't plan-specific
+// ============================================
+
+model StudentFieldValue {
+  id           String   @id @default(uuid())
+  studentId    String
+  fieldKey     String   // References FormFieldDefinition.fieldKey
+  value        Json     // Flexible value storage
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, fieldKey])
+  @@index([studentId])
+  @@index([fieldKey])
 }

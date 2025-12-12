@@ -35,6 +35,7 @@ import artifactCompareRoutes from './routes/artifactCompare.js';
 import referenceRoutes from './routes/reference.js';
 import goalWizardRoutes from './routes/goalWizard.js';
 import iepReportsRoutes from './routes/iepReports.js';
+import formFieldsRoutes from './routes/formFields.js';
 
 export function createApp(): Express {
   const app = express();
@@ -117,6 +118,7 @@ export function createApp(): Express {
   app.use('/api/goal-wizard', goalWizardRoutes); // Alternative mounting point
   app.use('/api', iepReportsRoutes); // IEP Reports routes (Independent Assessment Reviews)
   app.use('/api', iepReportsRoutes); // For /api/students/:studentId/iep-reports
+  app.use('/api', formFieldsRoutes); // Form field definitions, values, and admin management
 
   // 404 handler
   app.use((_req, res) => {
