@@ -122,7 +122,7 @@ export default function IEPReportWizardPage() {
     setError(null);
 
     try {
-      const result = await api.createIEPReport(studentId, formData);
+      await api.createIEPReport(studentId, formData);
       router.push(`/students/${studentId}?tab=reports`);
     } catch (err) {
       console.error('Failed to save report:', err);

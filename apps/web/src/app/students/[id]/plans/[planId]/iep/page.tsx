@@ -246,22 +246,13 @@ export default function IEPInterviewPage() {
                   // Method 5: Order-based heuristic (goals is typically section 3 in Maryland IEP)
                   // Only use this as a fallback when other methods fail
                   if (currentSection === 2 && sections.length >= 5) {
-                    console.log('Using order-based heuristic for goals section detection');
                     return true;
                   }
 
                   return false;
                 };
 
-                const isGoals = detectGoalsSection();
-                console.log('Section check:', {
-                  index: currentSection,
-                  key: currentSectionData.key,
-                  title: currentSectionData.title,
-                  isGoalsSection: currentSectionData.isGoalsSection,
-                  hasGoalsField: currentSectionData.fields?.some((f: { type?: string }) => f.type === 'goals'),
-                  detected: isGoals
-                });
+                detectGoalsSection();
                 return null;
               })()}
 
@@ -291,7 +282,6 @@ export default function IEPInterviewPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Goal Wizard button clicked, setting goalWizardOpen to true');
                         setGoalWizardOpen(true);
                       }}
                     >
@@ -497,10 +487,6 @@ export default function IEPInterviewPage() {
       />
 
       {/* Goal Wizard Panel */}
-      {(() => {
-        console.log('Goal Wizard render check:', { goalWizardOpen, hasPlan: !!plan });
-        return null;
-      })()}
       {goalWizardOpen && plan && (
         <div className={styles.goalWizardOverlay} onClick={(e) => {
           // Only close if clicking the overlay itself, not the panel
@@ -514,7 +500,7 @@ export default function IEPInterviewPage() {
             studentGrade={plan.student?.grade}
             availableArtifacts={availableArtifacts}
             onClose={() => setGoalWizardOpen(false)}
-            onGoalCreated={(goalId) => {
+            onGoalCreated={(_goalId) => {
               setGoalWizardOpen(false);
               router.push(`/students/${studentId}/plans/${planId}/goals`);
             }}

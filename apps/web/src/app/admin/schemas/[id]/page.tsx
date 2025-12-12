@@ -50,7 +50,8 @@ export default function SchemaDetailPage() {
   const [loadingFields, setLoadingFields] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<FieldConfigUpdate[]>([]);
   const [savingFields, setSavingFields] = useState(false);
-  const [showFieldEditor, setShowFieldEditor] = useState(true); // Show by default
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [showFieldEditor, _setShowFieldEditor] = useState(true); // Show by default
 
   // Add Field Modal State
   const [showAddFieldModal, setShowAddFieldModal] = useState(false);

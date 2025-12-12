@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api, FormFieldDefinition, FormFieldOption, FormType, ControlType, OptionsEditableBy } from '@/lib/api';
+import { api, FormFieldDefinition, FormType, ControlType, OptionsEditableBy } from '@/lib/api';
 import styles from './page.module.css';
 
 type UserRole = 'ADMIN' | 'TEACHER' | 'CASE_MANAGER' | 'RELATED_SERVICE_PROVIDER' | 'READ_ONLY';
