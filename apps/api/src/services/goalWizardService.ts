@@ -426,8 +426,25 @@ ${session.currentDraft.objectives.map((o) => `${o.sequence}. ${o.objectiveText}`
     : 'No draft goal yet.'
 }
 
-Help the teacher refine the goal. If they want to modify the goal or objectives, provide the updated version.
-If providing an updated goal, include it in JSON format at the end of your response wrapped in \`\`\`json blocks.`;
+Help the teacher refine the goal. When the user asks to create or finalize a goal, or says "yes", "ok", "create it", "generate", etc., you MUST respond with a JSON block containing the complete goal.
+
+IMPORTANT: When providing a goal, you MUST include it in this exact JSON format at the end of your response:
+\`\`\`json
+{
+  "annualGoalText": "By the end of the IEP period, [student] will [specific measurable goal]...",
+  "objectives": [
+    {"sequence": 1, "objectiveText": "First objective...", "measurementCriteria": "How measured..."},
+    {"sequence": 2, "objectiveText": "Second objective...", "measurementCriteria": "How measured..."},
+    {"sequence": 3, "objectiveText": "Third objective...", "measurementCriteria": "How measured..."}
+  ],
+  "baselineDescription": "Current performance level...",
+  "measurementMethod": "How progress will be tracked...",
+  "progressSchedule": "quarterly",
+  "rationale": "Why this goal addresses the student's needs..."
+}
+\`\`\`
+
+Always include the JSON block when providing or updating a goal. The teacher needs the structured data.`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -457,7 +474,14 @@ If providing an updated goal, include it in JSON format at the end of your respo
           updatedDraft = {
             goalArea: session.goalArea,
             annualGoalText: parsed.annualGoalText,
-            objectives: parsed.objectives || session.currentDraft?.objectives || [],
+            objectives: Array.isArray(parsed.objectives)
+              ? parsed.objectives.map((o: { sequence?: number; objectiveText?: string; measurementCriteria?: string }, i: number) => ({
+                  sequence: o.sequence || i + 1,
+                  objectiveText: o.objectiveText || '',
+                  measurementCriteria: o.measurementCriteria || '',
+                  suggestedTargetWeeks: 12,
+                }))
+              : session.currentDraft?.objectives || [],
             baselineDescription: parsed.baselineDescription || session.currentDraft?.baselineDescription || '',
             measurementMethod: parsed.measurementMethod || session.currentDraft?.measurementMethod || '',
             progressSchedule: parsed.progressSchedule || session.currentDraft?.progressSchedule || 'quarterly',
@@ -466,7 +490,47 @@ If providing an updated goal, include it in JSON format at the end of your respo
           };
         }
       } catch {
-        // JSON parsing failed, no updated draft
+        // JSON parsing failed, try fallback extraction
+        console.log('JSON parsing failed, trying fallback extraction');
+      }
+    }
+
+    // Fallback: Try to extract goal from text patterns if no JSON found
+    if (!updatedDraft && responseText.toLowerCase().includes('goal')) {
+      // Look for common goal patterns like "By the end of..." or "**Sample Reading Goal:**"
+      const goalPatterns = [
+        /\*\*(?:Sample |Annual |Reading |Math |Writing )?Goal[:\*]*\s*["']?([^"'\n]+(?:\n(?![*\-#])[^"'\n]+)*)/i,
+        /By the end of (?:the IEP period|the school year|[^,]+),\s*(?:the student will|[^.]+will)\s+[^.]+\./i,
+        /"annualGoalText":\s*"([^"]+)"/i,
+      ];
+
+      for (const pattern of goalPatterns) {
+        const match = responseText.match(pattern);
+        if (match) {
+          const goalText = match[1] || match[0];
+          if (goalText && goalText.length > 20) {
+            // Extract objectives if present
+            const objectiveMatches = responseText.match(/\d+\.\s+(?:The student will\s+)?([^.]+\.)/gi) || [];
+            const objectives = objectiveMatches.slice(0, 3).map((obj, i) => ({
+              sequence: i + 1,
+              objectiveText: obj.replace(/^\d+\.\s*/, '').trim(),
+              measurementCriteria: '',
+              suggestedTargetWeeks: 12,
+            }));
+
+            updatedDraft = {
+              goalArea: session.goalArea,
+              annualGoalText: goalText.trim().replace(/^["']|["']$/g, ''),
+              objectives: objectives.length > 0 ? objectives : session.currentDraft?.objectives || [],
+              baselineDescription: session.currentDraft?.baselineDescription || '',
+              measurementMethod: session.currentDraft?.measurementMethod || '',
+              progressSchedule: 'quarterly',
+              comarReference: null,
+              rationale: session.currentDraft?.rationale || '',
+            };
+            break;
+          }
+        }
       }
     }
 

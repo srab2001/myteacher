@@ -502,22 +502,84 @@ export function GoalWizardPanel({
               <div ref={chatEndRef} />
             </div>
 
-            {/* Current Draft Preview */}
+            {/* Editable Draft Preview */}
             {currentDraft && (
               <div className={styles.draftPreview}>
-                <h4>Current Draft</h4>
-                <div className={styles.draftGoalText}>{currentDraft.annualGoalText}</div>
+                <h4>Generated Goal (Edit as needed)</h4>
+                <div className={styles.editableField}>
+                  <label>Annual Goal:</label>
+                  <textarea
+                    className={styles.goalTextArea}
+                    value={currentDraft.annualGoalText}
+                    onChange={(e) => setCurrentDraft({
+                      ...currentDraft,
+                      annualGoalText: e.target.value
+                    })}
+                    rows={4}
+                  />
+                </div>
                 {currentDraft.objectives.length > 0 && (
                   <div className={styles.objectivesList}>
-                    <strong>Objectives:</strong>
-                    {currentDraft.objectives.map((obj) => (
-                      <div key={obj.sequence} className={styles.objectiveItem}>
+                    <label>Short-Term Objectives:</label>
+                    {currentDraft.objectives.map((obj, index) => (
+                      <div key={obj.sequence} className={styles.editableObjective}>
                         <span className={styles.objectiveNumber}>{obj.sequence}.</span>
-                        <span>{obj.objectiveText}</span>
+                        <textarea
+                          className={styles.objectiveTextArea}
+                          value={obj.objectiveText}
+                          onChange={(e) => {
+                            const newObjectives = [...currentDraft.objectives];
+                            newObjectives[index] = {
+                              ...newObjectives[index],
+                              objectiveText: e.target.value
+                            };
+                            setCurrentDraft({
+                              ...currentDraft,
+                              objectives: newObjectives
+                            });
+                          }}
+                          rows={2}
+                        />
                       </div>
                     ))}
+                    <button
+                      className={`btn btn-sm ${styles.addObjectiveBtn}`}
+                      type="button"
+                      onClick={() => {
+                        const newObjective = {
+                          sequence: currentDraft.objectives.length + 1,
+                          objectiveText: '',
+                          measurementCriteria: '',
+                          suggestedTargetWeeks: 12
+                        };
+                        setCurrentDraft({
+                          ...currentDraft,
+                          objectives: [...currentDraft.objectives, newObjective]
+                        });
+                      }}
+                    >
+                      + Add Objective
+                    </button>
                   </div>
                 )}
+                <div className={styles.editableField} style={{ marginTop: '1rem' }}>
+                  <label>Baseline Description:</label>
+                  <textarea
+                    className={styles.baselineTextArea}
+                    value={currentDraft.baselineDescription}
+                    onChange={(e) => setCurrentDraft({
+                      ...currentDraft,
+                      baselineDescription: e.target.value
+                    })}
+                    rows={2}
+                    placeholder="Describe the student's current performance level..."
+                  />
+                </div>
+                <div className={styles.draftActions}>
+                  <p className={styles.draftHint}>
+                    ✓ Goal generated! Edit above if needed, then click Next to validate.
+                  </p>
+                </div>
               </div>
             )}
 

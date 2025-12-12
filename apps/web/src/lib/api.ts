@@ -1772,4 +1772,203 @@ export interface ArtifactComparison {
   createdAt: string;
 }
 
+  // ============================================
+  // Form Field Definitions API
+  // ============================================
+
+  async getFormFieldDefinitions(formType: 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR' = 'IEP'): Promise<FormFieldsResponse> {
+    return this.fetch(`/api/forms/fields?formType=${formType}`);
+  }
+
+  async getSchools(): Promise<{ schools: School[] }> {
+    return this.fetch('/api/schools');
+  }
+
+  async saveFormFieldValues(data: {
+    planId?: string;
+    studentId?: string;
+    formType: 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR';
+    values: Array<{ fieldKey: string; value: unknown }>;
+  }): Promise<{ saved: number; errors?: Array<{ fieldKey: string; message: string }> }> {
+    return this.fetch('/api/forms/values', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFormFieldValues(params: {
+    planId?: string;
+    studentId?: string;
+  }): Promise<{ values: Array<{ fieldKey: string; value: unknown }> }> {
+    const queryParams = new URLSearchParams();
+    if (params.planId) queryParams.append('planId', params.planId);
+    if (params.studentId) queryParams.append('studentId', params.studentId);
+    return this.fetch(`/api/forms/values?${queryParams.toString()}`);
+  }
+
+  async validateRequiredFields(data: {
+    planId?: string;
+    studentId?: string;
+    formType: 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR';
+  }): Promise<RequiredFieldValidation> {
+    return this.fetch('/api/forms/validate-required', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Admin: Form Field Management
+  async createFormField(data: CreateFieldData): Promise<{ field: FormFieldDefinition }> {
+    return this.fetch('/api/admin/forms/fields', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFormField(fieldId: string, data: UpdateFieldData): Promise<{ field: FormFieldDefinition }> {
+    return this.fetch(`/api/admin/forms/fields/${fieldId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFormField(fieldId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/admin/forms/fields/${fieldId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async createFieldOption(fieldId: string, data: { value: string; label: string; sortOrder?: number }): Promise<{ option: FormFieldOption }> {
+    return this.fetch(`/api/admin/forms/fields/${fieldId}/options`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFieldOption(optionId: string, data: { value?: string; label?: string; sortOrder?: number; isActive?: boolean }): Promise<{ option: FormFieldOption }> {
+    return this.fetch(`/api/admin/forms/options/${optionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFieldOption(optionId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/admin/forms/options/${optionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Admin: School Management
+  async getAdminSchoolsList(): Promise<{ schools: School[] }> {
+    return this.fetch('/api/admin/schools');
+  }
+
+  async createSchool(data: { name: string; code?: string; stateCode?: string; districtId?: string; address?: string }): Promise<{ school: School }> {
+    return this.fetch('/api/admin/schools', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSchool(schoolId: string, data: { name?: string; code?: string; stateCode?: string; isActive?: boolean }): Promise<{ school: School }> {
+    return this.fetch(`/api/admin/schools/${schoolId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSchool(schoolId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/admin/schools/${schoolId}`, {
+      method: 'DELETE',
+    });
+  }
+}
+
+// ============================================
+// Form Field Definition Types
+// ============================================
+
+export type FormType = 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR';
+export type ControlType = 'TEXT' | 'TEXTAREA' | 'DROPDOWN' | 'RADIO' | 'SIGNATURE' | 'CHECKBOX' | 'DATE';
+export type OptionsEditableBy = 'ADMIN_ONLY' | 'TEACHER_ALLOWED' | 'NONE';
+
+export interface FormFieldOption {
+  id: string;
+  value: string;
+  label: string;
+  sortOrder: number;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface FormFieldDefinition {
+  id: string;
+  formType: FormType;
+  section: string;
+  sectionOrder: number;
+  fieldKey: string;
+  fieldLabel: string;
+  controlType: ControlType;
+  isRequired: boolean;
+  valueEditableBy: string[];
+  optionsEditableBy: OptionsEditableBy;
+  helpText: string | null;
+  placeholder: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  options: FormFieldOption[];
+}
+
+export interface FormFieldsResponse {
+  formType: FormType;
+  fields: FormFieldDefinition[];
+  sections: Record<string, FormFieldDefinition[]>;
+  totalFields: number;
+}
+
+export interface School {
+  id: string;
+  name: string;
+  code: string | null;
+  stateCode: string | null;
+  districtId: string | null;
+  address: string | null;
+  isActive: boolean;
+}
+
+export interface RequiredFieldValidation {
+  isValid: boolean;
+  missingFields?: Array<{ section: string; fieldKey: string; fieldLabel: string }>;
+  message: string;
+}
+
+export interface CreateFieldData {
+  formType: FormType;
+  section: string;
+  sectionOrder?: number;
+  fieldKey: string;
+  fieldLabel: string;
+  controlType: ControlType;
+  isRequired?: boolean;
+  valueEditableBy: string[];
+  optionsEditableBy?: OptionsEditableBy;
+  helpText?: string;
+  placeholder?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateFieldData {
+  section?: string;
+  sectionOrder?: number;
+  fieldLabel?: string;
+  controlType?: ControlType;
+  isRequired?: boolean;
+  valueEditableBy?: string[];
+  optionsEditableBy?: OptionsEditableBy;
+  helpText?: string | null;
+  placeholder?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
 export const api = new ApiClient();
