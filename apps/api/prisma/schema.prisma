@@ -460,7 +460,7 @@ model Goal {
   updatedAt           DateTime          @updatedAt
 
   planInstance        PlanInstance      @relation(fields: [planInstanceId], references: [id])
-  progressRecords     ProgressRecord[]
+  progressRecords     GoalProgress[]
   objectives          GoalObjective[]
   artifactLinks       GoalArtifactLink[]
 
