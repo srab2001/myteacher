@@ -799,3 +799,159 @@ model Session {
   @@index([expire], name: "IDX_session_expire")
   @@map("session")
 }
+
+// ============================================
+// FORM FIELD ENUMS (Added for formFields feature)
+// ============================================
+
+enum FormType {
+  IEP
+  IEP_REPORT
+  FIVE_OH_FOUR
+  BIP
+}
+
+enum ControlType {
+  TEXT
+  TEXTAREA
+  DROPDOWN
+  RADIO
+  CHECKBOX
+  CHECKBOX_GROUP
+  DATE
+  SIGNATURE
+}
+
+enum OptionsEditableBy {
+  ADMIN_ONLY
+  TEACHER_ALLOWED
+  NONE
+}
+
+enum AssessmentType {
+  INITIAL
+  REEVALUATION
+  TRIENNIAL
+  INDEPENDENT
+}
+
+// ============================================
+// FORM FIELD DEFINITION MODEL
+// ============================================
+
+model FormFieldDefinition {
+  id              String           @id @default(uuid())
+  formType        FormType
+  fieldKey        String
+  label           String
+  controlType     ControlType
+  placeholder     String?
+  helpText        String?
+  isRequired      Boolean          @default(false)
+  sortOrder       Int              @default(0)
+  sectionKey      String?
+  valueEditableBy String[]         @default(["ADMIN", "TEACHER", "CASE_MANAGER"])
+  optionsEditableBy OptionsEditableBy @default(NONE)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  options         FormFieldOption[]
+  studentValues   StudentFieldValue[]
+
+  @@unique([formType, fieldKey])
+  @@index([formType])
+  @@index([formType, sectionKey])
+}
+
+// ============================================
+// FORM FIELD OPTION MODEL
+// ============================================
+
+model FormFieldOption {
+  id                    String              @id @default(uuid())
+  formFieldDefinitionId String
+  value                 String
+  label                 String
+  sortOrder             Int                 @default(0)
+  isActive              Boolean             @default(true)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  fieldDefinition       FormFieldDefinition @relation(fields: [formFieldDefinitionId], references: [id], onDelete: Cascade)
+
+  @@index([formFieldDefinitionId])
+}
+
+// ============================================
+// STUDENT FIELD VALUE MODEL
+// ============================================
+
+model StudentFieldValue {
+  id                    String              @id @default(uuid())
+  studentId             String
+  formFieldDefinitionId String
+  value                 Json
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  fieldDefinition       FormFieldDefinition @relation(fields: [formFieldDefinitionId], references: [id])
+
+  @@unique([studentId, formFieldDefinitionId])
+  @@index([studentId])
+}
+
+// ============================================
+// GOAL ARTIFACT LINK MODEL
+// ============================================
+
+model GoalArtifactLink {
+  id                    String   @id @default(uuid())
+  goalId                String
+  artifactComparisonId  String
+  linkType              String   @default("EVIDENCE")
+  notes                 String?
+  createdAt             DateTime @default(now())
+
+  @@unique([goalId, artifactComparisonId])
+  @@index([goalId])
+  @@index([artifactComparisonId])
+}
+
+// ============================================
+// GOAL OBJECTIVE MODEL
+// ============================================
+
+model GoalObjective {
+  id              String   @id @default(uuid())
+  goalId          String
+  objectiveNumber Int
+  objectiveText   String   @db.Text
+  measurementCriteria String?
+  targetDate      DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([goalId, objectiveNumber])
+  @@index([goalId])
+}
+
+// ============================================
+// IEP INDEPENDENT ASSESSMENT REVIEW MODEL
+// ============================================
+
+model IEPIndependentAssessmentReview {
+  id              String         @id @default(uuid())
+  planInstanceId  String
+  assessmentType  AssessmentType
+  assessmentDate  DateTime?
+  evaluator       String?
+  summary         String?        @db.Text
+  recommendations String?        @db.Text
+  attachmentUrl   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([planInstanceId])
+}
