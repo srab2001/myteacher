@@ -413,6 +413,7 @@ model PlanInstance {
   serviceLogs  ServiceLog[]
   behaviorPlan BehaviorPlan?
   artifactComparisons ArtifactComparison[]
+  iepReviews   IEPIndependentAssessmentReview[]
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -786,6 +787,7 @@ model ArtifactComparison {
   student          Student      @relation(fields: [studentId], references: [id])
   planType         PlanType     @relation(fields: [planTypeId], references: [id])
   createdBy        AppUser      @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+  goalArtifactLinks GoalArtifactLink[]
 
   @@index([planInstanceId])
   @@index([studentId])
