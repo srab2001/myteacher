@@ -1,0 +1,413 @@
+{
+  "version": "v1",
+  "optionSets": [
+    {
+      "formType": "IEP",
+      "fieldKey": "svc_location",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "general_education_classroom",
+          "label": "General education classroom",
+          "sortOrder": 1
+        },
+        {
+          "value": "resource_room",
+          "label": "Resource room",
+          "sortOrder": 2
+        },
+        {
+          "value": "separate_classroom",
+          "label": "Separate classroom",
+          "sortOrder": 3
+        },
+        {
+          "value": "separate_school",
+          "label": "Separate school",
+          "sortOrder": 4
+        },
+        {
+          "value": "community_setting",
+          "label": "Community setting",
+          "sortOrder": 5
+        },
+        {
+          "value": "home_hospital",
+          "label": "Home and hospital",
+          "sortOrder": 6
+        }
+      ]
+    },
+    {
+      "formType": "IEP",
+      "fieldKey": "assess_participation",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "participates",
+          "label": "Participates",
+          "sortOrder": 1
+        },
+        {
+          "value": "does_not_participate",
+          "label": "Does not participate",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "IEP",
+      "fieldKey": "esy_eligibility_decision",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "IEP",
+      "fieldKey": "goals_area",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "reading",
+          "label": "Reading",
+          "sortOrder": 1
+        },
+        {
+          "value": "math",
+          "label": "Math",
+          "sortOrder": 2
+        },
+        {
+          "value": "writing",
+          "label": "Writing",
+          "sortOrder": 3
+        },
+        {
+          "value": "behavior",
+          "label": "Behavior",
+          "sortOrder": 4
+        },
+        {
+          "value": "speech_language",
+          "label": "Speech and language",
+          "sortOrder": 5
+        },
+        {
+          "value": "motor",
+          "label": "Motor",
+          "sortOrder": 6
+        },
+        {
+          "value": "social_emotional",
+          "label": "Social emotional",
+          "sortOrder": 7
+        },
+        {
+          "value": "other",
+          "label": "Other",
+          "sortOrder": 8
+        }
+      ]
+    },
+    {
+      "formType": "PLAN504_REFERRAL",
+      "fieldKey": "s504_referrer_relationship_type",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "parent_guardian",
+          "label": "Parent or guardian",
+          "sortOrder": 1
+        },
+        {
+          "value": "hcpss_staff",
+          "label": "School staff",
+          "sortOrder": 2
+        },
+        {
+          "value": "other",
+          "label": "Other",
+          "sortOrder": 3
+        }
+      ]
+    },
+    {
+      "formType": "PLAN504_REFERRAL",
+      "fieldKey": "s504_known_disability_flag",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "PLAN504_REFERRAL",
+      "fieldKey": "s504_concerns",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "ability_focus_tasks",
+          "label": "Ability to focus and follow through with tasks",
+          "sortOrder": 1
+        },
+        {
+          "value": "ability_follow_directions",
+          "label": "Ability to follow directions",
+          "sortOrder": 2
+        },
+        {
+          "value": "ability_stay_on_task",
+          "label": "Ability to stay on task",
+          "sortOrder": 3
+        },
+        {
+          "value": "articulation_speech",
+          "label": "Articulation or speech",
+          "sortOrder": 4
+        },
+        {
+          "value": "attendance",
+          "label": "Attendance",
+          "sortOrder": 5
+        },
+        {
+          "value": "communication",
+          "label": "Communication",
+          "sortOrder": 6
+        },
+        {
+          "value": "disengaged_from_education",
+          "label": "Disengaged from education",
+          "sortOrder": 7
+        },
+        {
+          "value": "fine_motor",
+          "label": "Fine motor",
+          "sortOrder": 8
+        },
+        {
+          "value": "frustration_gives_up",
+          "label": "Frustration or gives up",
+          "sortOrder": 9
+        },
+        {
+          "value": "gross_motor_coordination_mobility",
+          "label": "Gross motor coordination or mobility",
+          "sortOrder": 10
+        },
+        {
+          "value": "hearing_ability",
+          "label": "Hearing ability",
+          "sortOrder": 11
+        },
+        {
+          "value": "health_related",
+          "label": "Health related",
+          "sortOrder": 12
+        },
+        {
+          "value": "language_skills",
+          "label": "Language skills",
+          "sortOrder": 13
+        },
+        {
+          "value": "listening_skills",
+          "label": "Listening skills",
+          "sortOrder": 14
+        },
+        {
+          "value": "memory_retention",
+          "label": "Memory or retention",
+          "sortOrder": 15
+        },
+        {
+          "value": "movement",
+          "label": "Movement",
+          "sortOrder": 16
+        },
+        {
+          "value": "organization_skills",
+          "label": "Organization skills",
+          "sortOrder": 17
+        },
+        {
+          "value": "personal_responsibility",
+          "label": "Personal responsibility",
+          "sortOrder": 18
+        },
+        {
+          "value": "relationships_peers",
+          "label": "Relationships with peers",
+          "sortOrder": 19
+        },
+        {
+          "value": "relationships_adults",
+          "label": "Relationships with adults",
+          "sortOrder": 20
+        },
+        {
+          "value": "social_skills",
+          "label": "Social skills",
+          "sortOrder": 21
+        },
+        {
+          "value": "vision",
+          "label": "Vision",
+          "sortOrder": 22
+        },
+        {
+          "value": "other",
+          "label": "Other",
+          "sortOrder": 23
+        }
+      ]
+    },
+    {
+      "formType": "PLAN504_REFERRAL",
+      "fieldKey": "s504_outside_supports_flag",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "PLAN504_REFERRAL",
+      "fieldKey": "s504_prior_eval_flag",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "PLAN504_REFERRAL",
+      "fieldKey": "s504_prior_sped_flag",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "PLAN504_REFERRAL",
+      "fieldKey": "s504_trauma_flag",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "BIP",
+      "fieldKey": "bip_progress_review_frequency",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "weekly",
+          "label": "Weekly",
+          "sortOrder": 1
+        },
+        {
+          "value": "biweekly",
+          "label": "Every two weeks",
+          "sortOrder": 2
+        },
+        {
+          "value": "monthly",
+          "label": "Monthly",
+          "sortOrder": 3
+        },
+        {
+          "value": "quarterly",
+          "label": "Quarterly",
+          "sortOrder": 4
+        }
+      ]
+    },
+    {
+      "formType": "BIP",
+      "fieldKey": "bip_fba_completed_flag",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "formType": "BIP",
+      "fieldKey": "bip_restraint_considerations_flag",
+      "optionsEditableBy": "ADMIN_ONLY",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes",
+          "sortOrder": 1
+        },
+        {
+          "value": "no",
+          "label": "No",
+          "sortOrder": 2
+        }
+      ]
+    }
+  ]
+}

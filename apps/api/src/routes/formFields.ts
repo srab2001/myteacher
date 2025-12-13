@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requireAuth, requireOnboarded, requireAdmin } from '../middleware/auth.js';
 import { FormType, ControlType, OptionsEditableBy, UserRole } from '@prisma/client';
+import {
+  requireConfigBIPFieldDefinitions,
+  requireConfigBIPFieldOptions,
+} from '../middleware/rolePermissions.js';
 
 const router = Router();
 

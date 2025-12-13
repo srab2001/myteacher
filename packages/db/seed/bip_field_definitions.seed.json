@@ -1,0 +1,484 @@
+cat /home/user/myteacher-work/packages/db/seed/bip_field_definitions.seed.json
+{
+  "formType": "BIP",
+  "version": "v1",
+  "fields": [
+    {
+      "section": "Student Link",
+      "sectionOrder": 1,
+      "fieldKey": "bip_student_name",
+      "fieldLabel": "Student Name",
+      "controlType": "TEXT",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Read-only display of student name",
+      "options": []
+    },
+    {
+      "section": "Student Link",
+      "sectionOrder": 1,
+      "fieldKey": "bip_student_school_id",
+      "fieldLabel": "School",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 2,
+      "options": []
+    },
+
+    {
+      "section": "Plan Header",
+      "sectionOrder": 2,
+      "fieldKey": "bip_plan_date",
+      "fieldLabel": "Plan Date",
+      "controlType": "DATE",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "options": []
+    },
+    {
+      "section": "Plan Header",
+      "sectionOrder": 2,
+      "fieldKey": "bip_team_members",
+      "fieldLabel": "Team Members",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "List all team members involved in developing this BIP",
+      "options": []
+    },
+    {
+      "section": "Plan Header",
+      "sectionOrder": 2,
+      "fieldKey": "bip_setting_context",
+      "fieldLabel": "Setting/Context",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "helpText": "Describe the settings and contexts where this plan applies",
+      "options": []
+    },
+
+    {
+      "section": "Target Behaviors",
+      "sectionOrder": 3,
+      "fieldKey": "bip_behavior_1_definition",
+      "fieldLabel": "Target Behavior 1 Definition",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Provide an observable, measurable definition of the first target behavior",
+      "options": []
+    },
+    {
+      "section": "Target Behaviors",
+      "sectionOrder": 3,
+      "fieldKey": "bip_behavior_2_definition",
+      "fieldLabel": "Target Behavior 2 Definition",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "If applicable, provide definition for a second target behavior",
+      "options": []
+    },
+    {
+      "section": "Target Behaviors",
+      "sectionOrder": 3,
+      "fieldKey": "bip_behavior_3_definition",
+      "fieldLabel": "Target Behavior 3 Definition",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "helpText": "If applicable, provide definition for a third target behavior",
+      "options": []
+    },
+
+    {
+      "section": "Baseline and Data",
+      "sectionOrder": 4,
+      "fieldKey": "bip_baseline_summary",
+      "fieldLabel": "Baseline Summary",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Summarize baseline data for the target behavior (frequency, duration, intensity)",
+      "options": []
+    },
+    {
+      "section": "Baseline and Data",
+      "sectionOrder": 4,
+      "fieldKey": "bip_data_sources",
+      "fieldLabel": "Data Sources",
+      "controlType": "CHECKBOX_GROUP",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 2,
+      "helpText": "Select all data sources used to establish baseline",
+      "options": [
+        { "value": "direct_observation", "label": "Direct Observation", "sortOrder": 1 },
+        { "value": "frequency_data", "label": "Frequency Data", "sortOrder": 2 },
+        { "value": "duration_data", "label": "Duration Data", "sortOrder": 3 },
+        { "value": "abc_data", "label": "ABC Data", "sortOrder": 4 },
+        { "value": "scatter_plot", "label": "Scatter Plot", "sortOrder": 5 },
+        { "value": "interview", "label": "Interview", "sortOrder": 6 },
+        { "value": "rating_scales", "label": "Rating Scales", "sortOrder": 7 },
+        { "value": "record_review", "label": "Record Review", "sortOrder": 8 },
+        { "value": "functional_analysis", "label": "Functional Analysis", "sortOrder": 9 },
+        { "value": "other", "label": "Other", "sortOrder": 10 }
+      ]
+    },
+
+    {
+      "section": "FBA Summary",
+      "sectionOrder": 5,
+      "fieldKey": "bip_fba_completed_flag",
+      "fieldLabel": "FBA Completed",
+      "controlType": "RADIO",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 1,
+      "options": [
+        { "value": "yes", "label": "Yes", "sortOrder": 1 },
+        { "value": "no", "label": "No", "sortOrder": 2 },
+        { "value": "in_progress", "label": "In Progress", "sortOrder": 3 }
+      ]
+    },
+    {
+      "section": "FBA Summary",
+      "sectionOrder": 5,
+      "fieldKey": "bip_fba_date",
+      "fieldLabel": "FBA Date",
+      "controlType": "DATE",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "Date the Functional Behavior Assessment was completed",
+      "options": []
+    },
+    {
+      "section": "FBA Summary",
+      "sectionOrder": 5,
+      "fieldKey": "bip_function_of_behavior",
+      "fieldLabel": "Function of Behavior",
+      "controlType": "CHECKBOX_GROUP",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 3,
+      "helpText": "Select all functions that apply to the target behavior",
+      "options": [
+        { "value": "escape_avoidance", "label": "Escape/Avoidance (task, demand, person, environment)", "sortOrder": 1 },
+        { "value": "attention", "label": "Attention (adult, peer)", "sortOrder": 2 },
+        { "value": "tangible", "label": "Access to Tangibles (items, activities)", "sortOrder": 3 },
+        { "value": "sensory", "label": "Sensory/Automatic Reinforcement", "sortOrder": 4 },
+        { "value": "multiple_functions", "label": "Multiple Functions", "sortOrder": 5 },
+        { "value": "unknown", "label": "Unknown/Undetermined", "sortOrder": 6 }
+      ]
+    },
+
+    {
+      "section": "Triggers and Maintaining Factors",
+      "sectionOrder": 6,
+      "fieldKey": "bip_triggers",
+      "fieldLabel": "Triggers",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Describe specific triggers that precede the behavior",
+      "options": []
+    },
+    {
+      "section": "Triggers and Maintaining Factors",
+      "sectionOrder": 6,
+      "fieldKey": "bip_antecedents",
+      "fieldLabel": "Antecedents",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "Describe common antecedent events or conditions",
+      "options": []
+    },
+    {
+      "section": "Triggers and Maintaining Factors",
+      "sectionOrder": 6,
+      "fieldKey": "bip_consequences",
+      "fieldLabel": "Consequences",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "helpText": "Describe what typically happens after the behavior occurs",
+      "options": []
+    },
+
+    {
+      "section": "Replacement Behaviors and Teaching",
+      "sectionOrder": 7,
+      "fieldKey": "bip_replacement_behaviors",
+      "fieldLabel": "Replacement Behaviors",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Define the functionally equivalent replacement behaviors to teach",
+      "options": []
+    },
+    {
+      "section": "Replacement Behaviors and Teaching",
+      "sectionOrder": 7,
+      "fieldKey": "bip_skills_to_teach",
+      "fieldLabel": "Skills to Teach",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "Specific skills the student needs to learn",
+      "options": []
+    },
+    {
+      "section": "Replacement Behaviors and Teaching",
+      "sectionOrder": 7,
+      "fieldKey": "bip_teaching_plan",
+      "fieldLabel": "Teaching Plan",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "helpText": "Describe strategies and methods to teach replacement behaviors",
+      "options": []
+    },
+
+    {
+      "section": "Prevention and Supports",
+      "sectionOrder": 8,
+      "fieldKey": "bip_environment_changes",
+      "fieldLabel": "Environment Changes",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Describe changes to the environment to prevent behavior",
+      "options": []
+    },
+    {
+      "section": "Prevention and Supports",
+      "sectionOrder": 8,
+      "fieldKey": "bip_schedule_routine_supports",
+      "fieldLabel": "Schedule/Routine Supports",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "Describe schedule or routine modifications to support the student",
+      "options": []
+    },
+    {
+      "section": "Prevention and Supports",
+      "sectionOrder": 8,
+      "fieldKey": "bip_staff_supports",
+      "fieldLabel": "Staff Supports",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "helpText": "Describe additional staff supports needed",
+      "options": []
+    },
+
+    {
+      "section": "Reinforcement",
+      "sectionOrder": 9,
+      "fieldKey": "bip_reinforcement_strategy",
+      "fieldLabel": "Reinforcement Strategy",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Describe the reinforcement strategies to be used",
+      "options": []
+    },
+    {
+      "section": "Reinforcement",
+      "sectionOrder": 9,
+      "fieldKey": "bip_reinforcement_schedule",
+      "fieldLabel": "Reinforcement Schedule",
+      "controlType": "TEXT",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "Describe the schedule for delivering reinforcement",
+      "options": []
+    },
+
+    {
+      "section": "Response Plan",
+      "sectionOrder": 10,
+      "fieldKey": "bip_staff_response_steps",
+      "fieldLabel": "Staff Response Steps",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "List specific steps staff should take when behavior occurs",
+      "options": []
+    },
+    {
+      "section": "Response Plan",
+      "sectionOrder": 10,
+      "fieldKey": "bip_deescalation_steps",
+      "fieldLabel": "De-escalation Steps",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "Describe steps to de-escalate the student",
+      "options": []
+    },
+
+    {
+      "section": "Crisis and Safety",
+      "sectionOrder": 11,
+      "fieldKey": "bip_crisis_procedures",
+      "fieldLabel": "Crisis Procedures",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Describe procedures to follow if behavior escalates to crisis (per HCPSS Policy 9400)",
+      "options": []
+    },
+    {
+      "section": "Crisis and Safety",
+      "sectionOrder": 11,
+      "fieldKey": "bip_restraint_considerations_flag",
+      "fieldLabel": "Restraint Considerations",
+      "controlType": "RADIO",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 2,
+      "helpText": "Are there any restraint considerations for this student?",
+      "options": [
+        { "value": "yes", "label": "Yes - See attached documentation", "sortOrder": 1 },
+        { "value": "no", "label": "No", "sortOrder": 2 },
+        { "value": "na", "label": "Not Applicable", "sortOrder": 3 }
+      ]
+    },
+    {
+      "section": "Crisis and Safety",
+      "sectionOrder": 11,
+      "fieldKey": "bip_parent_notification_steps",
+      "fieldLabel": "Parent Notification Steps",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "helpText": "Describe when and how parents will be notified of incidents",
+      "options": []
+    },
+
+    {
+      "section": "Progress Monitoring",
+      "sectionOrder": 12,
+      "fieldKey": "bip_progress_monitoring_method",
+      "fieldLabel": "Progress Monitoring Method",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 1,
+      "options": [
+        { "value": "frequency_count", "label": "Frequency Count", "sortOrder": 1 },
+        { "value": "duration_recording", "label": "Duration Recording", "sortOrder": 2 },
+        { "value": "interval_recording", "label": "Interval Recording", "sortOrder": 3 },
+        { "value": "time_sampling", "label": "Time Sampling", "sortOrder": 4 },
+        { "value": "latency_recording", "label": "Latency Recording", "sortOrder": 5 },
+        { "value": "permanent_product", "label": "Permanent Product", "sortOrder": 6 },
+        { "value": "rating_scale", "label": "Rating Scale", "sortOrder": 7 },
+        { "value": "other", "label": "Other", "sortOrder": 8 }
+      ]
+    },
+    {
+      "section": "Progress Monitoring",
+      "sectionOrder": 12,
+      "fieldKey": "bip_progress_review_frequency",
+      "fieldLabel": "Progress Review Frequency",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 2,
+      "options": [
+        { "value": "daily", "label": "Daily", "sortOrder": 1 },
+        { "value": "weekly", "label": "Weekly", "sortOrder": 2 },
+        { "value": "biweekly", "label": "Bi-Weekly", "sortOrder": 3 },
+        { "value": "monthly", "label": "Monthly", "sortOrder": 4 },
+        { "value": "quarterly", "label": "Quarterly", "sortOrder": 5 }
+      ]
+    },
+    {
+      "section": "Progress Monitoring",
+      "sectionOrder": 12,
+      "fieldKey": "bip_progress_reporting",
+      "fieldLabel": "Progress Reporting",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "helpText": "Describe how progress will be documented and reported",
+      "options": []
+    },
+
+    {
+      "section": "Sign-off",
+      "sectionOrder": 13,
+      "fieldKey": "bip_signatures",
+      "fieldLabel": "Signatures",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Team member signatures and dates",
+      "options": []
+    }
+  ]
+}

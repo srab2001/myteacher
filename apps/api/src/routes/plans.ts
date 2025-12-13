@@ -4,6 +4,7 @@ import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requireStudentAccess, requirePlanAccess, requireCreatePlanPermission, requireUpdatePlanPermission } from '../middleware/permissions.js';
 import { generateIepPdf, generate504Pdf, getStudentInfoForPlan } from '../services/pdfExport.js';
+import { requireFinalizeBIP, userHasCapability } from '../middleware/rolePermissions.js';
 
 const router = Router();
 

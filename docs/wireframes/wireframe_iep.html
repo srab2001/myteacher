@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IEP Wireframes</title>
+  <style>
+    :root {
+      --border:#111;
+      --muted:#666;
+      --bg:#fff;
+      --panel:#f6f6f6;
+      --radius:10px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Arial, Helvetica, sans-serif;
+    }
+    body { font-family: var(--sans); margin: 0; background: var(--bg); color:#111; }
+    header { padding: 18px 20px; border-bottom: 2px solid var(--border); }
+    header h1 { margin: 0; font-size: 18px; }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+    .wrap { padding: 20px; max-width: 1100px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .card {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+    }
+    .card .bar {
+      background: var(--panel);
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      font-size: 13px;
+      display:flex;
+      justify-content:space-between;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .card .content { padding: 12px; }
+    .row { display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .tabs { display:flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      border: 2px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background:#fff;
+    }
+    .tab.active { background:#111; color:#fff; }
+    .field {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 260px;
+      flex: 1 1 260px;
+    }
+    .field .lbl { font-size: 12px; color:#111; margin-bottom: 6px; display:flex; justify-content:space-between; gap: 8px; }
+    .field .req { font-size: 11px; color:#111; border:2px solid #111; padding:1px 6px; border-radius:999px; white-space: nowrap; }
+    .ctrl {
+      height: 34px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color:#111;
+    }
+    .ctrl.textarea { height: 90px; align-items:flex-start; padding-top:8px; }
+    .ctrl.signature { height: 56px; justify-content:center; }
+    .note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+    .k { font-family: var(--mono); font-size: 11px; }
+    .table {
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .table th, .table td {
+      border: 2px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .footer {
+      border-top: 2px solid var(--border);
+      padding: 10px 12px;
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items:center;
+      background:#fff;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 2px solid var(--border);
+      background:#fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-family: var(--sans);
+    }
+    .btn.primary { background:#111; color:#fff; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>IEP Wireframes</h1>
+  <p>Wireframes only. Controls are placeholders. Required markers show finalize requirements.</p>
+</header>
+<div class="wrap">
+  
+<div class="grid">
+  <div class="card">
+    <div class="bar">
+      <div><strong>IEP Wizard</strong></div>
+      <div class="tabs">
+        <span class="tab active">1 Student</span>
+        <span class="tab">2 Present Levels</span>
+        <span class="tab">3 Goals</span>
+        <span class="tab">4 Services</span>
+        <span class="tab">5 Assess/ESY/Trans</span>
+        <span class="tab">6 Signatures</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Student Name</span><span class="req">required</span></div>
+      <div class="note">fieldKey: student_name</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Date of Birth</span><span class="req">required</span></div>
+      <div class="note">fieldKey: student_dob</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Grade</span><span class="req">required</span></div>
+      <div class="note">fieldKey: student_grade</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>School</span><span class="req">required</span></div>
+      <div class="note">fieldKey: student_school_id (select from admin schools)</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Case Manager</span><span class="req">required</span></div>
+      <div class="note">fieldKey: student_case_manager_id (admin sets)</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Present Levels</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Student</span>
+        <span class="tab active">2 Present Levels</span>
+        <span class="tab">3 Goals</span>
+        <span class="tab">4 Services</span>
+        <span class="tab">5 Assess/ESY/Trans</span>
+        <span class="tab">6 Signatures</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Academic Performance</span><span class="req">required</span></div>
+      <div class="note">fieldKey: plaa_academic_performance</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Functional Performance</span><span class="req">required</span></div>
+      <div class="note">fieldKey: plaa_functional_performance</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Impact of Disability on Progress</span><span class="req">required</span></div>
+      <div class="note">fieldKey: plaa_impact_disability_progress</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Goals</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Student</span>
+        <span class="tab">2 Present Levels</span>
+        <span class="tab active">3 Goals</span>
+        <span class="tab">4 Services</span>
+        <span class="tab">5 Assess/ESY/Trans</span>
+        <span class="tab">6 Signatures</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Goal Area</span><span class="req">required</span></div>
+      <div class="note">fieldKey: goals_area</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Annual Goal</span><span class="req">required</span></div>
+      <div class="note">fieldKey: goals_annual_goal</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Short-Term Objective 1</span></div>
+      <div class="note">fieldKey: goals_short_term_objective_1</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Short-Term Objective 2</span></div>
+      <div class="note">fieldKey: goals_short_term_objective_2</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Short-Term Objective 3</span></div>
+      <div class="note">fieldKey: goals_short_term_objective_3</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Progress Measurement Method</span><span class="req">required</span></div>
+      <div class="note">fieldKey: goals_progress_measure_method</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Progress Measurement Frequency</span><span class="req">required</span></div>
+      <div class="note">fieldKey: goals_progress_measure_frequency</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Services</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Student</span>
+        <span class="tab">2 Present Levels</span>
+        <span class="tab">3 Goals</span>
+        <span class="tab active">4 Services</span>
+        <span class="tab">5 Assess/ESY/Trans</span>
+        <span class="tab">6 Signatures</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Service Type</span><span class="req">required</span></div>
+      <div class="note">fieldKey: svc_service_type</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Frequency</span><span class="req">required</span></div>
+      <div class="note">fieldKey: svc_frequency</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Duration</span><span class="req">required</span></div>
+      <div class="note">fieldKey: svc_duration</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Location</span><span class="req">required</span></div>
+      <div class="note">fieldKey: svc_location (options admin only)</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Supports Description</span></div>
+      <div class="note">fieldKey: supp_supports_description</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Assessments / LRE / ESY / Transition</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Student</span>
+        <span class="tab">2 Present Levels</span>
+        <span class="tab">3 Goals</span>
+        <span class="tab">4 Services</span>
+        <span class="tab active">5 Assess/ESY/Trans</span>
+        <span class="tab">6 Signatures</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Assessment Participation</span><span class="req">required</span></div>
+      <div class="note">fieldKey: assess_participation (options admin only)</div>
+      <div class="ctrl">RADIO</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Accommodations</span></div>
+      <div class="note">fieldKey: assess_accommodations</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Extent of Non-Participation</span><span class="req">required</span></div>
+      <div class="note">fieldKey: lre_extent_non_participation</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>ESY Eligibility Decision</span><span class="req">required</span></div>
+      <div class="note">fieldKey: esy_eligibility_decision (options admin only)</div>
+      <div class="ctrl">RADIO</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>ESY Justification</span><span class="req">required</span></div>
+      <div class="note">fieldKey: esy_justification</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Postsecondary Goal: Education</span></div>
+      <div class="note">fieldKey: trans_postsecondary_education</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Postsecondary Goal: Employment</span></div>
+      <div class="note">fieldKey: trans_postsecondary_employment</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Postsecondary Goal: Independent Living</span></div>
+      <div class="note">fieldKey: trans_postsecondary_independent_living</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Transition Services and Activities</span></div>
+      <div class="note">fieldKey: trans_services_activities</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Team Signatures</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Student</span>
+        <span class="tab">2 Present Levels</span>
+        <span class="tab">3 Goals</span>
+        <span class="tab">4 Services</span>
+        <span class="tab">5 Assess/ESY/Trans</span>
+        <span class="tab active">6 Signatures</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Team Member Name</span><span class="req">required</span></div>
+      <div class="note">fieldKey: sign_team_member_name</div>
+      <div class="ctrl">TEXT</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Role</span><span class="req">required</span></div>
+      <div class="note">fieldKey: sign_role</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Signature</span><span class="req">required</span></div>
+      <div class="note">fieldKey: sign_signature</div>
+      <div class="ctrl signature">SIGNATURE</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save Draft</button><button class="btn primary">Finalize</button></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
