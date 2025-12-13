@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IEP Form Layouts</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .section { border: 1px solid #000; padding: 16px; margin-bottom: 20px; }
+    .section h2 { margin-top: 0; font-size: 18px; }
+    .field-row { margin-bottom: 8px; }
+    label { display: inline-block; width: 260px; }
+    textarea { width: 100%; height: 80px; }
+    table.services { width: 100%; border-collapse: collapse; }
+    table.services th, table.services td { border: 1px solid #000; padding: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="section">
+  <h2>Section 1 — Student Information</h2>
+  <div class="field-row"><label>Student Name (required):</label><input type="text"></div>
+  <div class="field-row"><label>Date of Birth (required):</label><input type="date"></div>
+  <div class="field-row"><label>Grade (required):</label><input type="text"></div>
+  <div class="field-row"><label>School (required):</label><input type="text"></div>
+  <div class="field-row"><label>Case Manager (required):</label><input type="text"></div>
+</div>
+
+<div class="section">
+  <h2>Section 2 — Present Levels</h2>
+  <div class="field-row"><label>Academic Performance (required):</label><br><textarea></textarea></div>
+  <div class="field-row"><label>Functional Performance (required):</label><br><textarea></textarea></div>
+  <div class="field-row"><label>Impact of Disability on Progress (required):</label><br><textarea></textarea></div>
+</div>
+
+<div class="section">
+  <h2>Section 3 — Measurable Annual Goals</h2>
+  <div class="field-row">
+    <label>Goal Area (required):</label>
+    <select>
+      <option value="">Select area</option>
+      <option>Reading</option>
+      <option>Math</option>
+      <option>Writing</option>
+      <option>Behavior</option>
+      <option>Other</option>
+    </select>
+  </div>
+  <div class="field-row"><label>Annual Goal (required):</label><br><textarea></textarea></div>
+  <div class="field-row"><label>Short-Term Objective 1:</label><input type="text"></div>
+  <div class="field-row"><label>Short-Term Objective 2:</label><input type="text"></div>
+  <div class="field-row"><label>Short-Term Objective 3:</label><input type="text"></div>
+  <div class="field-row">
+    <label>Progress Measurement Method (required):</label>
+    <select>
+      <option value="">Select method</option>
+      <option>Curriculum-based measure</option>
+      <option>Teacher checklist</option>
+      <option>Work samples</option>
+      <option>Observation</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <label>Progress Measurement Frequency (required):</label>
+    <select>
+      <option value="">Select frequency</option>
+      <option>Weekly</option>
+      <option>Monthly</option>
+      <option>Quarterly</option>
+    </select>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Section 4 — Special Education and Related Services</h2>
+  <table class="services">
+    <thead>
+      <tr>
+        <th>Service Type (required)</th>
+        <th>Frequency (required)</th>
+        <th>Duration (required)</th>
+        <th>Location (required)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <select>
+            <option value="">Select service</option>
+            <option>Special education instruction</option>
+            <option>Speech-language</option>
+            <option>Occupational therapy</option>
+            <option>Physical therapy</option>
+            <option>Counseling</option>
+          </select>
+        </td>
+        <td><input type="text"></td>
+        <td><input type="text"></td>
+        <td>
+          <select>
+            <option value="">Select location</option>
+            <option>General education classroom</option>
+            <option>Resource room</option>
+            <option>Separate classroom</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Section 5 — Supplementary Aids and Supports</h2>
+  <div class="field-row"><label>Supports Description:</label><br><textarea></textarea></div>
+</div>
+
+<div class="section">
+  <h2>Section 6 — Assessments</h2>
+  <div class="field-row">
+    <label>Participation (required):</label>
+    <label><input type="radio" name="assessment_participation"> Participates</label>
+    <label><input type="radio" name="assessment_participation"> Does not participate</label>
+  </div>
+  <div class="field-row"><label>Accommodations:</label><br><textarea></textarea></div>
+</div>
+
+<div class="section">
+  <h2>Section 7 — Least Restrictive Environment (LRE)</h2>
+  <div class="field-row"><label>Extent of Non-Participation (required):</label><br><textarea></textarea></div>
+</div>
+
+<div class="section">
+  <h2>Section 8 — Extended School Year (ESY)</h2>
+  <div class="field-row">
+    <label>Eligibility Decision (required):</label>
+    <label><input type="radio" name="esy_eligibility"> Yes</label>
+    <label><input type="radio" name="esy_eligibility"> No</label>
+  </div>
+  <div class="field-row"><label>Justification (required):</label><br><textarea></textarea></div>
+</div>
+
+<div class="section">
+  <h2>Section 9 — Transition Planning</h2>
+  <div class="field-row"><label>Postsecondary Goal: Education:</label><br><textarea></textarea></div>
+  <div class="field-row"><label>Postsecondary Goal: Employment:</label><br><textarea></textarea></div>
+  <div class="field-row"><label>Postsecondary Goal: Independent Living:</label><br><textarea></textarea></div>
+  <div class="field-row"><label>Transition Services and Activities:</label><br><textarea></textarea></div>
+</div>
+
+<div class="section">
+  <h2>Section 10 — IEP Team Signatures</h2>
+  <table class="services">
+    <thead>
+      <tr>
+        <th>Team Member Name (required)</th>
+        <th>Role (required)</th>
+        <th>Signature (required)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="text"></td>
+        <td>
+          <select>
+            <option value="">Select role</option>
+            <option>Parent</option>
+            <option>General education teacher</option>
+            <option>Special education teacher</option>
+            <option>Administrator</option>
+            <option>Related service provider</option>
+          </select>
+        </td>
+        <td>[ Signature block ]</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

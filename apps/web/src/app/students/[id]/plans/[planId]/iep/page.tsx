@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan } from '@/lib/api';
+import { api, Plan, ArtifactComparison, FormFieldDefinition, School } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import { ServicesListEditor, ServiceItem } from '@/components/iep/ServicesListEditor';
 import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
+import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
+import { GoalWizardPanel } from '@/components/goals/GoalWizardPanel';
+import { DynamicFormField } from '@/components/forms/DynamicFormField';
 import styles from './page.module.css';
 
 export default function IEPInterviewPage() {
@@ -26,6 +30,13 @@ export default function IEPInterviewPage() {
   const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
   const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
+  const [goalWizardOpen, setGoalWizardOpen] = useState(false);
+  const [availableArtifacts, setAvailableArtifacts] = useState<ArtifactComparison[]>([]);
+
+  // Dynamic form fields from database
+  const [fieldDefinitions, setFieldDefinitions] = useState<FormFieldDefinition[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [useDynamicFields, setUseDynamicFields] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,6 +63,52 @@ export default function IEPInterviewPage() {
     }
   }, [user, planId, loadPlan]);
 
+  // Load dynamic field definitions and schools
+  useEffect(() => {
+    const loadFieldDefinitions = async () => {
+      try {
+        const [fieldsRes, schoolsRes] = await Promise.all([
+          api.getFormFieldDefinitions('IEP'),
+          api.getSchools(),
+        ]);
+        if (fieldsRes.fields && fieldsRes.fields.length > 0) {
+          setFieldDefinitions(fieldsRes.fields);
+          setUseDynamicFields(true);
+        }
+        setSchools(schoolsRes.schools || []);
+      } catch (err) {
+        // If field definitions not available, fall back to schema-based rendering
+        console.log('Dynamic fields not available, using schema-based rendering');
+      }
+    };
+
+    if (user?.isOnboarded) {
+      loadFieldDefinitions();
+    }
+  }, [user]);
+
+  // Group field definitions by section for navigation
+  const dynamicSections = useMemo(() => {
+    if (!useDynamicFields || fieldDefinitions.length === 0) return [];
+
+    const sectionMap = new Map<string, FormFieldDefinition[]>();
+    fieldDefinitions.forEach(field => {
+      if (!sectionMap.has(field.section)) {
+        sectionMap.set(field.section, []);
+      }
+      sectionMap.get(field.section)!.push(field);
+    });
+
+    // Sort sections by their first field's sectionOrder
+    return Array.from(sectionMap.entries())
+      .map(([name, fields]) => ({
+        name,
+        fields: fields.sort((a, b) => a.sortOrder - b.sortOrder),
+        order: fields[0]?.sectionOrder || 0,
+      }))
+      .sort((a, b) => a.order - b.order);
+  }, [fieldDefinitions, useDynamicFields]);
+
   // Check generation availability
   useEffect(() => {
     const checkGeneration = async () => {
@@ -69,6 +126,23 @@ export default function IEPInterviewPage() {
       checkGeneration();
     }
   }, [planId]);
+
+  // Load available artifacts for goal wizard
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        const result = await api.getStudentArtifactCompares(studentId);
+        setAvailableArtifacts(result.comparisons || []);
+      } catch (err) {
+        // Artifacts not available - silently fail
+        console.error('Failed to load artifacts:', err);
+      }
+    };
+
+    if (studentId) {
+      loadArtifacts();
+    }
+  }, [studentId]);
 
   const handleGenerateDraft = async (sectionKey: string, fieldKey: string) => {
     setGeneratingFields(prev => new Set(prev).add(fieldKey));
@@ -89,8 +163,13 @@ export default function IEPInterviewPage() {
     }
   };
 
-  const sections = plan?.schema?.fields?.sections || [];
+  // Use dynamic sections if available, otherwise fall back to schema-based sections
+  const schemaSections = plan?.schema?.fields?.sections || [];
+  const sections = useDynamicFields && dynamicSections.length > 0
+    ? dynamicSections.map(s => ({ key: s.name.toLowerCase().replace(/\s+/g, '_'), title: s.name, fields: s.fields }))
+    : schemaSections;
   const currentSectionData = sections[currentSection];
+  const currentDynamicSection = useDynamicFields ? dynamicSections[currentSection] : null;
 
   const handleFieldChange = (fieldKey: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [fieldKey]: value }));
@@ -201,19 +280,72 @@ export default function IEPInterviewPage() {
             <div className={styles.section}>
               <h2>{currentSectionData.title}</h2>
 
-              {currentSectionData.isGoalsSection ? (
+              {/* Show Goal Wizard for goals sections - only for schema-based sections */}
+              {(() => {
+                // Skip goals detection for dynamic field sections
+                if (useDynamicFields && currentDynamicSection) return false;
+
+                // Use schema section for type-safe access
+                const schemaSection = schemaSections[currentSection];
+                if (!schemaSection) return false;
+
+                // Comprehensive goals section detection
+                const key = schemaSection.key?.toLowerCase() || '';
+                const title = schemaSection.title?.toLowerCase() || '';
+                const isGoalsSection =
+                  schemaSection.isGoalsSection === true ||
+                  key === 'goals' || key === 'annual_goals' || key.includes('goal') ||
+                  title.includes('goal') || title.includes('objective') ||
+                  schemaSection.fields?.some((f: { type?: string; key?: string }) =>
+                    f.type === 'goals' || f.key?.toLowerCase().includes('goal')
+                  ) ||
+                  // Order-based fallback for section 3 in Maryland IEP format
+                  (currentSection === 2 && schemaSections.length >= 5);
+
+                return isGoalsSection;
+              })() ? (
                 <div className={styles.goalsSection}>
-                  <p>Manage goals in the Goals tab after saving the IEP.</p>
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => router.push(`/students/${studentId}/plans/${planId}/goals`)}
-                  >
-                    Manage Goals →
-                  </button>
+                  <p>Use the Goal Wizard to create COMAR-compliant goals with AI assistance, or manage existing goals.</p>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setGoalWizardOpen(true);
+                      }}
+                    >
+                      Goal Wizard
+                    </button>
+                    <Link
+                      href={`/students/${studentId}/plans/${planId}/goals`}
+                      className="btn btn-outline"
+                    >
+                      Manage Goals →
+                    </Link>
+                  </div>
                 </div>
-              ) : (
+              ) : useDynamicFields && currentDynamicSection ? (
+                /* Dynamic Form Fields from Database */
                 <div className={styles.fields}>
-                  {currentSectionData.fields.map(field => (
+                  {currentDynamicSection.fields.map(field => (
+                    <DynamicFormField
+                      key={field.fieldKey}
+                      field={field}
+                      value={formData[field.fieldKey]}
+                      onChange={(value) => handleFieldChange(field.fieldKey, value)}
+                      user={user}
+                      schools={schools}
+                      disabled={plan?.status === 'FINALIZED'}
+                      showPermissionHint={true}
+                    />
+                  ))}
+                </div>
+              ) : schemaSections[currentSection] ? (
+                /* Schema-based Form Fields (fallback) */
+                <div className={styles.fields}>
+                  {schemaSections[currentSection].fields.map(field => (
                     <div key={field.key} className={styles.field}>
                       <label className={styles.label}>
                         {field.label}
@@ -312,7 +444,7 @@ export default function IEPInterviewPage() {
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -375,6 +507,23 @@ export default function IEPInterviewPage() {
         </button>
       </div>
 
+      {/* Artifact Comparisons Section */}
+      <div className={styles.artifactComparesContainer}>
+        <div className={styles.artifactComparesSection}>
+          <h2>Artifact Compares</h2>
+
+          <div className={styles.artifactSubsection}>
+            <h3>This Plan</h3>
+            <ArtifactComparesSection planId={planId} />
+          </div>
+
+          <div className={styles.artifactSubsection}>
+            <h3>All Student Comparisons</h3>
+            <ArtifactComparesSection studentId={studentId} showPlanInfo={true} />
+          </div>
+        </div>
+      </div>
+
       {/* Artifact Compare Wizard */}
       <ArtifactCompareWizard
         studentId={studentId}
@@ -384,6 +533,28 @@ export default function IEPInterviewPage() {
         isOpen={artifactWizardOpen}
         onClose={() => setArtifactWizardOpen(false)}
       />
+
+      {/* Goal Wizard Panel */}
+      {goalWizardOpen && plan && (
+        <div className={styles.goalWizardOverlay} onClick={(e) => {
+          // Only close if clicking the overlay itself, not the panel
+          if (e.target === e.currentTarget) {
+            setGoalWizardOpen(false);
+          }
+        }}>
+          <GoalWizardPanel
+            planId={planId}
+            studentId={studentId}
+            studentGrade={plan.student?.grade}
+            availableArtifacts={availableArtifacts}
+            onClose={() => setGoalWizardOpen(false)}
+            onGoalCreated={(_goalId) => {
+              setGoalWizardOpen(false);
+              router.push(`/students/${studentId}/plans/${planId}/goals`);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

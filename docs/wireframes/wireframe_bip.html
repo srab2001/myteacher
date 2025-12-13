@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BIP Wireframes</title>
+  <style>
+    :root {
+      --border:#111;
+      --muted:#666;
+      --bg:#fff;
+      --panel:#f6f6f6;
+      --radius:10px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Arial, Helvetica, sans-serif;
+    }
+    body { font-family: var(--sans); margin: 0; background: var(--bg); color:#111; }
+    header { padding: 18px 20px; border-bottom: 2px solid var(--border); }
+    header h1 { margin: 0; font-size: 18px; }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+    .wrap { padding: 20px; max-width: 1100px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .card {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+    }
+    .card .bar {
+      background: var(--panel);
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      font-size: 13px;
+      display:flex;
+      justify-content:space-between;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .card .content { padding: 12px; }
+    .row { display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .tabs { display:flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      border: 2px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background:#fff;
+    }
+    .tab.active { background:#111; color:#fff; }
+    .field {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 260px;
+      flex: 1 1 260px;
+    }
+    .field .lbl { font-size: 12px; color:#111; margin-bottom: 6px; display:flex; justify-content:space-between; gap: 8px; }
+    .field .req { font-size: 11px; color:#111; border:2px solid #111; padding:1px 6px; border-radius:999px; white-space: nowrap; }
+    .ctrl {
+      height: 34px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      padding: 0 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color:#111;
+    }
+    .ctrl.textarea { height: 90px; align-items:flex-start; padding-top:8px; }
+    .ctrl.signature { height: 56px; justify-content:center; }
+    .note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+    .k { font-family: var(--mono); font-size: 11px; }
+    .table {
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .table th, .table td {
+      border: 2px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .footer {
+      border-top: 2px solid var(--border);
+      padding: 10px 12px;
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items:center;
+      background:#fff;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 2px solid var(--border);
+      background:#fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-family: var(--sans);
+    }
+    .btn.primary { background:#111; color:#fff; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>BIP Wireframes</h1>
+  <p>Wireframes only. Controls are placeholders. Required markers show finalize requirements.</p>
+</header>
+<div class="wrap">
+  
+<div class="grid">
+  <div class="card">
+    <div class="bar">
+      <div><strong>BIP Wizard</strong></div>
+      <div class="tabs">
+        <span class="tab active">1 Header</span>
+        <span class="tab">2 Behaviors</span>
+        <span class="tab">3 Baseline/FBA</span>
+        <span class="tab">4 Plan</span>
+        <span class="tab">5 Crisis/Monitor</span>
+        <span class="tab">6 Sign-off</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>School</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_student_school_id (admin schools)</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Plan Date</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_plan_date</div>
+      <div class="ctrl">DATE</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Team Members</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_team_members</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Setting and Context</span></div>
+      <div class="note">fieldKey: bip_setting_context</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Target Behaviors</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Header</span>
+        <span class="tab active">2 Behaviors</span>
+        <span class="tab">3 Baseline/FBA</span>
+        <span class="tab">4 Plan</span>
+        <span class="tab">5 Crisis/Monitor</span>
+        <span class="tab">6 Sign-off</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Behavior 1 Definition</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_behavior_1_definition</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Behavior 2 Definition</span></div>
+      <div class="note">fieldKey: bip_behavior_2_definition</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Behavior 3 Definition</span></div>
+      <div class="note">fieldKey: bip_behavior_3_definition</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Baseline and FBA</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Header</span>
+        <span class="tab">2 Behaviors</span>
+        <span class="tab active">3 Baseline/FBA</span>
+        <span class="tab">4 Plan</span>
+        <span class="tab">5 Crisis/Monitor</span>
+        <span class="tab">6 Sign-off</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Baseline Summary</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_baseline_summary</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Data Sources</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_data_sources</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>FBA Completed</span></div>
+      <div class="note">fieldKey: bip_fba_completed_flag</div>
+      <div class="ctrl">RADIO</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>FBA Date</span></div>
+      <div class="note">fieldKey: bip_fba_date</div>
+      <div class="ctrl">DATE</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Function of Behavior</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_function_of_behavior</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Intervention Plan</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Header</span>
+        <span class="tab">2 Behaviors</span>
+        <span class="tab">3 Baseline/FBA</span>
+        <span class="tab active">4 Plan</span>
+        <span class="tab">5 Crisis/Monitor</span>
+        <span class="tab">6 Sign-off</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Triggers</span></div>
+      <div class="note">fieldKey: bip_triggers</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Antecedents</span></div>
+      <div class="note">fieldKey: bip_antecedents</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Consequences</span></div>
+      <div class="note">fieldKey: bip_consequences</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Replacement Behaviors</span></div>
+      <div class="note">fieldKey: bip_replacement_behaviors</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Skills To Teach</span></div>
+      <div class="note">fieldKey: bip_skills_to_teach</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Teaching Plan</span></div>
+      <div class="note">fieldKey: bip_teaching_plan</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Environment Changes</span></div>
+      <div class="note">fieldKey: bip_environment_changes</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Schedule/Routine Supports</span></div>
+      <div class="note">fieldKey: bip_schedule_routine_supports</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Staff Supports</span></div>
+      <div class="note">fieldKey: bip_staff_supports</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Reinforcement Strategy</span></div>
+      <div class="note">fieldKey: bip_reinforcement_strategy</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Reinforcement Schedule</span></div>
+      <div class="note">fieldKey: bip_reinforcement_schedule</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Staff Response Steps</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_staff_response_steps</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>De-escalation Steps</span></div>
+      <div class="note">fieldKey: bip_deescalation_steps</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Crisis and Progress Monitoring</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Header</span>
+        <span class="tab">2 Behaviors</span>
+        <span class="tab">3 Baseline/FBA</span>
+        <span class="tab">4 Plan</span>
+        <span class="tab active">5 Crisis/Monitor</span>
+        <span class="tab">6 Sign-off</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Crisis Procedures</span></div>
+      <div class="note">fieldKey: bip_crisis_procedures</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Restraint Considerations</span></div>
+      <div class="note">fieldKey: bip_restraint_considerations_flag</div>
+      <div class="ctrl">RADIO</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Parent Notification Steps</span></div>
+      <div class="note">fieldKey: bip_parent_notification_steps</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Progress Monitoring Method</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_progress_monitoring_method</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Progress Review Frequency</span><span class="req">required</span></div>
+      <div class="note">fieldKey: bip_progress_review_frequency (options admin only)</div>
+      <div class="ctrl">DROPDOWN</div>
+    </div>
+    
+        
+    <div class="field">
+      <div class="lbl"><span>Progress Reporting</span></div>
+      <div class="note">fieldKey: bip_progress_reporting</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save & Next</button></div>
+  </div>
+
+  <div class="card">
+    <div class="bar">
+      <div><strong>Sign-off</strong></div>
+      <div class="tabs">
+        <span class="tab">1 Header</span>
+        <span class="tab">2 Behaviors</span>
+        <span class="tab">3 Baseline/FBA</span>
+        <span class="tab">4 Plan</span>
+        <span class="tab">5 Crisis/Monitor</span>
+        <span class="tab active">6 Sign-off</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="row">
+        
+    <div class="field">
+      <div class="lbl"><span>Signatures</span></div>
+      <div class="note">fieldKey: bip_signatures</div>
+      <div class="ctrl textarea">TEXTAREA</div>
+    </div>
+    
+      </div>
+    </div>
+    <div class="footer"><button class="btn">Back</button><button class="btn primary">Save Draft</button><button class="btn primary">Finalize</button></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

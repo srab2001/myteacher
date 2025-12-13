@@ -5,8 +5,9 @@ import path from 'path';
 import fs from 'fs';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
-import { requirePlanAccess, requireUpdatePlanPermission } from '../middleware/permissions.js';
-import { compareArtifacts, extractTextFromFile } from '../services/artifactCompareService.js';
+import { requirePlanAccess, requireUpdatePlanPermission, requireStudentAccess } from '../middleware/permissions.js';
+import { compareArtifacts, compareArtifactsWithImages, extractTextFromFile, isImageMimeType } from '../services/artifactCompareService.js';
+import { Errors } from '../errors.js';
 
 const router = Router();
 
@@ -35,7 +36,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Allow PDF, DOCX, DOC, TXT, and common document formats
+  // Allow PDF, DOCX, DOC, TXT, images, and common document formats
   const allowedMimes = [
     'application/pdf',
     'application/msword',
@@ -43,12 +44,17 @@ const fileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer
     'text/plain',
     'text/markdown',
     'application/rtf',
+    // Image formats for GPT-4 Vision
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
   ];
 
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Allowed: PDF, DOC, DOCX, TXT, MD, RTF'));
+    cb(new Error('Invalid file type. Allowed: PDF, DOC, DOCX, TXT, MD, RTF, JPEG, PNG, GIF, WEBP'));
   }
 };
 
@@ -257,7 +263,7 @@ router.post(
         return res.status(404).json({ error: 'Artifact files not found. They may have been deleted.' });
       }
 
-      // Read and extract text from files
+      // Read files
       const baselineBuffer = fs.readFileSync(baselineFilePath);
       const compareBuffer = fs.readFileSync(compareFilePath);
 
@@ -265,29 +271,74 @@ router.post(
       const baselineMime = getMimeType(baselineFilename);
       const compareMime = getMimeType(compareFilename);
 
-      const baselineText = await extractTextFromFile(baselineBuffer, baselineMime, baselineFilename);
-      const compareText = await extractTextFromFile(compareBuffer, compareMime, compareFilename);
+      // Check if either file is an image
+      const baselineIsImage = isImageMimeType(baselineMime);
+      const compareIsImage = isImageMimeType(compareMime);
 
-      if (!baselineText.trim()) {
-        return res.status(400).json({ error: 'Could not extract text from baseline file' });
-      }
-      if (!compareText.trim()) {
-        return res.status(400).json({ error: 'Could not extract text from compare file' });
-      }
-
-      // Call ChatGPT API
       const studentName = `${comparison.student.firstName} ${comparison.student.lastName}`;
       const planTypeCode = comparison.planType.code;
       const artifactDate = comparison.artifactDate.toISOString().split('T')[0];
 
-      const analysisText = await compareArtifacts({
-        studentName,
-        planTypeCode,
-        artifactDate,
-        description: comparison.description,
-        baselineText,
-        compareText,
-      });
+      let analysisText: string;
+
+      // If either file is an image, use GPT-4 Vision
+      if (baselineIsImage || compareIsImage) {
+        // Prepare content for each file
+        type ContentType = { type: 'text'; text: string } | { type: 'image'; buffer: Buffer; mimeType: string };
+
+        let baselineContent: ContentType;
+        let compareContent: ContentType;
+
+        if (baselineIsImage) {
+          baselineContent = { type: 'image', buffer: baselineBuffer, mimeType: baselineMime };
+        } else {
+          const text = await extractTextFromFile(baselineBuffer, baselineMime, baselineFilename);
+          if (!text.trim()) {
+            return res.status(400).json({ error: 'Could not extract text from baseline file' });
+          }
+          baselineContent = { type: 'text', text };
+        }
+
+        if (compareIsImage) {
+          compareContent = { type: 'image', buffer: compareBuffer, mimeType: compareMime };
+        } else {
+          const text = await extractTextFromFile(compareBuffer, compareMime, compareFilename);
+          if (!text.trim()) {
+            return res.status(400).json({ error: 'Could not extract text from compare file' });
+          }
+          compareContent = { type: 'text', text };
+        }
+
+        // Use GPT-4 Vision for comparison
+        analysisText = await compareArtifactsWithImages({
+          studentName,
+          planTypeCode,
+          artifactDate,
+          description: comparison.description,
+          baselineContent,
+          compareContent,
+        });
+      } else {
+        // Both files are documents - extract text and use standard comparison
+        const baselineText = await extractTextFromFile(baselineBuffer, baselineMime, baselineFilename);
+        const compareText = await extractTextFromFile(compareBuffer, compareMime, compareFilename);
+
+        if (!baselineText.trim()) {
+          return res.status(400).json({ error: 'Could not extract text from baseline file' });
+        }
+        if (!compareText.trim()) {
+          return res.status(400).json({ error: 'Could not extract text from compare file' });
+        }
+
+        analysisText = await compareArtifacts({
+          studentName,
+          planTypeCode,
+          artifactDate,
+          description: comparison.description,
+          baselineText,
+          compareText,
+        });
+      }
 
       // Update the comparison with analysis
       const updatedComparison = await prisma.artifactComparison.update({
@@ -416,6 +467,150 @@ router.delete(
   }
 );
 
+// ============================================
+// GET /students/:studentId/artifact-compares - List all comparisons for a student
+// ============================================
+router.get(
+  '/students/:studentId/artifact-compares',
+  requireAuth,
+  requireOnboarded,
+  requireStudentAccess('studentId'),
+  async (req, res, next) => {
+    try {
+      const { studentId } = req.params;
+
+      // Verify student exists
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+      });
+
+      if (!student) {
+        throw Errors.studentNotFound(studentId);
+      }
+
+      // Get all artifact comparisons for this student
+      const comparisons = await prisma.artifactComparison.findMany({
+        where: { studentId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          planType: {
+            select: { code: true, name: true },
+          },
+          planInstance: {
+            select: { id: true, status: true, startDate: true },
+          },
+          createdBy: {
+            select: { displayName: true },
+          },
+        },
+      });
+
+      res.json({
+        comparisons: comparisons.map((c) => ({
+          id: c.id,
+          planInstanceId: c.planInstanceId ?? null,
+          planLabel: c.planInstance ? `${c.planInstance.status} - ${new Date(c.planInstance.startDate).toLocaleDateString()}` : null,
+          planTypeCode: c.planType?.code ?? 'UNKNOWN',
+          planTypeName: c.planType?.name ?? 'Unknown',
+          artifactDate: c.artifactDate,
+          description: c.description ?? null,
+          baselineFileUrl: c.baselineFileUrl,
+          compareFileUrl: c.compareFileUrl,
+          analysisText: c.analysisText ?? null,
+          createdBy: c.createdBy?.displayName ?? 'Unknown',
+          createdAt: c.createdAt,
+        })),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// PATCH /students/:studentId/artifact-compares/:comparisonId/align - Align comparison to a plan
+// ============================================
+router.patch(
+  '/students/:studentId/artifact-compares/:comparisonId/align',
+  requireAuth,
+  requireOnboarded,
+  requireStudentAccess('studentId'),
+  async (req, res, next) => {
+    try {
+      const { studentId, comparisonId } = req.params;
+      const { planId } = req.body;
+
+      if (!planId) {
+        return res.status(400).json({ error: 'planId is required' });
+      }
+
+      // Verify the comparison exists and belongs to this student
+      const comparison = await prisma.artifactComparison.findFirst({
+        where: {
+          id: comparisonId,
+          studentId,
+        },
+      });
+
+      if (!comparison) {
+        return res.status(404).json({ error: 'Artifact comparison not found' });
+      }
+
+      // Verify the plan exists and belongs to this student
+      const plan = await prisma.planInstance.findFirst({
+        where: {
+          id: planId,
+          studentId,
+        },
+        include: {
+          planType: true,
+        },
+      });
+
+      if (!plan) {
+        return res.status(404).json({ error: 'Plan not found or does not belong to this student' });
+      }
+
+      // Update the comparison to link to the plan
+      const updatedComparison = await prisma.artifactComparison.update({
+        where: { id: comparisonId },
+        data: {
+          planInstanceId: planId,
+          planTypeId: plan.planTypeId,
+        },
+        include: {
+          planType: {
+            select: { code: true, name: true },
+          },
+          planInstance: {
+            select: { id: true, status: true, startDate: true },
+          },
+          createdBy: {
+            select: { displayName: true },
+          },
+        },
+      });
+
+      res.json({
+        id: updatedComparison.id,
+        planInstanceId: updatedComparison.planInstanceId,
+        planLabel: updatedComparison.planInstance ? `${updatedComparison.planInstance.status} - ${new Date(updatedComparison.planInstance.startDate).toLocaleDateString()}` : null,
+        planTypeCode: updatedComparison.planType.code,
+        planTypeName: updatedComparison.planType.name,
+        artifactDate: updatedComparison.artifactDate,
+        description: updatedComparison.description,
+        baselineFileUrl: updatedComparison.baselineFileUrl,
+        compareFileUrl: updatedComparison.compareFileUrl,
+        analysisText: updatedComparison.analysisText,
+        createdBy: updatedComparison.createdBy.displayName,
+        createdAt: updatedComparison.createdAt,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Helper function to get MIME type from filename
 function getMimeType(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
@@ -426,6 +621,12 @@ function getMimeType(filename: string): string {
     '.txt': 'text/plain',
     '.md': 'text/markdown',
     '.rtf': 'application/rtf',
+    // Image formats
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
   };
   return mimeTypes[ext] || 'application/octet-stream';
 }

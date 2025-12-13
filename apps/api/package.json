@@ -5,13 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npx prisma@5.22.0 generate",
-    "postinstall": "npx prisma@5.22.0 generate",
+    "build": "npx prisma@5.22.0 generate && npx prisma@5.22.0 db push --skip-generate && npx tsx prisma/seed-if-empty.ts",
+    "postinstall": "npx prisma@5.22.0 generate && npx prisma@5.22.0 db push --skip-generate --accept-data-loss && npx tsx prisma/seed-if-empty.ts || true",
+    "prepare": "",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
-    "test": "jest --passWithNoTests",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -33,7 +38,9 @@
     "passport-local": "^1.0.0",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",
+    "pdf2json": "^4.0.0",
     "pg": "^8.16.3",
+    "unpdf": "^1.4.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

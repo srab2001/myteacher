@@ -981,7 +981,7 @@ class ApiClient {
     if (from) params.append('from', from);
     if (to) params.append('to', to);
     const queryString = params.toString();
-    return this.fetch(`/api/reports/students/${studentId}/iep-progress${queryString ? `?${queryString}` : ''}`);
+    return this.fetch(`/api/students/${studentId}/iep-progress${queryString ? `?${queryString}` : ''}`);
   }
 
   async getServiceMinutesReport(studentId: string, from?: string, to?: string): Promise<ServiceMinutesReport> {
@@ -989,7 +989,7 @@ class ApiClient {
     if (from) params.append('from', from);
     if (to) params.append('to', to);
     const queryString = params.toString();
-    return this.fetch(`/api/reports/students/${studentId}/services${queryString ? `?${queryString}` : ''}`);
+    return this.fetch(`/api/students/${studentId}/service-minutes${queryString ? `?${queryString}` : ''}`);
   }
 
   // Phase 4: Admin Schema API
@@ -1031,6 +1031,20 @@ class ApiClient {
     return this.fetch(`/api/admin/schemas/${schemaId}/fields`, {
       method: 'PATCH',
       body: JSON.stringify({ updates }),
+    });
+  }
+
+  async addSchemaField(schemaId: string, field: {
+    sectionKey: string;
+    fieldKey: string;
+    label: string;
+    type: string;
+    required: boolean;
+    options?: string[];
+  }): Promise<{ success: boolean; message: string }> {
+    return this.fetch(`/api/admin/schemas/${schemaId}/fields`, {
+      method: 'POST',
+      body: JSON.stringify(field),
     });
   }
 
@@ -1131,11 +1145,11 @@ class ApiClient {
   }
 
   async createStudent(data: {
-    recordId: string;
     firstName: string;
     lastName: string;
     dateOfBirth?: string;
     grade?: string;
+    schoolId?: string;
     schoolName?: string;
     districtName?: string;
   }): Promise<{ student: AdminStudent }> {
@@ -1143,6 +1157,19 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // Reference Data API (States, Districts, Schools)
+  async getReferenceStates(): Promise<ReferenceState[]> {
+    return this.fetch('/api/reference/states');
+  }
+
+  async getReferenceDistricts(stateId: string): Promise<ReferenceDistrict[]> {
+    return this.fetch(`/api/reference/states/${stateId}/districts`);
+  }
+
+  async getReferenceSchools(districtId: string): Promise<ReferenceSchool[]> {
+    return this.fetch(`/api/reference/districts/${districtId}/schools`);
   }
 
   // ============================================
@@ -1200,6 +1227,507 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Student-level artifact compares
+  async getStudentArtifactCompares(studentId: string): Promise<{ comparisons: ArtifactComparison[] }> {
+    return this.fetch(`/api/artifact-compare/students/${studentId}/artifact-compares`);
+  }
+
+  async getPlanArtifactCompares(planId: string): Promise<{ comparisons: ArtifactComparison[] }> {
+    return this.fetch(`/api/artifact-compare/plans/${planId}/artifact-compare`);
+  }
+
+  async alignArtifactCompare(studentId: string, comparisonId: string, planId: string): Promise<ArtifactComparison> {
+    return this.fetch(`/api/artifact-compare/students/${studentId}/artifact-compares/${comparisonId}/align`, {
+      method: 'PATCH',
+      body: JSON.stringify({ planId }),
+    });
+  }
+
+  // ============================================
+  // Goal Wizard API
+  // ============================================
+
+  // Present Levels
+  async getPresentLevelsHelpers(studentId: string, goalArea?: string): Promise<PresentLevelsHelpers> {
+    const params = new URLSearchParams();
+    if (goalArea) params.append('goalArea', goalArea);
+    const queryString = params.toString();
+    return this.fetch(`/api/students/${studentId}/present-levels/helpers${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async generatePresentLevels(studentId: string, goalArea?: string, planId?: string): Promise<PresentLevelData> {
+    return this.fetch(`/api/students/${studentId}/present-levels/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ goalArea, planId }),
+    });
+  }
+
+  async getGoalContext(studentId: string, goalArea?: string): Promise<{
+    student: { id: string; firstName: string; lastName: string; grade: string };
+    recentStatuses: Array<{ scope: string; code: string; summary: string | null; effectiveDate: string }>;
+    artifactComparisons: Array<{ id: string; artifactDate: string; description: string | null; analysisText: string | null }>;
+    existingGoals: Array<{ id: string; area: string; annualGoalText: string }>;
+  }> {
+    const params = new URLSearchParams();
+    if (goalArea) params.append('goalArea', goalArea);
+    const queryString = params.toString();
+    return this.fetch(`/api/students/${studentId}/goal-context${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Goal Templates
+  async getGoalTemplates(area?: string, gradeBand?: string): Promise<{ templates: Record<string, GoalTemplate[]> | GoalTemplate[] }> {
+    const params = new URLSearchParams();
+    if (area) params.append('area', area);
+    if (gradeBand) params.append('gradeBand', gradeBand);
+    const queryString = params.toString();
+    return this.fetch(`/api/goal-templates${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Goal Draft Generation
+  async generateGoalDraft(data: {
+    planId: string;
+    goalArea: string;
+    userPrompt?: string;
+    templateId?: string;
+    linkedArtifactIds?: string[];
+    presentLevels?: {
+      currentPerformance: string;
+      strengthsNoted: string[];
+      challengesNoted: string[];
+      recentProgress: string;
+      dataSourceSummary: string;
+    };
+  }): Promise<{ draft: GoalDraft }> {
+    return this.fetch('/api/goal-wizard/draft', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Wizard Sessions
+  async startWizardSession(planId: string, goalArea: string, linkedArtifactIds?: string[]): Promise<{ sessionId: string; message: string }> {
+    return this.fetch('/api/goal-wizard/session/start', {
+      method: 'POST',
+      body: JSON.stringify({ planId, goalArea, linkedArtifactIds }),
+    });
+  }
+
+  async sendWizardMessage(sessionId: string, message: string): Promise<{ response: string; currentDraft: GoalDraft | null }> {
+    return this.fetch(`/api/goal-wizard/session/${sessionId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+
+  async getWizardSession(sessionId: string): Promise<{ goalArea: string; currentDraft: GoalDraft | null; messageCount: number }> {
+    return this.fetch(`/api/goal-wizard/session/${sessionId}`);
+  }
+
+  async saveWizardDraft(sessionId: string): Promise<{ goalId: string; message: string }> {
+    return this.fetch(`/api/goal-wizard/session/${sessionId}/save`, {
+      method: 'POST',
+    });
+  }
+
+  // Goal Validation
+  async quickValidateGoal(goalText: string): Promise<QuickValidationResult> {
+    return this.fetch('/api/goal-wizard/validate/quick', {
+      method: 'POST',
+      body: JSON.stringify({ goalText }),
+    });
+  }
+
+  async validateGoal(data: {
+    annualGoalText: string;
+    area: string;
+    objectives?: Array<{ objectiveText: string; measurementCriteria?: string }>;
+    baselineDescription?: string;
+    studentGrade?: string;
+  }): Promise<ValidationResult> {
+    return this.fetch('/api/goal-wizard/validate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async validateGoalWithAI(data: {
+    annualGoalText: string;
+    area: string;
+    objectives?: Array<{ objectiveText: string; measurementCriteria?: string }>;
+    baselineDescription?: string;
+    studentGrade?: string;
+  }): Promise<ValidationResult> {
+    return this.fetch('/api/goal-wizard/validate/ai', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async improveGoal(data: {
+    annualGoalText: string;
+    area: string;
+    baselineDescription?: string;
+    studentGrade?: string;
+  }): Promise<{ improvedGoal: string; explanation: string }> {
+    return this.fetch('/api/goal-wizard/improve', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Goal Artifact Links
+  async linkArtifactToGoal(goalId: string, artifactComparisonId: string, relevanceNote?: string): Promise<{ link: GoalArtifactLink }> {
+    return this.fetch(`/api/goals/${goalId}/artifacts`, {
+      method: 'POST',
+      body: JSON.stringify({ artifactComparisonId, relevanceNote }),
+    });
+  }
+
+  async getGoalArtifacts(goalId: string): Promise<{ artifacts: GoalArtifactLink[] }> {
+    return this.fetch(`/api/goals/${goalId}/artifacts`);
+  }
+
+  async unlinkArtifactFromGoal(goalId: string, linkId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/goals/${goalId}/artifacts/${linkId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Goal Objectives
+  async getGoalObjectives(goalId: string): Promise<{ objectives: GoalObjective[] }> {
+    return this.fetch(`/api/goals/${goalId}/objectives`);
+  }
+
+  async addGoalObjective(goalId: string, data: {
+    objectiveText: string;
+    measurementCriteria?: string;
+    targetDate?: string;
+  }): Promise<{ objective: GoalObjective }> {
+    return this.fetch(`/api/goals/${goalId}/objectives`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateGoalObjective(goalId: string, objectiveId: string, data: {
+    objectiveText?: string;
+    measurementCriteria?: string;
+    targetDate?: string;
+  }): Promise<{ objective: GoalObjective }> {
+    return this.fetch(`/api/goals/${goalId}/objectives/${objectiveId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async completeGoalObjective(goalId: string, objectiveId: string): Promise<{ objective: GoalObjective }> {
+    return this.fetch(`/api/goals/${goalId}/objectives/${objectiveId}/complete`, {
+      method: 'POST',
+    });
+  }
+
+  async finalizeGoal(goalId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/goals/${goalId}/finalize`, {
+      method: 'POST',
+    });
+  }
+
+  // ============================================
+  // IEP Independent Assessment Review (IEP Reports)
+  // Based on Howard County "Review of Independent Assessment" form
+  // ============================================
+
+  async getIEPReports(studentId: string): Promise<{ reviews: IEPIndependentAssessmentReview[] }> {
+    return this.fetch(`/api/students/${studentId}/iep-reports`);
+  }
+
+  async getIEPReport(reportId: string): Promise<{ review: IEPIndependentAssessmentReview }> {
+    return this.fetch(`/api/iep-reports/${reportId}`);
+  }
+
+  async createIEPReport(studentId: string, data: CreateIEPReportData): Promise<{ review: IEPIndependentAssessmentReview; message: string }> {
+    return this.fetch(`/api/students/${studentId}/iep-reports`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateIEPReport(reportId: string, data: Partial<CreateIEPReportData>): Promise<{ review: IEPIndependentAssessmentReview; message: string }> {
+    return this.fetch(`/api/iep-reports/${reportId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteIEPReport(reportId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/iep-reports/${reportId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ============================================
+  // Form Field Definitions API
+  // ============================================
+
+  async getFormFieldDefinitions(formType: 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR' = 'IEP'): Promise<FormFieldsResponse> {
+    return this.fetch(`/api/forms/fields?formType=${formType}`);
+  }
+
+  async getSchools(): Promise<{ schools: School[] }> {
+    return this.fetch('/api/schools');
+  }
+
+  async saveFormFieldValues(data: {
+    planId?: string;
+    studentId?: string;
+    formType: 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR';
+    values: Array<{ fieldKey: string; value: unknown }>;
+  }): Promise<{ saved: number; errors?: Array<{ fieldKey: string; message: string }> }> {
+    return this.fetch('/api/forms/values', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFormFieldValues(params: {
+    planId?: string;
+    studentId?: string;
+  }): Promise<{ values: Array<{ fieldKey: string; value: unknown }> }> {
+    const queryParams = new URLSearchParams();
+    if (params.planId) queryParams.append('planId', params.planId);
+    if (params.studentId) queryParams.append('studentId', params.studentId);
+    return this.fetch(`/api/forms/values?${queryParams.toString()}`);
+  }
+
+  async validateRequiredFields(data: {
+    planId?: string;
+    studentId?: string;
+    formType: 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR';
+  }): Promise<RequiredFieldValidation> {
+    return this.fetch('/api/forms/validate-required', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Admin: Form Field Management
+  async createFormField(data: CreateFieldData): Promise<{ field: FormFieldDefinition }> {
+    return this.fetch('/api/admin/forms/fields', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFormField(fieldId: string, data: UpdateFieldData): Promise<{ field: FormFieldDefinition }> {
+    return this.fetch(`/api/admin/forms/fields/${fieldId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFormField(fieldId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/admin/forms/fields/${fieldId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async createFieldOption(fieldId: string, data: { value: string; label: string; sortOrder?: number }): Promise<{ option: FormFieldOption }> {
+    return this.fetch(`/api/admin/forms/fields/${fieldId}/options`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFieldOption(optionId: string, data: { value?: string; label?: string; sortOrder?: number; isActive?: boolean }): Promise<{ option: FormFieldOption }> {
+    return this.fetch(`/api/admin/forms/options/${optionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFieldOption(optionId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/admin/forms/options/${optionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Admin: School Management
+  async getAdminSchoolsList(): Promise<{ schools: School[] }> {
+    return this.fetch('/api/admin/schools');
+  }
+
+  async createSchool(data: { name: string; code?: string; stateCode?: string; districtId?: string; address?: string }): Promise<{ school: School }> {
+    return this.fetch('/api/admin/schools', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSchool(schoolId: string, data: { name?: string; code?: string; stateCode?: string; isActive?: boolean }): Promise<{ school: School }> {
+    return this.fetch(`/api/admin/schools/${schoolId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSchool(schoolId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/admin/schools/${schoolId}`, {
+      method: 'DELETE',
+    });
+  }
+}
+
+// ============================================
+// IEP Independent Assessment Review Types
+// ============================================
+
+export type AssessmentType =
+  | 'AUDIOLOGICAL'
+  | 'EDUCATIONAL'
+  | 'OCCUPATIONAL_THERAPY'
+  | 'PHYSICAL_THERAPY'
+  | 'PSYCHOLOGICAL'
+  | 'SPEECH_LANGUAGE'
+  | 'OTHER';
+
+export interface IEPIndependentAssessmentReview {
+  id: string;
+  studentId: string;
+  planInstanceId?: string;
+
+  // Header
+  school?: string;
+  grade?: string;
+  dateOfBirth?: string;
+  dateOfReport?: string;
+  dateOfTeamReview?: string;
+  assessmentType: AssessmentType;
+  assessmentTypeOther?: string;
+
+  // Part I: Review by Qualified Personnel
+  schoolReviewerName?: string;
+  schoolReviewerTitle?: string;
+  schoolReviewerCredentials?: string;
+  examinerName?: string;
+  examinerTitle?: string;
+  examinerLicensed?: boolean;
+  examinerLicenseDetails?: string;
+  examinerQualified?: boolean;
+  examinerQualificationNotes?: string;
+  reportWrittenDatedSigned?: boolean;
+  materialsTechnicallySound?: boolean;
+  materialsFollowedInstructions?: boolean;
+  materialsInstructionsNotes?: string;
+  materialsLanguageAccurate?: boolean;
+  materialsLanguageNotes?: string;
+  materialsBiasFree?: boolean;
+  materialsBiasNotes?: string;
+  materialsValidPurpose?: boolean;
+  materialsValidNotes?: string;
+  resultsReflectAptitude?: boolean;
+  resultsReflectAptitudeNA?: boolean;
+  resultsNotes?: string;
+
+  // Part II: Review by Team
+  describesPerformanceAllAreas?: boolean;
+  performanceAreasNotes?: string;
+  includesVariedAssessmentData?: boolean;
+  assessmentDataNotes?: string;
+  includesInstructionalImplications?: boolean;
+  instructionalNotes?: string;
+
+  // Part III: Conclusions
+  findingsMatchData?: boolean;
+  findingsMatchDataNote?: string;
+  dataMatchExistingSchoolData?: boolean;
+  dataMatchExistingNote?: string;
+  recommendationsSupported?: boolean;
+  recommendationsToConsider?: string;
+  schoolAssessmentWaived?: boolean;
+  schoolAssessmentWaivedNote?: string;
+
+  // Part IV: IEP Teams Only
+  includesDataForIEPContent?: boolean;
+  iepContentNotes?: string;
+  disabilityConsistentWithCOMAR?: boolean;
+  comarDisabilityNotes?: string;
+
+  // Additional
+  additionalNotes?: string;
+  teamMembers?: Array<{ name: string; role: string }>;
+
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: { id: string; displayName: string };
+  student?: { id: string; firstName: string; lastName: string };
+  planInstance?: { id: string; startDate: string; status: string };
+}
+
+export interface CreateIEPReportData {
+  assessmentType: AssessmentType;
+  assessmentTypeOther?: string;
+  planInstanceId?: string;
+
+  // Header
+  school?: string;
+  grade?: string;
+  dateOfBirth?: string;
+  dateOfReport?: string;
+  dateOfTeamReview?: string;
+
+  // Part I
+  schoolReviewerName?: string;
+  schoolReviewerTitle?: string;
+  schoolReviewerCredentials?: string;
+  examinerName?: string;
+  examinerTitle?: string;
+  examinerLicensed?: boolean;
+  examinerLicenseDetails?: string;
+  examinerQualified?: boolean;
+  examinerQualificationNotes?: string;
+  reportWrittenDatedSigned?: boolean;
+  materialsTechnicallySound?: boolean;
+  materialsFollowedInstructions?: boolean;
+  materialsInstructionsNotes?: string;
+  materialsLanguageAccurate?: boolean;
+  materialsLanguageNotes?: string;
+  materialsBiasFree?: boolean;
+  materialsBiasNotes?: string;
+  materialsValidPurpose?: boolean;
+  materialsValidNotes?: string;
+  resultsReflectAptitude?: boolean;
+  resultsReflectAptitudeNA?: boolean;
+  resultsNotes?: string;
+
+  // Part II
+  describesPerformanceAllAreas?: boolean;
+  performanceAreasNotes?: string;
+  includesVariedAssessmentData?: boolean;
+  assessmentDataNotes?: string;
+  includesInstructionalImplications?: boolean;
+  instructionalNotes?: string;
+
+  // Part III
+  findingsMatchData?: boolean;
+  findingsMatchDataNote?: string;
+  dataMatchExistingSchoolData?: boolean;
+  dataMatchExistingNote?: string;
+  recommendationsSupported?: boolean;
+  recommendationsToConsider?: string;
+  schoolAssessmentWaived?: boolean;
+  schoolAssessmentWaivedNote?: string;
+
+  // Part IV
+  includesDataForIEPContent?: boolean;
+  iepContentNotes?: string;
+  disabilityConsistentWithCOMAR?: boolean;
+  comarDisabilityNotes?: string;
+
+  // Additional
+  additionalNotes?: string;
+  teamMembers?: Array<{ name: string; role: string }>;
 }
 
 export interface AdminStudent {
@@ -1209,26 +1737,237 @@ export interface AdminStudent {
   lastName: string;
   dateOfBirth: string | null;
   grade: string | null;
+  schoolId: string | null;
   schoolName: string | null;
   districtName: string | null;
   isActive: boolean;
   createdAt?: string;
+  school?: {
+    id: string;
+    name: string;
+    district: {
+      id: string;
+      name: string;
+      state: {
+        id: string;
+        code: string;
+        name: string;
+      };
+    };
+  } | null;
+}
+
+// Reference Data Types
+export type SchoolType = 'ELEMENTARY' | 'MIDDLE' | 'HIGH' | 'K8' | 'K12' | 'OTHER';
+
+export interface ReferenceState {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface ReferenceDistrict {
+  id: string;
+  code: string;
+  name: string;
+  stateId: string;
+}
+
+export interface ReferenceSchool {
+  id: string;
+  code: string | null;
+  name: string;
+  schoolType: SchoolType;
+  districtId: string;
+}
+
+// Goal Wizard Types
+export interface PresentLevelData {
+  area: string;
+  currentPerformance: string;
+  strengthsNoted: string[];
+  challengesNoted: string[];
+  recentProgress: string;
+  dataSourceSummary: string;
+  suggestedGoalAreas?: string[];
+}
+
+export interface PresentLevelsHelpers {
+  statusSummary: Record<string, { latestCode: string; latestSummary: string | null }>;
+  artifactHighlights: Array<{ date: string; summary: string }>;
+  progressTrend: string;
+}
+
+export interface GoalObjective {
+  id?: string;
+  sequence: number;
+  objectiveText: string;
+  measurementCriteria?: string;
+  targetDate?: string;
+  isCompleted?: boolean;
+}
+
+export interface GoalDraft {
+  goalArea: string;
+  annualGoalText: string;
+  objectives: Array<{
+    sequence: number;
+    objectiveText: string;
+    measurementCriteria: string;
+    suggestedTargetWeeks: number;
+  }>;
+  baselineDescription: string;
+  measurementMethod: string;
+  progressSchedule: string;
+  comarReference: string | null;
+  rationale: string;
+}
+
+export interface GoalTemplate {
+  template: string;
+  comarRef: string;
+}
+
+export interface ValidationIssue {
+  type: 'error' | 'warning' | 'suggestion';
+  code: string;
+  message: string;
+  comarReference?: string;
+  suggestion?: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  score: number;
+  issues: ValidationIssue[];
+  comarCompliance: {
+    measurable: boolean;
+    gradeAligned: boolean;
+    needsBased: boolean;
+    geAccessEnabled: boolean;
+  };
+  suggestions: string[];
+}
+
+export interface QuickValidationResult {
+  status: 'good' | 'needs-work' | 'incomplete';
+  hints: string[];
+}
+
+export interface GoalArtifactLink {
+  linkId: string;
+  relevanceNote: string | null;
+  linkedAt: string;
+  id: string;
+  artifactDate: string;
+  description: string | null;
+  analysisText: string | null;
+  baselineFileUrl: string;
+  compareFileUrl: string;
 }
 
 // Artifact Compare Types
 export interface ArtifactComparison {
   id: string;
   planInstanceId?: string;
+  planLabel?: string;
   artifactDate: string;
   description: string | null;
   baselineFileUrl: string;
   compareFileUrl: string;
   analysisText: string | null;
   studentName?: string;
-  planTypeCode?: string;
+  planTypeCode: string;
   planTypeName?: string;
   createdBy?: string;
-  createdAt?: string;
+  createdAt: string;
+}
+
+// ============================================
+// Form Field Definition Types
+// ============================================
+
+export type FormType = 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR';
+export type ControlType = 'TEXT' | 'TEXTAREA' | 'DROPDOWN' | 'RADIO' | 'SIGNATURE' | 'CHECKBOX' | 'DATE';
+export type OptionsEditableBy = 'ADMIN_ONLY' | 'TEACHER_ALLOWED' | 'NONE';
+
+export interface FormFieldOption {
+  id: string;
+  value: string;
+  label: string;
+  sortOrder: number;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface FormFieldDefinition {
+  id: string;
+  formType: FormType;
+  section: string;
+  sectionOrder: number;
+  fieldKey: string;
+  fieldLabel: string;
+  controlType: ControlType;
+  isRequired: boolean;
+  valueEditableBy: string[];
+  optionsEditableBy: OptionsEditableBy;
+  helpText: string | null;
+  placeholder: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  options: FormFieldOption[];
+}
+
+export interface FormFieldsResponse {
+  formType: FormType;
+  fields: FormFieldDefinition[];
+  sections: Record<string, FormFieldDefinition[]>;
+  totalFields: number;
+}
+
+export interface School {
+  id: string;
+  name: string;
+  code: string | null;
+  stateCode: string | null;
+  districtId: string | null;
+  address: string | null;
+  isActive: boolean;
+}
+
+export interface RequiredFieldValidation {
+  isValid: boolean;
+  missingFields?: Array<{ section: string; fieldKey: string; fieldLabel: string }>;
+  message: string;
+}
+
+export interface CreateFieldData {
+  formType: FormType;
+  section: string;
+  sectionOrder?: number;
+  fieldKey: string;
+  fieldLabel: string;
+  controlType: ControlType;
+  isRequired?: boolean;
+  valueEditableBy: string[];
+  optionsEditableBy?: OptionsEditableBy;
+  helpText?: string;
+  placeholder?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateFieldData {
+  section?: string;
+  sectionOrder?: number;
+  fieldLabel?: string;
+  controlType?: ControlType;
+  isRequired?: boolean;
+  valueEditableBy?: string[];
+  optionsEditableBy?: OptionsEditableBy;
+  helpText?: string | null;
+  placeholder?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
 }
 
 export const api = new ApiClient();

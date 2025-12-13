@@ -1,0 +1,469 @@
+{
+  "formType": "IEP",
+  "version": "v1",
+  "fields": [
+    {
+      "section": "Student Information",
+      "sectionOrder": 1,
+      "fieldKey": "student_name",
+      "fieldLabel": "Student Name",
+      "controlType": "TEXT",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "options": []
+    },
+    {
+      "section": "Student Information",
+      "sectionOrder": 1,
+      "fieldKey": "student_dob",
+      "fieldLabel": "Date of Birth",
+      "controlType": "TEXT",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "options": []
+    },
+    {
+      "section": "Student Information",
+      "sectionOrder": 1,
+      "fieldKey": "student_grade",
+      "fieldLabel": "Grade",
+      "controlType": "TEXT",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "options": []
+    },
+    {
+      "section": "Student Information",
+      "sectionOrder": 1,
+      "fieldKey": "student_school_id",
+      "fieldLabel": "School",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 4,
+      "options": []
+    },
+    {
+      "section": "Student Information",
+      "sectionOrder": 1,
+      "fieldKey": "student_case_manager_id",
+      "fieldLabel": "Case Manager",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 5,
+      "options": []
+    },
+
+    {
+      "section": "Present Levels",
+      "sectionOrder": 2,
+      "fieldKey": "plaa_academic_performance",
+      "fieldLabel": "Academic Performance",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "options": []
+    },
+    {
+      "section": "Present Levels",
+      "sectionOrder": 2,
+      "fieldKey": "plaa_functional_performance",
+      "fieldLabel": "Functional Performance",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "options": []
+    },
+    {
+      "section": "Present Levels",
+      "sectionOrder": 2,
+      "fieldKey": "plaa_impact_disability_progress",
+      "fieldLabel": "Impact of Disability on Progress",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "options": []
+    },
+
+    {
+      "section": "Annual Goals",
+      "sectionOrder": 3,
+      "fieldKey": "goals_area",
+      "fieldLabel": "Goal Area",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 1,
+      "options": [
+        { "value": "READING", "label": "Reading", "sortOrder": 1 },
+        { "value": "WRITING", "label": "Writing", "sortOrder": 2 },
+        { "value": "MATH", "label": "Math", "sortOrder": 3 },
+        { "value": "COMMUNICATION", "label": "Communication", "sortOrder": 4 },
+        { "value": "SOCIAL_EMOTIONAL", "label": "Social-Emotional", "sortOrder": 5 },
+        { "value": "BEHAVIOR", "label": "Behavior", "sortOrder": 6 },
+        { "value": "MOTOR_SKILLS", "label": "Motor Skills", "sortOrder": 7 },
+        { "value": "DAILY_LIVING", "label": "Daily Living", "sortOrder": 8 },
+        { "value": "VOCATIONAL", "label": "Vocational", "sortOrder": 9 },
+        { "value": "OTHER", "label": "Other", "sortOrder": 10 }
+      ]
+    },
+    {
+      "section": "Annual Goals",
+      "sectionOrder": 3,
+      "fieldKey": "goals_annual_goal",
+      "fieldLabel": "Annual Goal",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "options": []
+    },
+    {
+      "section": "Annual Goals",
+      "sectionOrder": 3,
+      "fieldKey": "goals_short_term_objective_1",
+      "fieldLabel": "Short-Term Objective 1",
+      "controlType": "TEXT",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "options": []
+    },
+    {
+      "section": "Annual Goals",
+      "sectionOrder": 3,
+      "fieldKey": "goals_short_term_objective_2",
+      "fieldLabel": "Short-Term Objective 2",
+      "controlType": "TEXT",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 4,
+      "options": []
+    },
+    {
+      "section": "Annual Goals",
+      "sectionOrder": 3,
+      "fieldKey": "goals_short_term_objective_3",
+      "fieldLabel": "Short-Term Objective 3",
+      "controlType": "TEXT",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 5,
+      "options": []
+    },
+    {
+      "section": "Annual Goals",
+      "sectionOrder": 3,
+      "fieldKey": "goals_progress_measure_method",
+      "fieldLabel": "Progress Measurement Method",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 6,
+      "options": [
+        { "value": "observation", "label": "Observation", "sortOrder": 1 },
+        { "value": "work_samples", "label": "Work Samples", "sortOrder": 2 },
+        { "value": "curriculum_assessment", "label": "Curriculum-Based Assessment", "sortOrder": 3 },
+        { "value": "standardized_test", "label": "Standardized Test", "sortOrder": 4 },
+        { "value": "data_collection", "label": "Data Collection", "sortOrder": 5 },
+        { "value": "teacher_made_test", "label": "Teacher-Made Test", "sortOrder": 6 },
+        { "value": "other", "label": "Other", "sortOrder": 7 }
+      ]
+    },
+    {
+      "section": "Annual Goals",
+      "sectionOrder": 3,
+      "fieldKey": "goals_progress_measure_frequency",
+      "fieldLabel": "Progress Measurement Frequency",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 7,
+      "options": [
+        { "value": "daily", "label": "Daily", "sortOrder": 1 },
+        { "value": "weekly", "label": "Weekly", "sortOrder": 2 },
+        { "value": "biweekly", "label": "Bi-Weekly", "sortOrder": 3 },
+        { "value": "monthly", "label": "Monthly", "sortOrder": 4 },
+        { "value": "quarterly", "label": "Quarterly", "sortOrder": 5 },
+        { "value": "per_marking_period", "label": "Per Marking Period", "sortOrder": 6 }
+      ]
+    },
+
+    {
+      "section": "Services",
+      "sectionOrder": 4,
+      "fieldKey": "svc_service_type",
+      "fieldLabel": "Service Type",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 1,
+      "options": [
+        { "value": "special_education", "label": "Special Education", "sortOrder": 1 },
+        { "value": "speech_language", "label": "Speech-Language Therapy", "sortOrder": 2 },
+        { "value": "occupational_therapy", "label": "Occupational Therapy", "sortOrder": 3 },
+        { "value": "physical_therapy", "label": "Physical Therapy", "sortOrder": 4 },
+        { "value": "counseling", "label": "Counseling", "sortOrder": 5 },
+        { "value": "behavioral_support", "label": "Behavioral Support", "sortOrder": 6 },
+        { "value": "reading_specialist", "label": "Reading Specialist", "sortOrder": 7 },
+        { "value": "paraprofessional", "label": "Paraprofessional Support", "sortOrder": 8 },
+        { "value": "other", "label": "Other", "sortOrder": 9 }
+      ]
+    },
+    {
+      "section": "Services",
+      "sectionOrder": 4,
+      "fieldKey": "svc_frequency",
+      "fieldLabel": "Frequency",
+      "controlType": "TEXT",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "placeholder": "e.g., 3 times per week",
+      "options": []
+    },
+    {
+      "section": "Services",
+      "sectionOrder": 4,
+      "fieldKey": "svc_duration",
+      "fieldLabel": "Duration",
+      "controlType": "TEXT",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "placeholder": "e.g., 30 minutes per session",
+      "options": []
+    },
+    {
+      "section": "Services",
+      "sectionOrder": 4,
+      "fieldKey": "svc_location",
+      "fieldLabel": "Location",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 4,
+      "options": [
+        { "value": "general_education", "label": "General Education Classroom", "sortOrder": 1 },
+        { "value": "special_education", "label": "Special Education Classroom", "sortOrder": 2 },
+        { "value": "resource_room", "label": "Resource Room", "sortOrder": 3 },
+        { "value": "therapy_room", "label": "Therapy Room", "sortOrder": 4 },
+        { "value": "community", "label": "Community Setting", "sortOrder": 5 },
+        { "value": "home", "label": "Home", "sortOrder": 6 },
+        { "value": "other", "label": "Other", "sortOrder": 7 }
+      ]
+    },
+
+    {
+      "section": "Supplementary Aids",
+      "sectionOrder": 5,
+      "fieldKey": "supp_supports_description",
+      "fieldLabel": "Supports Description",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "options": []
+    },
+
+    {
+      "section": "Assessments",
+      "sectionOrder": 6,
+      "fieldKey": "assess_participation",
+      "fieldLabel": "Assessment Participation",
+      "controlType": "RADIO",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 1,
+      "options": [
+        { "value": "standard_no_accommodations", "label": "Standard Assessment (No Accommodations)", "sortOrder": 1 },
+        { "value": "standard_with_accommodations", "label": "Standard Assessment with Accommodations", "sortOrder": 2 },
+        { "value": "alternate_assessment", "label": "Alternate Assessment", "sortOrder": 3 },
+        { "value": "not_applicable", "label": "Not Applicable", "sortOrder": 4 }
+      ]
+    },
+    {
+      "section": "Assessments",
+      "sectionOrder": 6,
+      "fieldKey": "assess_accommodations",
+      "fieldLabel": "Accommodations",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "options": []
+    },
+
+    {
+      "section": "LRE",
+      "sectionOrder": 7,
+      "fieldKey": "lre_extent_non_participation",
+      "fieldLabel": "Extent of Non-Participation",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "helpText": "Describe the extent to which the student will not participate with nondisabled peers in regular classes and extracurricular activities.",
+      "options": []
+    },
+
+    {
+      "section": "ESY",
+      "sectionOrder": 8,
+      "fieldKey": "esy_eligibility_decision",
+      "fieldLabel": "Eligibility Decision",
+      "controlType": "RADIO",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 1,
+      "options": [
+        { "value": "eligible", "label": "Eligible for ESY Services", "sortOrder": 1 },
+        { "value": "not_eligible", "label": "Not Eligible for ESY Services", "sortOrder": 2 },
+        { "value": "pending_review", "label": "Pending Further Review", "sortOrder": 3 }
+      ]
+    },
+    {
+      "section": "ESY",
+      "sectionOrder": 8,
+      "fieldKey": "esy_justification",
+      "fieldLabel": "Justification",
+      "controlType": "TEXTAREA",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "helpText": "Provide justification for the ESY eligibility decision based on regression/recoupment data and other factors.",
+      "options": []
+    },
+
+    {
+      "section": "Transition",
+      "sectionOrder": 9,
+      "fieldKey": "trans_postsecondary_education",
+      "fieldLabel": "Postsecondary Goal: Education",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "options": []
+    },
+    {
+      "section": "Transition",
+      "sectionOrder": 9,
+      "fieldKey": "trans_postsecondary_employment",
+      "fieldLabel": "Postsecondary Goal: Employment",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 2,
+      "options": []
+    },
+    {
+      "section": "Transition",
+      "sectionOrder": 9,
+      "fieldKey": "trans_postsecondary_independent_living",
+      "fieldLabel": "Postsecondary Goal: Independent Living",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "options": []
+    },
+    {
+      "section": "Transition",
+      "sectionOrder": 9,
+      "fieldKey": "trans_services_activities",
+      "fieldLabel": "Transition Services and Activities",
+      "controlType": "TEXTAREA",
+      "isRequired": false,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 4,
+      "options": []
+    },
+
+    {
+      "section": "Team Signatures",
+      "sectionOrder": 10,
+      "fieldKey": "sign_team_member_name",
+      "fieldLabel": "Team Member Name",
+      "controlType": "TEXT",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 1,
+      "options": []
+    },
+    {
+      "section": "Team Signatures",
+      "sectionOrder": 10,
+      "fieldKey": "sign_role",
+      "fieldLabel": "Role",
+      "controlType": "DROPDOWN",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "ADMIN_ONLY",
+      "sortOrder": 2,
+      "options": [
+        { "value": "parent_guardian", "label": "Parent/Guardian", "sortOrder": 1 },
+        { "value": "student", "label": "Student", "sortOrder": 2 },
+        { "value": "general_education_teacher", "label": "General Education Teacher", "sortOrder": 3 },
+        { "value": "special_education_teacher", "label": "Special Education Teacher", "sortOrder": 4 },
+        { "value": "school_administrator", "label": "School Administrator", "sortOrder": 5 },
+        { "value": "school_psychologist", "label": "School Psychologist", "sortOrder": 6 },
+        { "value": "speech_language_pathologist", "label": "Speech-Language Pathologist", "sortOrder": 7 },
+        { "value": "occupational_therapist", "label": "Occupational Therapist", "sortOrder": 8 },
+        { "value": "physical_therapist", "label": "Physical Therapist", "sortOrder": 9 },
+        { "value": "school_counselor", "label": "School Counselor", "sortOrder": 10 },
+        { "value": "lea_representative", "label": "LEA Representative", "sortOrder": 11 },
+        { "value": "other", "label": "Other", "sortOrder": 12 }
+      ]
+    },
+    {
+      "section": "Team Signatures",
+      "sectionOrder": 10,
+      "fieldKey": "sign_signature",
+      "fieldLabel": "Signature",
+      "controlType": "SIGNATURE",
+      "isRequired": true,
+      "valueEditableBy": ["ADMIN", "CASE_MANAGER", "TEACHER"],
+      "optionsEditableBy": "NONE",
+      "sortOrder": 3,
+      "options": []
+    }
+  ]
+}

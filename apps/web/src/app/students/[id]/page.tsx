@@ -8,6 +8,7 @@ import { api, Student, StudentStatus, PriorPlanDocument, PlanTypeCode } from '@/
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatusModal } from '@/components/StatusModal';
 import { PriorPlanUploadModal } from '@/components/PriorPlanUploadModal';
+import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
 import styles from './page.module.css';
 
 const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
@@ -482,6 +483,43 @@ export default function StudentDetailPage() {
                 No prior plans uploaded yet. Upload previous IEP, 504, or behavior plans to use them when creating new plans.
               </p>
             )}
+          </section>
+
+          {/* IEP Reports Section - Independent Assessment Reviews */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3>IEP Reports</h3>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => router.push(`/students/${studentId}/iep-report/new`)}
+              >
+                Create IEP Report
+              </button>
+            </div>
+            <p className={styles.emptyMessage}>
+              Create a Review of Independent Assessment report when reviewing an independent educational evaluation (IEE).
+            </p>
+          </section>
+
+          {/* Artifact Comparisons Section */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3>Artifact Comparisons</h3>
+            </div>
+            <ArtifactComparesSection
+              studentId={studentId}
+              showPlanInfo={true}
+              availablePlans={(studentPlans || [])
+                .filter(p => p.status === 'DRAFT' || p.status === 'ACTIVE')
+                .map(p => ({
+                  id: p.id,
+                  label: `${p.planType} - ${format(new Date(p.startDate), 'MMM yyyy')}`,
+                  planTypeCode: p.planTypeCode,
+                }))}
+              onAlignToPlan={async (comparisonId, planId) => {
+                await api.alignArtifactCompare(studentId, comparisonId, planId);
+              }}
+            />
           </section>
         </div>
       </main>

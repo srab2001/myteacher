@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, ServiceType, ServiceSetting } from '../lib/db.js';
+import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 
 const router = Router();
@@ -9,8 +9,8 @@ const router = Router();
 const createServiceLogSchema = z.object({
   date: z.string(),
   minutes: z.number().min(1).max(480),
-  serviceType: z.nativeEnum(ServiceType),
-  setting: z.nativeEnum(ServiceSetting),
+  serviceType: z.enum(['SPECIAL_EDUCATION', 'SPEECH_LANGUAGE', 'OCCUPATIONAL_THERAPY', 'PHYSICAL_THERAPY', 'COUNSELING', 'BEHAVIORAL_SUPPORT', 'READING_SPECIALIST', 'PARAPROFESSIONAL', 'OTHER']),
+  setting: z.enum(['GENERAL_EDUCATION', 'SPECIAL_EDUCATION', 'RESOURCE_ROOM', 'THERAPY_ROOM', 'COMMUNITY', 'HOME', 'OTHER']),
   notes: z.string().optional(),
 });
 

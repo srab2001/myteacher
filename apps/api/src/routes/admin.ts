@@ -8,6 +8,7 @@ import { prisma, PlanTypeCode, UserRole } from '../lib/db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { requireManageUsersPermission, getUserPermissions } from '../middleware/permissions.js';
 import { ingestBestPracticeDocument, getDocumentChunkStats } from '../services/ingestion.js';
+import { generateStudentRecordId } from '../services/studentIdService.js';
 
 const router = Router();
 
@@ -649,7 +650,7 @@ router.get('/schemas', requireAdmin, async (req, res) => {
       include: {
         planType: { select: { code: true, name: true } },
         jurisdiction: { select: { id: true, districtName: true, stateCode: true } },
-        _count: { select: { planInstances: true } },
+        _count: { select: { instances: true } },
       },
       orderBy: [{ planTypeId: 'asc' }, { version: 'desc' }],
     });
@@ -665,7 +666,7 @@ router.get('/schemas', requireAdmin, async (req, res) => {
         jurisdictionId: s.jurisdictionId,
         jurisdictionName: s.jurisdiction?.districtName || 'Global',
         isActive: s.isActive,
-        planCount: s._count.planInstances,
+        planCount: s._count.instances,
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,
       })),
@@ -842,6 +843,110 @@ router.patch('/schemas/:id/fields', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /admin/schemas/:id/fields - Add a new field to a schema section
+router.post('/schemas/:id/fields', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bodySchema = z.object({
+      sectionKey: z.string().min(1, 'Section key is required'),
+      fieldKey: z.string().min(1, 'Field key is required'),
+      label: z.string().min(1, 'Label is required'),
+      type: z.enum(['text', 'textarea', 'date', 'select', 'checkbox', 'number']),
+      required: z.boolean().default(false),
+      options: z.array(z.string()).optional(), // For select type
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const schema = await prisma.planSchema.findUnique({
+      where: { id },
+    });
+
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema not found' });
+    }
+
+    // Parse existing schema fields
+    const schemaFields = schema.fields as {
+      sections?: Array<{
+        key: string;
+        title: string;
+        order?: number;
+        isGoalsSection?: boolean;
+        fields?: Array<{
+          key: string;
+          label: string;
+          type: string;
+          required?: boolean;
+          placeholder?: string;
+          options?: string[];
+        }>;
+      }>;
+    };
+
+    if (!schemaFields.sections) {
+      return res.status(400).json({ error: 'Schema has no sections defined' });
+    }
+
+    // Find the target section
+    const sectionIndex = schemaFields.sections.findIndex(s => s.key === data.sectionKey);
+    if (sectionIndex === -1) {
+      return res.status(404).json({ error: `Section "${data.sectionKey}" not found in schema` });
+    }
+
+    // Check if field key already exists in section
+    const existingFields = schemaFields.sections[sectionIndex].fields || [];
+    if (existingFields.some(f => f.key === data.fieldKey)) {
+      return res.status(409).json({ error: `Field with key "${data.fieldKey}" already exists in this section` });
+    }
+
+    // Create the new field object
+    const newField: {
+      key: string;
+      label: string;
+      type: string;
+      required?: boolean;
+      options?: string[];
+    } = {
+      key: data.fieldKey,
+      label: data.label,
+      type: data.type,
+      required: data.required,
+    };
+
+    // Add options for select type
+    if (data.type === 'select' && data.options && data.options.length > 0) {
+      newField.options = data.options;
+    }
+
+    // Add the new field to the section
+    if (!schemaFields.sections[sectionIndex].fields) {
+      schemaFields.sections[sectionIndex].fields = [];
+    }
+    schemaFields.sections[sectionIndex].fields!.push(newField);
+
+    // Update the schema with the new fields
+    await prisma.planSchema.update({
+      where: { id },
+      data: {
+        fields: schemaFields,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Field "${data.label}" added to section "${schemaFields.sections[sectionIndex].title}"`
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('Add field error:', error);
+    res.status(500).json({ error: 'Failed to add field' });
+  }
+});
+
 // POST /admin/schemas - Create a new schema version
 router.post('/schemas', requireAdmin, async (req, res) => {
   try {
@@ -979,7 +1084,7 @@ router.patch('/schemas/:id', requireAdmin, async (req, res) => {
       include: {
         planType: { select: { code: true, name: true } },
         jurisdiction: { select: { id: true, districtName: true } },
-        _count: { select: { planInstances: true } },
+        _count: { select: { instances: true } },
       },
     });
 
@@ -994,7 +1099,7 @@ router.patch('/schemas/:id', requireAdmin, async (req, res) => {
         jurisdictionId: updated.jurisdictionId,
         jurisdictionName: updated.jurisdiction?.districtName || 'Global',
         isActive: updated.isActive,
-        planCount: updated._count.planInstances,
+        planCount: updated._count.instances,
         fields: updated.fields,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
@@ -1471,35 +1576,58 @@ router.get('/students', requireManageUsersPermission, async (req, res) => {
 router.post('/students', requireManageUsersPermission, async (req, res) => {
   try {
     const createStudentSchema = z.object({
-      recordId: z.string().min(1, 'Record ID is required'),
       firstName: z.string().min(1, 'First name is required'),
       lastName: z.string().min(1, 'Last name is required'),
       dateOfBirth: z.string().optional(),
       grade: z.string().optional(),
       schoolName: z.string().optional(),
       districtName: z.string().optional(),
+      jurisdictionId: z.string().optional(),
     });
 
     const data = createStudentSchema.parse(req.body);
 
-    // Check if recordId already exists
-    const existing = await prisma.student.findFirst({
-      where: { recordId: data.recordId },
-    });
+    // Generate a unique record ID
+    const recordId = await generateStudentRecordId();
 
-    if (existing) {
-      return res.status(409).json({ error: `Student with Record ID "${data.recordId}" already exists` });
+    // Find jurisdiction - use provided ID, lookup by district name, or use user's jurisdiction
+    let jurisdictionId = data.jurisdictionId;
+
+    if (!jurisdictionId && data.districtName) {
+      // Try to find jurisdiction by district name (case-insensitive)
+      const jurisdiction = await prisma.jurisdiction.findFirst({
+        where: {
+          districtName: {
+            contains: data.districtName,
+            mode: 'insensitive',
+          },
+        },
+      });
+      if (jurisdiction) {
+        jurisdictionId = jurisdiction.id;
+      }
+    }
+
+    if (!jurisdictionId) {
+      // Fall back to user's jurisdiction
+      jurisdictionId = req.user?.jurisdictionId || undefined;
+    }
+
+    if (!jurisdictionId) {
+      return res.status(400).json({ error: 'No jurisdiction found. Please provide a valid district name or jurisdiction ID.' });
     }
 
     const student = await prisma.student.create({
       data: {
-        recordId: data.recordId,
+        recordId,
         firstName: data.firstName,
         lastName: data.lastName,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         grade: data.grade || null,
         schoolName: data.schoolName || null,
         districtName: data.districtName || null,
+        jurisdiction: { connect: { id: jurisdictionId } },
+        teacher: { connect: { id: req.user!.id } },
         isActive: true,
       },
     });
@@ -1769,6 +1897,441 @@ router.delete('/users/:userId/students/:accessId', requireManageUsersPermission,
   } catch (error) {
     console.error('Student access delete error:', error);
     res.status(500).json({ error: 'Failed to remove student access' });
+  }
+});
+
+// ============================================
+// STATE MANAGEMENT (Reference Data)
+// ============================================
+
+// GET /admin/states - List all states
+router.get('/states', requireAdmin, async (_req, res) => {
+  try {
+    const states = await prisma.state.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: { select: { districts: true } },
+      },
+    });
+
+    res.json({
+      states: states.map(s => ({
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        isActive: s.isActive,
+        districtCount: s._count.districts,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('States fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch states' });
+  }
+});
+
+// POST /admin/states - Create a new state
+router.post('/states', requireAdmin, async (req, res) => {
+  try {
+    const bodySchema = z.object({
+      code: z.string().min(2).max(2, 'State code must be 2 characters'),
+      name: z.string().min(1, 'State name is required'),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    // Check if state code already exists
+    const existing = await prisma.state.findUnique({
+      where: { code: data.code.toUpperCase() },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: `State with code "${data.code}" already exists` });
+    }
+
+    const state = await prisma.state.create({
+      data: {
+        code: data.code.toUpperCase(),
+        name: data.name,
+        isActive: true,
+      },
+    });
+
+    res.status(201).json({ state });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('State create error:', error);
+    res.status(500).json({ error: 'Failed to create state' });
+  }
+});
+
+// PATCH /admin/states/:stateId - Update a state
+router.patch('/states/:stateId', requireAdmin, async (req, res) => {
+  try {
+    const { stateId } = req.params;
+
+    const bodySchema = z.object({
+      name: z.string().min(1).optional(),
+      isActive: z.boolean().optional(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const state = await prisma.state.findUnique({
+      where: { id: stateId },
+    });
+
+    if (!state) {
+      return res.status(404).json({ error: 'State not found' });
+    }
+
+    const updated = await prisma.state.update({
+      where: { id: stateId },
+      data: {
+        name: data.name,
+        isActive: data.isActive,
+      },
+    });
+
+    res.json({ state: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('State update error:', error);
+    res.status(500).json({ error: 'Failed to update state' });
+  }
+});
+
+// ============================================
+// DISTRICT MANAGEMENT (Reference Data)
+// ============================================
+
+// GET /admin/states/:stateId/districts - List all districts for a state
+router.get('/states/:stateId/districts', requireAdmin, async (req, res) => {
+  try {
+    const { stateId } = req.params;
+
+    const districts = await prisma.district.findMany({
+      where: { stateId },
+      orderBy: { name: 'asc' },
+      include: {
+        _count: { select: { schools: true } },
+      },
+    });
+
+    res.json({
+      districts: districts.map(d => ({
+        id: d.id,
+        code: d.code,
+        name: d.name,
+        stateId: d.stateId,
+        isActive: d.isActive,
+        schoolCount: d._count.schools,
+        createdAt: d.createdAt,
+        updatedAt: d.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Districts fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch districts' });
+  }
+});
+
+// POST /admin/states/:stateId/districts - Create a new district
+router.post('/states/:stateId/districts', requireAdmin, async (req, res) => {
+  try {
+    const { stateId } = req.params;
+
+    const bodySchema = z.object({
+      code: z.string().min(1, 'District code is required'),
+      name: z.string().min(1, 'District name is required'),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    // Verify state exists
+    const state = await prisma.state.findUnique({
+      where: { id: stateId },
+    });
+
+    if (!state) {
+      return res.status(404).json({ error: 'State not found' });
+    }
+
+    // Check if district code already exists in this state
+    const existing = await prisma.district.findFirst({
+      where: { stateId, code: data.code.toUpperCase() },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: `District with code "${data.code}" already exists in this state` });
+    }
+
+    const district = await prisma.district.create({
+      data: {
+        stateId,
+        code: data.code.toUpperCase(),
+        name: data.name,
+        isActive: true,
+      },
+    });
+
+    res.status(201).json({ district });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('District create error:', error);
+    res.status(500).json({ error: 'Failed to create district' });
+  }
+});
+
+// PATCH /admin/districts/:districtId - Update a district
+router.patch('/districts/:districtId', requireAdmin, async (req, res) => {
+  try {
+    const { districtId } = req.params;
+
+    const bodySchema = z.object({
+      name: z.string().min(1).optional(),
+      isActive: z.boolean().optional(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const district = await prisma.district.findUnique({
+      where: { id: districtId },
+    });
+
+    if (!district) {
+      return res.status(404).json({ error: 'District not found' });
+    }
+
+    const updated = await prisma.district.update({
+      where: { id: districtId },
+      data: {
+        name: data.name,
+        isActive: data.isActive,
+      },
+    });
+
+    res.json({ district: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('District update error:', error);
+    res.status(500).json({ error: 'Failed to update district' });
+  }
+});
+
+// ============================================
+// SCHOOL MANAGEMENT (Reference Data)
+// ============================================
+
+// GET /admin/districts/:districtId/schools - List all schools for a district
+router.get('/districts/:districtId/schools', requireAdmin, async (req, res) => {
+  try {
+    const { districtId } = req.params;
+
+    const schools = await prisma.school.findMany({
+      where: { districtId },
+      orderBy: { name: 'asc' },
+      include: {
+        _count: { select: { students: true } },
+      },
+    });
+
+    res.json({
+      schools: schools.map(s => ({
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        schoolType: s.schoolType,
+        districtId: s.districtId,
+        isActive: s.isActive,
+        studentCount: s._count.students,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Schools fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch schools' });
+  }
+});
+
+// POST /admin/districts/:districtId/schools - Create a new school
+router.post('/districts/:districtId/schools', requireAdmin, async (req, res) => {
+  try {
+    const { districtId } = req.params;
+
+    const bodySchema = z.object({
+      name: z.string().min(1, 'School name is required'),
+      code: z.string().optional(),
+      schoolType: z.enum(['ELEMENTARY', 'MIDDLE', 'HIGH', 'K8', 'K12', 'OTHER']).default('OTHER'),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    // Verify district exists
+    const district = await prisma.district.findUnique({
+      where: { id: districtId },
+    });
+
+    if (!district) {
+      return res.status(404).json({ error: 'District not found' });
+    }
+
+    // Check if school name already exists in this district
+    const existing = await prisma.school.findFirst({
+      where: { districtId, name: data.name },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: `School with name "${data.name}" already exists in this district` });
+    }
+
+    const school = await prisma.school.create({
+      data: {
+        districtId,
+        name: data.name,
+        code: data.code || null,
+        schoolType: data.schoolType,
+        isActive: true,
+      },
+    });
+
+    res.status(201).json({ school });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('School create error:', error);
+    res.status(500).json({ error: 'Failed to create school' });
+  }
+});
+
+// ============================================
+// SCHEMA MIGRATION UTILITIES
+// ============================================
+
+// POST /admin/schemas/migrate-goals-section - Add isGoalsSection flag to all IEP schemas
+router.post('/schemas/migrate-goals-section', requireAdmin, async (_req, res) => {
+  try {
+    // Find all IEP schemas
+    const iepSchemas = await prisma.planSchema.findMany({
+      where: {
+        planType: { code: 'IEP' }
+      },
+      include: {
+        planType: { select: { code: true } }
+      }
+    });
+
+    let updatedCount = 0;
+    const results: Array<{ schemaId: string; name: string; status: string }> = [];
+
+    for (const schema of iepSchemas) {
+      const fields = schema.fields as {
+        sections?: Array<{
+          key: string;
+          title: string;
+          order?: number;
+          isGoalsSection?: boolean;
+          fields?: Array<{
+            key: string;
+            type?: string;
+            label: string;
+          }>;
+        }>;
+      };
+
+      if (!fields.sections) {
+        results.push({ schemaId: schema.id, name: schema.name, status: 'skipped - no sections' });
+        continue;
+      }
+
+      let modified = false;
+
+      // Find goals section and add isGoalsSection flag
+      for (const section of fields.sections) {
+        const isGoalsSection =
+          section.key === 'goals' ||
+          section.title?.toLowerCase().includes('goal') ||
+          section.fields?.some(f => f.type === 'goals');
+
+        if (isGoalsSection && !section.isGoalsSection) {
+          section.isGoalsSection = true;
+          modified = true;
+        }
+      }
+
+      if (modified) {
+        await prisma.planSchema.update({
+          where: { id: schema.id },
+          data: { fields }
+        });
+        updatedCount++;
+        results.push({ schemaId: schema.id, name: schema.name, status: 'updated' });
+      } else {
+        results.push({ schemaId: schema.id, name: schema.name, status: 'already has flag' });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Updated ${updatedCount} of ${iepSchemas.length} IEP schemas with isGoalsSection flag`,
+      results
+    });
+  } catch (error) {
+    console.error('Schema migration error:', error);
+    res.status(500).json({ error: 'Failed to migrate schemas' });
+  }
+});
+
+// PATCH /admin/schools/:schoolId - Update a school
+router.patch('/schools/:schoolId', requireAdmin, async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+
+    const bodySchema = z.object({
+      name: z.string().min(1).optional(),
+      code: z.string().optional().nullable(),
+      schoolType: z.enum(['ELEMENTARY', 'MIDDLE', 'HIGH', 'K8', 'K12', 'OTHER']).optional(),
+      isActive: z.boolean().optional(),
+    });
+
+    const data = bodySchema.parse(req.body);
+
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+    });
+
+    if (!school) {
+      return res.status(404).json({ error: 'School not found' });
+    }
+
+    const updated = await prisma.school.update({
+      where: { id: schoolId },
+      data: {
+        name: data.name,
+        code: data.code,
+        schoolType: data.schoolType,
+        isActive: data.isActive,
+      },
+    });
+
+    res.json({ school: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
+    }
+    console.error('School update error:', error);
+    res.status(500).json({ error: 'Failed to update school' });
   }
 });
 

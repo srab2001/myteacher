@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan, PriorPlanDocument } from '@/lib/api';
+import { api, Plan, PriorPlanDocument, FormFieldDefinition, School } from '@/lib/api';
 import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
+import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
+import { DynamicFormField } from '@/components/forms/DynamicFormField';
 import styles from '../iep/page.module.css';
 
 export default function FiveOhFourInterviewPage() {
@@ -28,6 +30,11 @@ export default function FiveOhFourInterviewPage() {
   const [, setGeneratingSections] = useState<string[]>([]);
   const [generatingFields, setGeneratingFields] = useState<Set<string>>(new Set());
   const [artifactWizardOpen, setArtifactWizardOpen] = useState(false);
+
+  // Dynamic form fields from database
+  const [fieldDefinitions, setFieldDefinitions] = useState<FormFieldDefinition[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [useDynamicFields, setUseDynamicFields] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -67,6 +74,50 @@ export default function FiveOhFourInterviewPage() {
       loadPlan();
     }
   }, [user, planId, loadPlan]);
+
+  // Load dynamic field definitions and schools
+  useEffect(() => {
+    const loadFieldDefinitions = async () => {
+      try {
+        const [fieldsRes, schoolsRes] = await Promise.all([
+          api.getFormFieldDefinitions('FIVE_OH_FOUR'),
+          api.getSchools(),
+        ]);
+        if (fieldsRes.fields && fieldsRes.fields.length > 0) {
+          setFieldDefinitions(fieldsRes.fields);
+          setUseDynamicFields(true);
+        }
+        setSchools(schoolsRes.schools || []);
+      } catch (err) {
+        console.log('Dynamic fields not available, using schema-based rendering');
+      }
+    };
+
+    if (user?.isOnboarded) {
+      loadFieldDefinitions();
+    }
+  }, [user]);
+
+  // Group field definitions by section for navigation
+  const dynamicSections = useMemo(() => {
+    if (!useDynamicFields || fieldDefinitions.length === 0) return [];
+
+    const sectionMap = new Map<string, FormFieldDefinition[]>();
+    fieldDefinitions.forEach(field => {
+      if (!sectionMap.has(field.section)) {
+        sectionMap.set(field.section, []);
+      }
+      sectionMap.get(field.section)!.push(field);
+    });
+
+    return Array.from(sectionMap.entries())
+      .map(([name, fields]) => ({
+        name,
+        fields: fields.sort((a, b) => a.sortOrder - b.sortOrder),
+        order: fields[0]?.sectionOrder || 0,
+      }))
+      .sort((a, b) => a.order - b.order);
+  }, [fieldDefinitions, useDynamicFields]);
 
   // Check generation availability
   useEffect(() => {
@@ -108,8 +159,13 @@ export default function FiveOhFourInterviewPage() {
     setShowStartStep(false);
   };
 
-  const sections = plan?.schema?.fields?.sections || [];
+  // Use dynamic sections if available, otherwise fall back to schema-based sections
+  const schemaSections = plan?.schema?.fields?.sections || [];
+  const sections = useDynamicFields && dynamicSections.length > 0
+    ? dynamicSections.map(s => ({ key: s.name.toLowerCase().replace(/\s+/g, '_'), title: s.name, fields: s.fields }))
+    : schemaSections;
   const currentSectionData = sections[currentSection];
+  const currentDynamicSection = useDynamicFields ? dynamicSections[currentSection] : null;
 
   const handleFieldChange = (fieldKey: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [fieldKey]: value }));
@@ -292,97 +348,116 @@ export default function FiveOhFourInterviewPage() {
             <div className={styles.section}>
               <h2>{currentSectionData.title}</h2>
 
-              <div className={styles.fields}>
-                {currentSectionData.fields.map(field => (
-                  <div key={field.key} className={styles.field}>
-                    <label className={styles.label}>
-                      {field.label}
-                      {field.required && <span className={styles.required}>*</span>}
-                    </label>
+              {useDynamicFields && currentDynamicSection ? (
+                /* Dynamic Form Fields from Database */
+                <div className={styles.fields}>
+                  {currentDynamicSection.fields.map(field => (
+                    <DynamicFormField
+                      key={field.fieldKey}
+                      field={field}
+                      value={formData[field.fieldKey]}
+                      onChange={(value) => handleFieldChange(field.fieldKey, value)}
+                      user={user}
+                      schools={schools}
+                      disabled={plan?.status === 'FINALIZED'}
+                      showPermissionHint={true}
+                    />
+                  ))}
+                </div>
+              ) : schemaSections[currentSection] ? (
+                /* Schema-based Form Fields (fallback) */
+                <div className={styles.fields}>
+                  {schemaSections[currentSection].fields.map(field => (
+                    <div key={field.key} className={styles.field}>
+                      <label className={styles.label}>
+                        {field.label}
+                        {field.required && <span className={styles.required}>*</span>}
+                      </label>
 
-                    {field.type === 'text' && (
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={(formData[field.key] as string) || ''}
-                        onChange={e => handleFieldChange(field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-
-                    {field.type === 'date' && (
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={(formData[field.key] as string) || ''}
-                        onChange={e => handleFieldChange(field.key, e.target.value)}
-                      />
-                    )}
-
-                    {field.type === 'select' && (
-                      <select
-                        className="form-select"
-                        value={(formData[field.key] as string) || ''}
-                        onChange={e => handleFieldChange(field.key, e.target.value)}
-                      >
-                        <option value="">Select...</option>
-                        {field.options?.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    )}
-
-                    {field.type === 'textarea' && (
-                      <div className={styles.textareaWrapper}>
-                        {generationAvailable && (
-                          <div className={styles.textareaHeader}>
-                            <button
-                              type="button"
-                              className={styles.generateBtn}
-                              onClick={() => handleGenerateDraft(currentSectionData.key, field.key)}
-                              disabled={generatingFields.has(field.key)}
-                            >
-                              {generatingFields.has(field.key) ? (
-                                <>
-                                  <span className={styles.generateSpinner} />
-                                  Generating...
-                                </>
-                              ) : (
-                                <>
-                                  <span className={styles.sparkle}>&#10024;</span>
-                                  Generate Draft
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        )}
-                        <DictationTextArea
-                          value={(formData[field.key] as string) || ''}
-                          onChange={(value) => handleFieldChange(field.key, value)}
-                          placeholder={field.placeholder}
-                          rows={5}
-                        />
-                      </div>
-                    )}
-
-                    {field.type === 'boolean' && (
-                      <div className={styles.checkboxField}>
+                      {field.type === 'text' && (
                         <input
-                          type="checkbox"
-                          id={field.key}
-                          checked={(formData[field.key] as boolean) || false}
-                          onChange={e => handleFieldChange(field.key, e.target.checked)}
+                          type="text"
+                          className="form-input"
+                          value={(formData[field.key] as string) || ''}
+                          onChange={e => handleFieldChange(field.key, e.target.value)}
+                          placeholder={field.placeholder}
                         />
-                        <label htmlFor={field.key}>{field.label}</label>
-                      </div>
-                    )}
+                      )}
 
-                    {field.description && (
-                      <p className={styles.fieldDesc}>{field.description}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      {field.type === 'date' && (
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={(formData[field.key] as string) || ''}
+                          onChange={e => handleFieldChange(field.key, e.target.value)}
+                        />
+                      )}
+
+                      {field.type === 'select' && (
+                        <select
+                          className="form-select"
+                          value={(formData[field.key] as string) || ''}
+                          onChange={e => handleFieldChange(field.key, e.target.value)}
+                        >
+                          <option value="">Select...</option>
+                          {field.options?.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {field.type === 'textarea' && (
+                        <div className={styles.textareaWrapper}>
+                          {generationAvailable && (
+                            <div className={styles.textareaHeader}>
+                              <button
+                                type="button"
+                                className={styles.generateBtn}
+                                onClick={() => handleGenerateDraft(currentSectionData.key, field.key)}
+                                disabled={generatingFields.has(field.key)}
+                              >
+                                {generatingFields.has(field.key) ? (
+                                  <>
+                                    <span className={styles.generateSpinner} />
+                                    Generating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className={styles.sparkle}>&#10024;</span>
+                                    Generate Draft
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                          <DictationTextArea
+                            value={(formData[field.key] as string) || ''}
+                            onChange={(value) => handleFieldChange(field.key, value)}
+                            placeholder={field.placeholder}
+                            rows={5}
+                          />
+                        </div>
+                      )}
+
+                      {field.type === 'boolean' && (
+                        <div className={styles.checkboxField}>
+                          <input
+                            type="checkbox"
+                            id={field.key}
+                            checked={(formData[field.key] as boolean) || false}
+                            onChange={e => handleFieldChange(field.key, e.target.checked)}
+                          />
+                          <label htmlFor={field.key}>{field.label}</label>
+                        </div>
+                      )}
+
+                      {field.description && (
+                        <p className={styles.fieldDesc}>{field.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           )}
 
@@ -443,6 +518,23 @@ export default function FiveOhFourInterviewPage() {
         >
           View Printable 504 Plan
         </button>
+      </div>
+
+      {/* Artifact Comparisons Section */}
+      <div className={styles.artifactComparesContainer}>
+        <div className={styles.artifactComparesSection}>
+          <h2>Artifact Compares</h2>
+
+          <div className={styles.artifactSubsection}>
+            <h3>This Plan</h3>
+            <ArtifactComparesSection planId={planId} />
+          </div>
+
+          <div className={styles.artifactSubsection}>
+            <h3>All Student Comparisons</h3>
+            <ArtifactComparesSection studentId={studentId} showPlanInfo={true} />
+          </div>
+        </div>
       </div>
 
       {/* Artifact Compare Wizard */}

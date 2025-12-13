@@ -136,7 +136,11 @@ describe('Dashboard Page', () => {
       });
 
       expect(screen.getByText('Your Students')).toBeInTheDocument();
-      expect(screen.getByText(/3 of 3 students/)).toBeInTheDocument();
+
+      // Wait for students to load
+      await waitFor(() => {
+        expect(screen.getByText(/3 of 3 students/)).toBeInTheDocument();
+      });
     });
 
     it('displays students in table format with correct columns', async () => {
@@ -146,16 +150,17 @@ describe('Dashboard Page', () => {
         </AuthProvider>
       );
 
+      // Wait for table to render with students
       await waitFor(() => {
         expect(screen.getByText('Record ID')).toBeInTheDocument();
+        expect(screen.getByText('Name')).toBeInTheDocument();
+        expect(screen.getByText('Grade')).toBeInTheDocument();
+        // Status appears in both filter and table header, so use getAllByText
+        expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByText('IEP')).toBeInTheDocument();
+        expect(screen.getByText('504')).toBeInTheDocument();
+        expect(screen.getByText('Behavior')).toBeInTheDocument();
       });
-
-      expect(screen.getByText('Name')).toBeInTheDocument();
-      expect(screen.getByText('Grade')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByText('IEP')).toBeInTheDocument();
-      expect(screen.getByText('504')).toBeInTheDocument();
-      expect(screen.getByText('Behavior')).toBeInTheDocument();
     });
 
     it('displays student data correctly', async () => {
@@ -167,10 +172,9 @@ describe('Dashboard Page', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Johnson, Alex')).toBeInTheDocument();
+        expect(screen.getByText('HCPSS-000001')).toBeInTheDocument();
+        expect(screen.getByText('Garcia, Maria')).toBeInTheDocument();
       });
-
-      expect(screen.getByText('HCPSS-000001')).toBeInTheDocument();
-      expect(screen.getByText('Garcia, Maria')).toBeInTheDocument();
     });
 
     it('shows user name in header', async () => {
@@ -186,6 +190,9 @@ describe('Dashboard Page', () => {
     });
   });
 
+  // Helper to get the status filter select
+  const getStatusSelect = () => screen.getByRole('combobox');
+
   describe('Filtering', () => {
     it('renders filter panel with status dropdown', async () => {
       render(
@@ -195,10 +202,10 @@ describe('Dashboard Page', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/status/i)).toBeInTheDocument();
+        expect(screen.getByText(/3 of 3 students/)).toBeInTheDocument();
       });
 
-      const statusSelect = screen.getByLabelText(/status/i);
+      const statusSelect = getStatusSelect();
       expect(statusSelect).toHaveValue('ALL');
     });
 
@@ -229,7 +236,7 @@ describe('Dashboard Page', () => {
       });
 
       // Select "Watch" status
-      fireEvent.change(screen.getByLabelText(/status/i), { target: { value: 'WATCH' } });
+      fireEvent.change(getStatusSelect(), { target: { value: 'WATCH' } });
 
       await waitFor(() => {
         expect(screen.getByText(/1 of 3 students/)).toBeInTheDocument();
@@ -296,15 +303,16 @@ describe('Dashboard Page', () => {
       });
 
       // Apply filters
-      fireEvent.change(screen.getByLabelText(/status/i), { target: { value: 'WATCH' } });
+      fireEvent.change(getStatusSelect(), { target: { value: 'WATCH' } });
       fireEvent.click(screen.getByLabelText(/has iep/i));
 
       await waitFor(() => {
         expect(screen.getByText(/0 of 3 students/)).toBeInTheDocument();
       });
 
-      // Clear filters
-      fireEvent.click(screen.getByText(/clear filters/i));
+      // Clear filters (there are two buttons when showing empty state, click the first one)
+      const clearButtons = screen.getAllByText(/clear filters/i);
+      fireEvent.click(clearButtons[0]);
 
       await waitFor(() => {
         expect(screen.getByText(/3 of 3 students/)).toBeInTheDocument();
@@ -393,7 +401,7 @@ describe('Dashboard Page', () => {
       });
 
       // Select "Urgent" status (no students have this)
-      fireEvent.change(screen.getByLabelText(/status/i), { target: { value: 'URGENT' } });
+      fireEvent.change(getStatusSelect(), { target: { value: 'URGENT' } });
 
       await waitFor(() => {
         expect(screen.getByText('No students match the current filters.')).toBeInTheDocument();

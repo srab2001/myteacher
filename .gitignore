@@ -38,7 +38,10 @@ coverage/
 # Prisma
 packages/db/prisma/*.db
 packages/db/prisma/*.db-journal
+apps/api/prisma/generated/
 
 # Misc
 *.tsbuildinfo
 .turbo/
+node-compile-cache/
+node-compile-cache/

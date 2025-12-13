@@ -7,6 +7,7 @@ import connectPgSimple from 'connect-pg-simple';
 import pg from 'pg';
 import passport from './config/passport.js';
 import { env } from './config/env.js';
+import { ApiError } from './errors.js';
 
 import path from 'path';
 
@@ -31,6 +32,10 @@ import adminRoutes from './routes/admin.js';
 import generationRoutes from './routes/generation.js';
 import behaviorRoutes from './routes/behavior.js';
 import artifactCompareRoutes from './routes/artifactCompare.js';
+import referenceRoutes from './routes/reference.js';
+import goalWizardRoutes from './routes/goalWizard.js';
+import iepReportsRoutes from './routes/iepReports.js';
+import formFieldsRoutes from './routes/formFields.js';
 
 export function createApp(): Express {
   const app = express();
@@ -107,17 +112,34 @@ export function createApp(): Express {
   app.use('/api/behavior-targets', behaviorRoutes); // Behavior target routes
   app.use('/api/behavior-events', behaviorRoutes); // Behavior event routes
   app.use('/api', artifactCompareRoutes); // Artifact compare routes (/api/plans/:planId/artifact-compare)
+  app.use('/api/artifact-compare', artifactCompareRoutes); // For /api/artifact-compare/students/:studentId/artifact-compares
+  app.use('/api/reference', referenceRoutes); // Reference data routes (states, districts, schools)
+  app.use('/api', goalWizardRoutes); // Goal wizard routes (present levels, draft, validation)
+  app.use('/api/goal-wizard', goalWizardRoutes); // Alternative mounting point
+  app.use('/api', iepReportsRoutes); // IEP Reports routes (Independent Assessment Reviews)
+  app.use('/api', iepReportsRoutes); // For /api/students/:studentId/iep-reports
+  app.use('/api', formFieldsRoutes); // Form field definitions, values, and admin management
 
   // 404 handler
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
 
-  // Error handler
+  // Global error handler
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    // Handle ApiError instances
+    if (err instanceof ApiError) {
+      console.error(`[${err.code}] ${err.message}`, err.details || '');
+      return res.status(err.status).json(err.toJSON());
+    }
+
+    // Handle other errors
     console.error('Unhandled error:', err);
     res.status(500).json({
-      error: env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+      error: {
+        code: 'ERR_API_INTERNAL',
+        message: env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+      },
     });
   });
 

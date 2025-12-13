@@ -7,8 +7,10 @@
     "moduleResolution": "NodeNext",
     "noImplicitReturns": false,
     "noUncheckedIndexedAccess": false,
-    "strict": false
+    "strict": false,
+    "declaration": false,
+    "declarationMap": false
   },
-  "include": ["src/**/*", "api/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

@@ -304,6 +304,68 @@
   margin: 0.25rem 0;
 }
 
+/* Artifact Comparisons */
+.artifactsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.artifactItem {
+  border: 1px solid #ddd;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  page-break-inside: avoid;
+}
+
+.artifactHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.artifactDate {
+  font-weight: 600;
+  color: #333;
+}
+
+.artifactDesc {
+  color: #666;
+  font-style: italic;
+}
+
+.artifactAnalysis {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+.artifactAnalysis h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.analysisText {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border-radius: 0.25rem;
+  max-height: none;
+}
+
+.artifactMeta {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #666;
+}
+
 /* Print-specific styles */
 @media print {
   .document {
@@ -315,6 +377,10 @@
   }
 
   .goalItem {
+    page-break-inside: avoid;
+  }
+
+  .artifactItem {
     page-break-inside: avoid;
   }
 

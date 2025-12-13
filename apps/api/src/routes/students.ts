@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, StatusScope, StatusCode } from '../lib/db.js';
+import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { getAccessibleStudentIds, requireStudentAccess, getUserPermissions } from '../middleware/permissions.js';
 
@@ -198,8 +198,8 @@ router.get('/:id/status', requireAuth, requireOnboarded, requireStudentAccess('i
 
 // Create new status
 const statusSchema = z.object({
-  scope: z.nativeEnum(StatusScope),
-  code: z.nativeEnum(StatusCode),
+  scope: z.enum(['OVERALL', 'ACADEMIC', 'BEHAVIOR', 'SERVICES']),
+  code: z.enum(['ON_TRACK', 'WATCH', 'CONCERN', 'URGENT']),
   summary: z.string().max(500).optional(),
   effectiveDate: z.string().transform(s => new Date(s)),
 });

@@ -235,32 +235,115 @@ function CreateStudentModal({
   onClose: () => void;
   onComplete: () => void;
 }) {
-  const [recordId, setRecordId] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [grade, setGrade] = useState('');
-  const [schoolName, setSchoolName] = useState('');
-  const [districtName, setDistrictName] = useState('');
+
+  // Location dropdowns state
+  const [states, setStates] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [schools, setSchools] = useState<{ id: string; code: string | null; name: string; schoolType: string }[]>([]);
+  const [selectedStateId, setSelectedStateId] = useState('');
+  const [selectedDistrictId, setSelectedDistrictId] = useState('');
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
+
+  const [loadingStates, setLoadingStates] = useState(true);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingSchools, setLoadingSchools] = useState(false);
+
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
+  // Load states on mount
+  useEffect(() => {
+    async function loadStates() {
+      try {
+        const statesData = await api.getReferenceStates();
+        setStates(statesData);
+      } catch (err) {
+        console.error('Failed to load states:', err);
+      } finally {
+        setLoadingStates(false);
+      }
+    }
+    loadStates();
+  }, []);
+
+  // Load districts when state changes
+  useEffect(() => {
+    if (!selectedStateId) {
+      setDistricts([]);
+      setSelectedDistrictId('');
+      return;
+    }
+
+    async function loadDistricts() {
+      setLoadingDistricts(true);
+      try {
+        const districtsData = await api.getReferenceDistricts(selectedStateId);
+        setDistricts(districtsData);
+      } catch (err) {
+        console.error('Failed to load districts:', err);
+        setDistricts([]);
+      } finally {
+        setLoadingDistricts(false);
+      }
+    }
+    loadDistricts();
+  }, [selectedStateId]);
+
+  // Load schools when district changes
+  useEffect(() => {
+    if (!selectedDistrictId) {
+      setSchools([]);
+      setSelectedSchoolId('');
+      return;
+    }
+
+    async function loadSchools() {
+      setLoadingSchools(true);
+      try {
+        const schoolsData = await api.getReferenceSchools(selectedDistrictId);
+        setSchools(schoolsData);
+      } catch (err) {
+        console.error('Failed to load schools:', err);
+        setSchools([]);
+      } finally {
+        setLoadingSchools(false);
+      }
+    }
+    loadSchools();
+  }, [selectedDistrictId]);
+
+  const handleStateChange = (stateId: string) => {
+    setSelectedStateId(stateId);
+    setSelectedDistrictId('');
+    setSelectedSchoolId('');
+    setDistricts([]);
+    setSchools([]);
+  };
+
+  const handleDistrictChange = (districtId: string) => {
+    setSelectedDistrictId(districtId);
+    setSelectedSchoolId('');
+    setSchools([]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recordId || !firstName || !lastName) return;
+    if (!firstName || !lastName) return;
 
     setCreating(true);
     setError('');
 
     try {
       await api.createStudent({
-        recordId,
         firstName,
         lastName,
         dateOfBirth: dateOfBirth || undefined,
         grade: grade || undefined,
-        schoolName: schoolName || undefined,
-        districtName: districtName || undefined,
+        schoolId: selectedSchoolId || undefined,
       });
       onComplete();
     } catch (err) {
@@ -275,20 +358,6 @@ function CreateStudentModal({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h3>Create New Student</h3>
         <form onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label>Record ID *</label>
-            <input
-              type="text"
-              value={recordId}
-              onChange={(e) => setRecordId(e.target.value)}
-              placeholder="e.g., HCPSS-000001"
-              required
-            />
-            <p className={styles.formHint}>
-              Unique identifier for the student in your district.
-            </p>
-          </div>
-
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label>First Name *</label>
@@ -346,24 +415,74 @@ function CreateStudentModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>School Name</label>
-            <input
-              type="text"
-              value={schoolName}
-              onChange={(e) => setSchoolName(e.target.value)}
-              placeholder="Lincoln Elementary"
-            />
+            <label>State</label>
+            <select
+              value={selectedStateId}
+              onChange={(e) => handleStateChange(e.target.value)}
+              disabled={loadingStates}
+            >
+              <option value="">
+                {loadingStates ? 'Loading states...' : 'Select State'}
+              </option>
+              {states.map((state) => (
+                <option key={state.id} value={state.id}>
+                  {state.name} ({state.code})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className={styles.formGroup}>
-            <label>District Name</label>
-            <input
-              type="text"
-              value={districtName}
-              onChange={(e) => setDistrictName(e.target.value)}
-              placeholder="Howard County Public Schools"
-            />
+            <label>District</label>
+            <select
+              value={selectedDistrictId}
+              onChange={(e) => handleDistrictChange(e.target.value)}
+              disabled={!selectedStateId || loadingDistricts}
+            >
+              <option value="">
+                {loadingDistricts
+                  ? 'Loading districts...'
+                  : !selectedStateId
+                  ? 'Select a state first'
+                  : districts.length === 0
+                  ? 'No districts available'
+                  : 'Select District'}
+              </option>
+              {districts.map((district) => (
+                <option key={district.id} value={district.id}>
+                  {district.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          <div className={styles.formGroup}>
+            <label>School</label>
+            <select
+              value={selectedSchoolId}
+              onChange={(e) => setSelectedSchoolId(e.target.value)}
+              disabled={!selectedDistrictId || loadingSchools}
+            >
+              <option value="">
+                {loadingSchools
+                  ? 'Loading schools...'
+                  : !selectedDistrictId
+                  ? 'Select a district first'
+                  : schools.length === 0
+                  ? 'No schools available'
+                  : 'Select School'}
+              </option>
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <p className={styles.formHint}>
+            A unique Record ID (e.g., STU-000001) will be automatically generated.
+          </p>
 
           {error && <p className={styles.error}>{error}</p>}
 
@@ -379,7 +498,7 @@ function CreateStudentModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={creating || !recordId || !firstName || !lastName}
+              disabled={creating || !firstName || !lastName}
             >
               {creating ? 'Creating...' : 'Create Student'}
             </button>

@@ -92,6 +92,19 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
       });
     })(req, res, next);
   });
+} else {
+  // Fallback routes when Google OAuth is not configured
+  router.get('/google', (req, res) => {
+    console.error('Google OAuth not configured. Missing env vars: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or GOOGLE_CALLBACK_URL');
+    res.status(503).json({
+      error: 'Google OAuth is not configured',
+      message: 'Please use username/password login or configure Google OAuth credentials',
+    });
+  });
+
+  router.get('/google/callback', (req, res) => {
+    res.redirect(`${env.FRONTEND_URL}/?error=oauth_not_configured`);
+  });
 }
 
 // Logout

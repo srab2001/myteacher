@@ -66,6 +66,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Plan Schemas
             </Link>
             <div className={styles.divider} />
+            <Link href="/admin/form-fields" className={styles.navLink}>
+              Form Field Definitions
+            </Link>
+            <Link href="/admin/schools" className={styles.navLink}>
+              School Management
+            </Link>
+            <Link href="/admin/students" className={styles.navLink}>
+              Student Management
+            </Link>
+            <div className={styles.divider} />
             <Link href="/dashboard" className={styles.navLink}>
               Back to Dashboard
             </Link>

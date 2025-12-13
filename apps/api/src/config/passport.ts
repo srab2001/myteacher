@@ -2,16 +2,9 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcryptjs';
-import { prisma, AppUser } from '../lib/db.js';
+import { prisma } from '../lib/db.js';
 import { env } from './env.js';
-
-// Extend Express.User to include our AppUser type
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface User extends AppUser {}
-  }
-}
+// Note: Express.User type augmentation is in ../types/express.d.ts (auto-included by TypeScript)
 
 passport.serializeUser((user: Express.User, done) => {
   done(null, user.id);
@@ -93,7 +86,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
         _accessToken: string,
         _refreshToken: string,
         profile: Profile,
-        done: (error: Error | null, user?: AppUser) => void
+        done: (error: Error | null, user?: Express.User) => void
       ) => {
         try {
           console.log('Google OAuth callback - profile received:', profile.id);

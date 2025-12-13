@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { prisma, UserRole } from '../lib/db.js';
+import { prisma } from '../lib/db.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-// Schema for onboarding update
+// Schema for onboarding update - use z.enum with literal values since UserRole is a type alias
 const onboardingSchema = z.object({
-  role: z.nativeEnum(UserRole),
+  role: z.enum(['TEACHER', 'CASE_MANAGER', 'ADMIN']),
   stateCode: z.string().min(2).max(2),
   districtName: z.string().min(1),
   schoolName: z.string().min(1),
