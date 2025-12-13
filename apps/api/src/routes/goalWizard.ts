@@ -190,6 +190,8 @@ router.post('/goal-wizard/draft', requireAuth, requireOnboarded, async (req, res
         ? {
             area: data.goalArea,
             ...data.presentLevels,
+            currentPerformance: data.presentLevels.currentPerformance || "",
+
           }
         : undefined,
     });
@@ -371,7 +373,7 @@ const validateGoalSchema = z.object({
 router.post('/goal-wizard/validate', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = validateGoalSchema.parse(req.body);
-    const result = validateGoalBasic(data);
+    const result = validateGoalBasic(data as GoalForValidation);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -385,7 +387,7 @@ router.post('/goal-wizard/validate', requireAuth, requireOnboarded, async (req, 
 router.post('/goal-wizard/validate/ai', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = validateGoalSchema.parse(req.body);
-    const result = await validateGoalWithAI(data);
+    const result = await validateGoalWithAI(data as GoalForValidation);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
