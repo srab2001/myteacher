@@ -152,6 +152,7 @@ model AppUser {
   @@index([googleId])
   @@index([email])
   @@index([username])
+  createdStudentFieldValues StudentFieldValue[] @relation("StudentFieldValueCreator")
 }
 
 // ============================================
@@ -288,6 +289,7 @@ model Student {
   @@index([lastName, firstName])
   @@index([teacherId])
   @@index([schoolId])
+  studentFieldValues  StudentFieldValue[]
 }
 
 // ============================================
@@ -840,28 +842,27 @@ enum AssessmentType {
 // ============================================
 
 model FormFieldDefinition {
-  id              String           @id @default(uuid())
-  formType        FormType
-  fieldKey        String
-  label           String
-  controlType     ControlType
-  placeholder     String?
-  helpText        String?
-  isRequired      Boolean          @default(false)
-  sortOrder       Int              @default(0)
-  sectionKey      String?
-  valueEditableBy String[]         @default(["ADMIN", "TEACHER", "CASE_MANAGER"])
+  id                String            @id @default(uuid())
+  formType          FormType
+  fieldKey          String
+  fieldLabel        String
+  section           String
+  sectionOrder      Int               @default(0)
+  controlType       ControlType
+  placeholder       String?
+  helpText          String?
+  isRequired        Boolean           @default(false)
+  isGoalsSection    Boolean           @default(false)
+  sortOrder         Int               @default(0)
+  valueEditableBy   String[]          @default(["ADMIN", "TEACHER", "CASE_MANAGER"])
   optionsEditableBy OptionsEditableBy @default(NONE)
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
-  options         FormFieldOption[]
-  studentValues   StudentFieldValue[]
+  options           FormFieldOption[]
 
   @@unique([formType, fieldKey])
-  @@index([formType])
-  @@index([formType, sectionKey])
 }
 
 // ============================================
@@ -888,16 +889,18 @@ model FormFieldOption {
 // ============================================
 
 model StudentFieldValue {
-  id                    String              @id @default(uuid())
-  studentId             String
-  formFieldDefinitionId String
-  value                 Json
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  id              String    @id @default(uuid())
+  studentId       String
+  fieldKey        String
+  value           Json?
+  createdById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  fieldDefinition       FormFieldDefinition @relation(fields: [formFieldDefinitionId], references: [id])
+  student         Student   @relation(fields: [studentId], references: [id])
+  createdBy       AppUser?  @relation("StudentFieldValueCreator", fields: [createdById], references: [id])
 
-  @@unique([studentId, formFieldDefinitionId])
+  @@unique([studentId, fieldKey])
   @@index([studentId])
 }
 

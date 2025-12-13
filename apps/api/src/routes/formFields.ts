@@ -4,8 +4,14 @@ import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded, requireAdmin } from '../middleware/auth.js';
 import { FormType, ControlType, OptionsEditableBy, UserRole } from '../types/prisma-enums.js';
 import {
+  requireConfigFieldDefinitions,
+  requireConfigFieldOptions,
+  requireConfigSchools,
+  requireConfig504FieldDefinitions,
+  requireConfig504FieldOptions,
   requireConfigBIPFieldDefinitions,
   requireConfigBIPFieldOptions,
+  userHasCapability,
 } from '../middleware/rolePermissions.js';
 
 const router = Router();

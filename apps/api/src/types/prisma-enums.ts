@@ -105,3 +105,6 @@ export type AssessmentType =
   | 'PSYCHOLOGICAL'
   | 'SPEECH_LANGUAGE'
   | 'OTHER';
+
+// Re-export UserRole from permissionMatrix for convenience
+export type { UserRole } from "../middleware/permissionMatrix.js";
