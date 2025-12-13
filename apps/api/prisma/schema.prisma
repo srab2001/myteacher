@@ -240,6 +240,7 @@ model School {
   districtId   String
   name         String              // e.g., "Wilde Lake High School"
   code         String?             // Optional school code
+  stateCode    String?
   schoolType   SchoolType @default(OTHER)
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
@@ -456,6 +457,7 @@ model Goal {
   targetValue         Float?
   presentLevelJson    Json?
   draftStatus         String?
+  comarAlignmentJson  Json?
   progressSchedule    String            @default("WEEKLY")
   targetDate          DateTime
   isActive            Boolean           @default(true)
@@ -480,6 +482,9 @@ model GoalProgress {
   date         DateTime      @default(now())
   quickSelect  ProgressLevel // One-tap progress level
   measureJson  Json?         // Detailed measurement data
+  percentCorrect Float?
+  trials       String?
+  notes        String?       @db.Text
   comment      String?       @db.Text
   isDictated   Boolean       @default(false) // True if entered via voice
   createdAt    DateTime      @default(now())
@@ -942,6 +947,8 @@ model GoalObjective {
   sequence            Int       @default(0)
   objectiveText       String    @db.Text
   measurementCriteria String?   @db.Text
+  targetDate          DateTime?
+  sortOrder           Int       @default(0)
   isCompleted         Boolean   @default(false)
   completedAt         DateTime?
   createdAt           DateTime  @default(now())
