@@ -370,7 +370,7 @@ const validateGoalSchema = z.object({
 
 router.post('/goal-wizard/validate', requireAuth, requireOnboarded, async (req, res) => {
   try {
-    const data = validateGoalSchema.parse(req.body);
+    const data = validateGoalSchema.parse(req.body) as GoalForValidation;
     const result = validateGoalBasic(data);
     res.json(result);
   } catch (error) {
@@ -384,7 +384,7 @@ router.post('/goal-wizard/validate', requireAuth, requireOnboarded, async (req, 
 // AI-enhanced validation
 router.post('/goal-wizard/validate/ai', requireAuth, requireOnboarded, async (req, res) => {
   try {
-    const data = validateGoalSchema.parse(req.body);
+    const data = validateGoalSchema.parse(req.body) as GoalForValidation;
     const result = await validateGoalWithAI(data);
     res.json(result);
   } catch (error) {
@@ -399,7 +399,7 @@ router.post('/goal-wizard/validate/ai', requireAuth, requireOnboarded, async (re
 // Get improvement suggestions
 router.post('/goal-wizard/improve', requireAuth, requireOnboarded, async (req, res) => {
   try {
-    const data = validateGoalSchema.parse(req.body);
+    const data = validateGoalSchema.parse(req.body) as GoalForValidation;
     const result = await suggestGoalImprovements(data);
     res.json(result);
   } catch (error) {

@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requireStudentAccess } from '../middleware/permissions.js';
-import { AssessmentType } from '../types/prisma-enums.js';
+import type { AssessmentType } from '../types/prisma-enums.js';
 
 const router = Router();
 
@@ -287,7 +287,7 @@ router.post(
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : student.dateOfBirth,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : null,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : null,
-          assessmentType: data.assessmentType as AssessmentType,
+          assessmentType: data.assessmentType as unknown as AssessmentType,
           assessmentTypeOther: data.assessmentTypeOther,
 
           // Part I
@@ -421,7 +421,7 @@ router.put(
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : undefined,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : undefined,
-          assessmentType: data.assessmentType as AssessmentType | undefined,
+          assessmentType: data.assessmentType as unknown as AssessmentType | undefined,
           assessmentTypeOther: data.assessmentTypeOther,
           planInstanceId: data.planInstanceId,
 

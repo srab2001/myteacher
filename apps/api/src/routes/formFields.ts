@@ -533,7 +533,7 @@ router.post('/admin/forms/fields/:fieldId/options', requireAdmin, async (req, re
 
     const option = await prisma.formFieldOption.create({
       data: {
-        fieldDefinitionId: fieldId,
+        fieldDefinition: { connect: { id: fieldId } },
         value: data.value,
         label: data.label,
         sortOrder: data.sortOrder,
@@ -633,7 +633,7 @@ router.post('/admin/schools', requireAdmin, async (req, res) => {
         name: data.name,
         code: data.code,
         stateCode: data.stateCode,
-        districtId: data.districtId,
+        district: { connect: { id: data.districtId } },
         address: data.address,
       },
     });

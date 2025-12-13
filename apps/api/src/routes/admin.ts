@@ -162,9 +162,9 @@ router.post(
           title: data.title,
           description: data.description,
           fileUrl: req.file.filename,
-          planTypeId: planType.id,
+          planType: { connect: { id: planType.id } },
           gradeBand: data.gradeBand,
-          jurisdictionId: data.jurisdictionId || null,
+          ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
           uploadedById: req.user!.id,
           ingestionStatus: 'PENDING',
         },
@@ -446,8 +446,8 @@ router.post(
       if (data.isDefault) {
         await prisma.formTemplate.updateMany({
           where: {
-            planTypeId: planType.id,
-            jurisdictionId: data.jurisdictionId || null,
+            planType: { connect: { id: planType.id } },
+            ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
             isDefault: true,
           },
           data: { isDefault: false },
@@ -459,8 +459,8 @@ router.post(
           title: data.title,
           description: data.description,
           fileUrl: req.file.filename,
-          planTypeId: planType.id,
-          jurisdictionId: data.jurisdictionId || null,
+          planType: { connect: { id: planType.id } },
+          ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
           isDefault: data.isDefault || false,
           uploadedById: req.user!.id,
         },
@@ -629,14 +629,11 @@ router.get('/schemas', requireAdmin, async (req, res) => {
   try {
     const { planType, jurisdictionId, activeOnly } = req.query;
 
-    const where: {
-      planType?: { code: string };
-      jurisdictionId?: string | null;
-      isActive?: boolean;
-    } = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
 
     if (planType && typeof planType === 'string') {
-      where.planType = { code: planType };
+      where.planType = { is: { code: planType } };
     }
     if (jurisdictionId && typeof jurisdictionId === 'string') {
       where.jurisdictionId = jurisdictionId === 'global' ? null : jurisdictionId;
@@ -990,8 +987,8 @@ router.post('/schemas', requireAdmin, async (req, res) => {
     // Get the next version number
     const latestSchema = await prisma.planSchema.findFirst({
       where: {
-        planTypeId: planType.id,
-        jurisdictionId: data.jurisdictionId || null,
+        planType: { connect: { id: planType.id } },
+        ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
       },
       orderBy: { version: 'desc' },
     });
@@ -1003,8 +1000,8 @@ router.post('/schemas', requireAdmin, async (req, res) => {
         name: data.name,
         description: data.description,
         version: nextVersion,
-        planTypeId: planType.id,
-        jurisdictionId: data.jurisdictionId || null,
+        planType: { connect: { id: planType.id } },
+        ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
         fields: data.fields,
         isActive: false, // New schemas start as inactive
       },
@@ -1276,7 +1273,7 @@ router.post('/users', requireManageUsersPermission, async (req, res) => {
         email: data.email,
         displayName: data.displayName,
         role: data.role as UserRole,
-        jurisdictionId: data.jurisdictionId || null,
+        ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
         isActive: true,
         permission: data.permissions ? {
           create: {
