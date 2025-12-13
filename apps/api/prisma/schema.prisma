@@ -442,27 +442,29 @@ model PlanFieldValue {
 // ============================================
 
 model Goal {
-  id               String    @id @default(uuid())
-  goalCode         String    // e.g., "GOAL-1", "GOAL-2"
-  area             GoalArea
-  baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
-  annualGoalText   String    @db.Text
-  shortTermObjectives Json?  // Array of short-term objectives
-  progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
-  targetDate       DateTime?
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                  String            @id @default(uuid())
+  planInstanceId      String
+  goalCode            String
+  area                GoalArea
+  annualGoalText      String            @db.Text
+  shortTermObjectives Json?
+  baselineJson        Json?
+  baselineValue       Float?
+  targetValue         Float?
+  presentLevelJson    Json?
+  draftStatus         String?
+  progressSchedule    String            @default("WEEKLY")
+  targetDate          DateTime
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
-  // Relations
-  planInstanceId String
-  planInstance   PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  progressRecords GoalProgress[]
-  workSamples    WorkSample[]
+  planInstance        PlanInstance      @relation(fields: [planInstanceId], references: [id])
+  progressRecords     ProgressRecord[]
+  objectives          GoalObjective[]
+  artifactLinks       GoalArtifactLink[]
 
-  @@unique([planInstanceId, goalCode])
   @@index([planInstanceId])
-  @@index([area])
 }
 
 // ============================================
@@ -909,14 +911,18 @@ model StudentFieldValue {
 // ============================================
 
 model GoalArtifactLink {
-  id                    String   @id @default(uuid())
+  id                    String              @id @default(uuid())
   goalId                String
   artifactComparisonId  String
-  linkType              String   @default("EVIDENCE")
-  notes                 String?
-  createdAt             DateTime @default(now())
+  linkType              String              @default("EVIDENCE")
+  relevanceNote         String?             @db.Text
+  notes                 String              @default("")
+  linkedAt              DateTime            @default(now())
+  createdAt             DateTime            @default(now())
 
-  @@unique([goalId, artifactComparisonId])
+  goal                  Goal                @relation(fields: [goalId], references: [id])
+  artifactComparison    ArtifactComparison  @relation(fields: [artifactComparisonId], references: [id])
+
   @@index([goalId])
   @@index([artifactComparisonId])
 }
@@ -926,17 +932,18 @@ model GoalArtifactLink {
 // ============================================
 
 model GoalObjective {
-  id              String   @id @default(uuid())
-  goalId          String
-  objectiveNumber Int
-  objectiveText   String   @db.Text
-  measurementCriteria String?
-  targetDate      DateTime?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  String    @id @default(uuid())
+  goalId              String
+  sequence            Int       @default(0)
+  objectiveText       String    @db.Text
+  measurementCriteria String?   @db.Text
+  isCompleted         Boolean   @default(false)
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  @@unique([goalId, objectiveNumber])
+  goal                Goal      @relation(fields: [goalId], references: [id])
+
   @@index([goalId])
 }
 
@@ -945,16 +952,28 @@ model GoalObjective {
 // ============================================
 
 model IEPIndependentAssessmentReview {
-  id              String         @id @default(uuid())
-  planInstanceId  String
-  assessmentType  AssessmentType
-  assessmentDate  DateTime?
-  evaluator       String?
-  summary         String?        @db.Text
-  recommendations String?        @db.Text
-  attachmentUrl   String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                  String          @id @default(uuid())
+  studentId           String
+  planInstanceId      String
+  assessmentType      AssessmentType
+  assessmentTypeOther String?
+  assessmentDate      DateTime?
+  dateOfReport        DateTime?
+  dateOfTeamReview    DateTime?
+  evaluator           String?
+  school              String?
+  grade               String?
+  summary             String          @default("") @db.Text
+  recommendations     String          @default("") @db.Text
+  attachmentUrl       String          @default("")
+  createdById         String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
+  student             Student         @relation(fields: [studentId], references: [id])
+  planInstance        PlanInstance    @relation(fields: [planInstanceId], references: [id])
+  createdBy           AppUser?        @relation("AssessmentReviewCreator", fields: [createdById], references: [id])
+
+  @@index([studentId])
   @@index([planInstanceId])
 }

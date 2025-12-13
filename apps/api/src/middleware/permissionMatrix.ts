@@ -1,3 +1,5 @@
+import { UserRole as UserRoleEnum } from '../types/prisma-enums.js';
+
 /**
  * Permission Matrix for IEP, IEP Report, 504 Plan, and BIP features
  *
@@ -9,12 +11,8 @@
 // TYPES
 // ==============================================
 
-export type UserRole =
-  | 'ADMIN'
-  | 'TEACHER'
-  | 'CASE_MANAGER'
-  | 'RELATED_SERVICE_PROVIDER'
-  | 'READ_ONLY';
+export type UserRole = typeof UserRoleEnum[keyof typeof UserRoleEnum];
+export { UserRoleEnum as UserRoleValues };
 
 export type Capability =
   // System Configuration (ADMIN only)
