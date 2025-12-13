@@ -82,3 +82,26 @@ export type SchoolType =
 export namespace Prisma {
   export type InputJsonValue = string | number | boolean | null | { [key: string]: InputJsonValue } | InputJsonValue[];
 }
+
+export type FormType = 'IEP' | 'IEP_REPORT' | 'FIVE_OH_FOUR' | 'BIP';
+
+export type ControlType =
+  | 'TEXT'
+  | 'TEXTAREA'
+  | 'DROPDOWN'
+  | 'RADIO'
+  | 'SIGNATURE'
+  | 'CHECKBOX'
+  | 'CHECKBOX_GROUP'
+  | 'DATE';
+
+export type OptionsEditableBy = 'ADMIN_ONLY' | 'TEACHER_ALLOWED' | 'NONE';
+
+export type AssessmentType =
+  | 'AUDIOLOGICAL'
+  | 'EDUCATIONAL'
+  | 'OCCUPATIONAL_THERAPY'
+  | 'PHYSICAL_THERAPY'
+  | 'PSYCHOLOGICAL'
+  | 'SPEECH_LANGUAGE'
+  | 'OTHER';

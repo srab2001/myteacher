@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requireStudentAccess } from '../middleware/permissions.js';
-import { AssessmentType } from '@prisma/client';
+import { AssessmentType } from '../types/prisma-enums.js';
 
 const router = Router();
 

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded, requireAdmin } from '../middleware/auth.js';
-import { FormType, ControlType, OptionsEditableBy, UserRole } from '@prisma/client';
+import { FormType, ControlType, OptionsEditableBy, UserRole } from '../types/prisma-enums.js';
 import {
   requireConfigBIPFieldDefinitions,
   requireConfigBIPFieldOptions,
