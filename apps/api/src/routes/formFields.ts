@@ -537,7 +537,6 @@ router.post('/admin/forms/fields/:fieldId/options', requireAdmin, async (req, re
         value: data.value,
         label: data.label,
         sortOrder: data.sortOrder,
-        isDefault: data.isDefault,
       },
     });
 
