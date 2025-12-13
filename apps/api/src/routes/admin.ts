@@ -162,9 +162,9 @@ router.post(
           title: data.title,
           description: data.description,
           fileUrl: req.file.filename,
-          planType: { connect: { id: planType.id } },
+          planTypeId: planType.id,
           gradeBand: data.gradeBand,
-          ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
+          jurisdictionId: data.jurisdictionId || null,
           uploadedById: req.user!.id,
           ingestionStatus: 'PENDING',
         },
@@ -446,8 +446,8 @@ router.post(
       if (data.isDefault) {
         await prisma.formTemplate.updateMany({
           where: {
-            planType: { connect: { id: planType.id } },
-            ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
+            planTypeId: planType.id,
+            jurisdictionId: data.jurisdictionId || null,
             isDefault: true,
           },
           data: { isDefault: false },
@@ -459,8 +459,8 @@ router.post(
           title: data.title,
           description: data.description,
           fileUrl: req.file.filename,
-          planType: { connect: { id: planType.id } },
-          ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
+          planTypeId: planType.id,
+          jurisdictionId: data.jurisdictionId || null,
           isDefault: data.isDefault || false,
           uploadedById: req.user!.id,
         },
@@ -987,8 +987,8 @@ router.post('/schemas', requireAdmin, async (req, res) => {
     // Get the next version number
     const latestSchema = await prisma.planSchema.findFirst({
       where: {
-        planType: { connect: { id: planType.id } },
-        ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
+        planTypeId: planType.id,
+        jurisdictionId: data.jurisdictionId || null,
       },
       orderBy: { version: 'desc' },
     });
@@ -1000,8 +1000,9 @@ router.post('/schemas', requireAdmin, async (req, res) => {
         name: data.name,
         description: data.description,
         version: nextVersion,
-        planType: { connect: { id: planType.id } },
-        ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
+        planTypeId: planType.id,
+        jurisdictionId: data.jurisdictionId || null,
+        effectiveFrom: new Date(),
         fields: data.fields,
         isActive: false, // New schemas start as inactive
       },
@@ -1273,7 +1274,7 @@ router.post('/users', requireManageUsersPermission, async (req, res) => {
         email: data.email,
         displayName: data.displayName,
         role: data.role as UserRole,
-        ...(data.jurisdictionId ? { jurisdiction: { connect: { id: data.jurisdictionId } } } : {}),
+        jurisdictionId: data.jurisdictionId || null,
         isActive: true,
         permission: data.permissions ? {
           create: {

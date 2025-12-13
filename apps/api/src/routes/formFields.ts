@@ -633,8 +633,8 @@ router.post('/admin/schools', requireAdmin, async (req, res) => {
         name: data.name,
         code: data.code,
         stateCode: data.stateCode,
-        district: { connect: { id: data.districtId } },
-        address: data.address,
+        districtId: data.districtId,
+        
       },
     });
 

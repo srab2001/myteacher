@@ -287,7 +287,7 @@ router.post(
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : student.dateOfBirth,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : null,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : null,
-          assessmentType: data.assessmentType as unknown as AssessmentType,
+          assessmentType: data.assessmentType as AssessmentType,
           assessmentTypeOther: data.assessmentTypeOther,
 
           // Part I
