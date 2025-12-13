@@ -141,6 +141,7 @@ model AppUser {
   progressRecords GoalProgress[] @relation("ProgressRecordedBy")
   workSamples    WorkSample[]   @relation("WorkSampleUploadedBy")
   serviceLogs    ServiceLog[]   @relation("ServiceProvider")
+  iepAssessmentReviews IEPIndependentAssessmentReview[] @relation("AssessmentReviewCreator")
   priorPlanUploads PriorPlanDocument[] @relation("PriorPlanUploadedBy")
   bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
   formTemplateUploads FormTemplate[] @relation("FormTemplateUploadedBy")
@@ -290,6 +291,7 @@ model Student {
   @@index([teacherId])
   @@index([schoolId])
   studentFieldValues  StudentFieldValue[]
+  iepReviews          IEPIndependentAssessmentReview[]
 }
 
 // ============================================
@@ -463,6 +465,7 @@ model Goal {
   planInstance        PlanInstance      @relation(fields: [planInstanceId], references: [id])
   progressRecords     GoalProgress[]
   objectives          GoalObjective[]
+  workSamples         WorkSample[]
   artifactLinks       GoalArtifactLink[]
 
   @@index([planInstanceId])
