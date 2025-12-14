@@ -288,49 +288,11 @@ router.post(
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : null,
           assessmentType: (data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType,
           assessmentTypeOther: data.assessmentTypeOther,
+          evaluator: data.evaluator,
+          summary: data.summary || "",
+          recommendations: data.recommendations || "",
+          attachmentUrl: data.attachmentUrl || "",
 
-          // Part I
-          reportWrittenDatedSigned: data.reportWrittenDatedSigned,
-          materialsTechnicallySound: data.materialsTechnicallySound,
-          materialsFollowedInstructions: data.materialsFollowedInstructions,
-          materialsInstructionsNotes: data.materialsInstructionsNotes,
-          materialsLanguageAccurate: data.materialsLanguageAccurate,
-          materialsLanguageNotes: data.materialsLanguageNotes,
-          materialsBiasFree: data.materialsBiasFree,
-          materialsBiasNotes: data.materialsBiasNotes,
-          materialsValidPurpose: data.materialsValidPurpose,
-          materialsValidNotes: data.materialsValidNotes,
-          resultsReflectAptitude: data.resultsReflectAptitude,
-          resultsReflectAptitudeNA: data.resultsReflectAptitudeNA,
-          resultsNotes: data.resultsNotes,
-
-          // Part II
-          describesPerformanceAllAreas: data.describesPerformanceAllAreas,
-          performanceAreasNotes: data.performanceAreasNotes,
-          includesVariedAssessmentData: data.includesVariedAssessmentData,
-          assessmentDataNotes: data.assessmentDataNotes,
-          includesInstructionalImplications: data.includesInstructionalImplications,
-          instructionalNotes: data.instructionalNotes,
-
-          // Part III
-          findingsMatchData: data.findingsMatchData,
-          findingsMatchDataNote: data.findingsMatchDataNote,
-          dataMatchExistingSchoolData: data.dataMatchExistingSchoolData,
-          dataMatchExistingNote: data.dataMatchExistingNote,
-          recommendationsSupported: data.recommendationsSupported,
-          recommendationsToConsider: data.recommendationsToConsider,
-          schoolAssessmentWaived: data.schoolAssessmentWaived,
-          schoolAssessmentWaivedNote: data.schoolAssessmentWaivedNote,
-
-          // Part IV
-          includesDataForIEPContent: data.includesDataForIEPContent,
-          iepContentNotes: data.iepContentNotes,
-          disabilityConsistentWithCOMAR: data.disabilityConsistentWithCOMAR,
-          comarDisabilityNotes: data.comarDisabilityNotes,
-
-          // Additional
-          additionalNotes: data.additionalNotes,
-          teamMembers: data.teamMembers || [],
         },
       });
 
@@ -412,50 +374,12 @@ router.put(
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : undefined,
           assessmentType: data.assessmentType ? ((data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType) : undefined,
           assessmentTypeOther: data.assessmentTypeOther,
+          evaluator: data.evaluator,
+          summary: data.summary || "",
+          recommendations: data.recommendations || "",
+          attachmentUrl: data.attachmentUrl || "",
           planInstanceId: data.planInstanceId,
 
-          // Part I
-          reportWrittenDatedSigned: data.reportWrittenDatedSigned,
-          materialsTechnicallySound: data.materialsTechnicallySound,
-          materialsFollowedInstructions: data.materialsFollowedInstructions,
-          materialsInstructionsNotes: data.materialsInstructionsNotes,
-          materialsLanguageAccurate: data.materialsLanguageAccurate,
-          materialsLanguageNotes: data.materialsLanguageNotes,
-          materialsBiasFree: data.materialsBiasFree,
-          materialsBiasNotes: data.materialsBiasNotes,
-          materialsValidPurpose: data.materialsValidPurpose,
-          materialsValidNotes: data.materialsValidNotes,
-          resultsReflectAptitude: data.resultsReflectAptitude,
-          resultsReflectAptitudeNA: data.resultsReflectAptitudeNA,
-          resultsNotes: data.resultsNotes,
-
-          // Part II
-          describesPerformanceAllAreas: data.describesPerformanceAllAreas,
-          performanceAreasNotes: data.performanceAreasNotes,
-          includesVariedAssessmentData: data.includesVariedAssessmentData,
-          assessmentDataNotes: data.assessmentDataNotes,
-          includesInstructionalImplications: data.includesInstructionalImplications,
-          instructionalNotes: data.instructionalNotes,
-
-          // Part III
-          findingsMatchData: data.findingsMatchData,
-          findingsMatchDataNote: data.findingsMatchDataNote,
-          dataMatchExistingSchoolData: data.dataMatchExistingSchoolData,
-          dataMatchExistingNote: data.dataMatchExistingNote,
-          recommendationsSupported: data.recommendationsSupported,
-          recommendationsToConsider: data.recommendationsToConsider,
-          schoolAssessmentWaived: data.schoolAssessmentWaived,
-          schoolAssessmentWaivedNote: data.schoolAssessmentWaivedNote,
-
-          // Part IV
-          includesDataForIEPContent: data.includesDataForIEPContent,
-          iepContentNotes: data.iepContentNotes,
-          disabilityConsistentWithCOMAR: data.disabilityConsistentWithCOMAR,
-          comarDisabilityNotes: data.comarDisabilityNotes,
-
-          // Additional
-          additionalNotes: data.additionalNotes,
-          teamMembers: data.teamMembers,
         },
       });
 
