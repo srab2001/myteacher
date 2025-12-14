@@ -581,7 +581,6 @@ export async function saveGoalDraft(params: {
     data: {
       planInstance: { connect: { id: planId } },
       targetDate: null,
-      targetDate: null,
       goalCode,
       area: draft.goalArea as Prisma.EnumGoalAreaFieldUpdateOperationsInput['set'],
       annualGoalText: draft.annualGoalText,

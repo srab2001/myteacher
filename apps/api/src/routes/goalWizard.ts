@@ -4,11 +4,15 @@ import { prisma, Prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requireStudentAccess } from '../middleware/permissions.js';
 import {
+  GoalForValidation,
+  GoalForValidation,
   generatePresentLevels,
   getPresentLevelsHelpers,
   gatherStudentContext,
 } from '../services/presentLevelsService.js';
 import {
+  GoalForValidation,
+  GoalForValidation,
   generateGoalDraft,
   getGoalTemplates,
   continueWizardChat,
@@ -18,6 +22,8 @@ import {
   GoalDraft,
 } from '../services/goalWizardService.js';
 import {
+  GoalForValidation,
+  GoalForValidation,
   validateGoalBasic,
   validateGoalWithAI,
   getQuickValidationStatus,
@@ -191,6 +197,10 @@ router.post('/goal-wizard/draft', requireAuth, requireOnboarded, async (req, res
             area: data.goalArea,
             ...data.presentLevels,
             currentPerformance: data.presentLevels.currentPerformance || "",
+            strengthsNoted: data.presentLevels.strengthsNoted || "",
+            challengesNoted: data.presentLevels.challengesNoted || "",
+            strengthsNoted: data.presentLevels.strengthsNoted || "",
+            challengesNoted: data.presentLevels.challengesNoted || "",
 
           }
         : undefined,

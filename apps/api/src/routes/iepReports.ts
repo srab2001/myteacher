@@ -287,7 +287,7 @@ router.post(
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : student.dateOfBirth,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : null,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : null,
-          assessmentType: data.assessmentType as unknown as AssessmentType,
+          assessmentType: data.assessmentType === "OTHER" ? ("INITIAL" as AssessmentType) : (data.assessmentType as AssessmentType),
           assessmentTypeOther: data.assessmentTypeOther,
 
           // Part I
@@ -421,7 +421,7 @@ router.put(
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : undefined,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : undefined,
-          assessmentType: data.assessmentType as unknown as AssessmentType | undefined,
+          assessmentType: data.assessmentType ? ((data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as AssessmentType) : undefined,
           assessmentTypeOther: data.assessmentTypeOther,
           planInstanceId: data.planInstanceId,
 
