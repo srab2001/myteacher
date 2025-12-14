@@ -290,12 +290,6 @@ router.post(
           assessmentTypeOther: data.assessmentTypeOther,
 
           // Part I
-          examinerName: data.examinerName,
-          examinerTitle: data.examinerTitle,
-          examinerLicensed: data.examinerLicensed,
-          examinerLicenseDetails: data.examinerLicenseDetails,
-          examinerQualified: data.examinerQualified,
-          examinerQualificationNotes: data.examinerQualificationNotes,
           reportWrittenDatedSigned: data.reportWrittenDatedSigned,
           materialsTechnicallySound: data.materialsTechnicallySound,
           materialsFollowedInstructions: data.materialsFollowedInstructions,
@@ -421,12 +415,6 @@ router.put(
           planInstanceId: data.planInstanceId,
 
           // Part I
-          examinerName: data.examinerName,
-          examinerTitle: data.examinerTitle,
-          examinerLicensed: data.examinerLicensed,
-          examinerLicenseDetails: data.examinerLicenseDetails,
-          examinerQualified: data.examinerQualified,
-          examinerQualificationNotes: data.examinerQualificationNotes,
           reportWrittenDatedSigned: data.reportWrittenDatedSigned,
           materialsTechnicallySound: data.materialsTechnicallySound,
           materialsFollowedInstructions: data.materialsFollowedInstructions,
