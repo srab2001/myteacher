@@ -9,7 +9,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 // Lazy-load PDF parser to avoid initialization issues in serverless
 async function parsePdfBuffer(buffer: Buffer): Promise<string> {
   // Use pdf-parse with custom options to avoid DOM requirements
-  const pdfParse = (await import('pdf-parse')).default;
+  const pdfParseModule = await import('pdf-parse'); const pdfParse = (pdfParseModule as { default?: unknown }).default || pdfParseModule;
 
   // Custom page render function that doesn't require canvas
   const options = {
@@ -26,7 +26,7 @@ async function parsePdfBuffer(buffer: Buffer): Promise<string> {
   };
 
   try {
-    const data = await pdfParse(buffer, options);
+    const data = await (pdfParse as any)(buffer, options);
     return data.text || '';
   } catch (error) {
     console.error('pdf-parse error:', error);

@@ -1,3 +1,9 @@
+import { jest } from '@jest/globals';
+(globalThis as Record<string, unknown>).jest = jest;
+
+process.env.OPENAI_API_KEY = 'test-openai-key';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+process.env.SESSION_SECRET = 'test-session-secret-that-is-long-enough';
 // Jest test setup file
 import { prisma } from '../lib/db.js';
 

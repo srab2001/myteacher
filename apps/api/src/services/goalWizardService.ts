@@ -579,7 +579,8 @@ export async function saveGoalDraft(params: {
   // Create goal with objectives
   const goal = await prisma.goal.create({
     data: {
-      planInstanceId: planId,
+      planInstance: { connect: { id: planId } },
+      targetDate: null,
       goalCode,
       area: draft.goalArea as Prisma.EnumGoalAreaFieldUpdateOperationsInput['set'],
       annualGoalText: draft.annualGoalText,

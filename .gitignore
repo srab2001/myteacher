@@ -45,3 +45,4 @@ apps/api/prisma/generated/
 .turbo/
 node-compile-cache/
 node-compile-cache/
+.vercel

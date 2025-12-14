@@ -22,6 +22,7 @@ import {
   validateGoalWithAI,
   getQuickValidationStatus,
   suggestGoalImprovements,
+  GoalForValidation,
 } from '../services/goalValidationService.js';
 
 const router = Router();
@@ -190,6 +191,12 @@ router.post('/goal-wizard/draft', requireAuth, requireOnboarded, async (req, res
         ? {
             area: data.goalArea,
             ...data.presentLevels,
+            currentPerformance: data.presentLevels.currentPerformance || "",
+            strengthsNoted: Array.isArray(data.presentLevels.strengthsNoted) ? data.presentLevels.strengthsNoted : [],
+            challengesNoted: Array.isArray(data.presentLevels.challengesNoted) ? data.presentLevels.challengesNoted : [],
+            recentProgress: data.presentLevels.recentProgress || "",
+            dataSourceSummary: data.presentLevels.dataSourceSummary || "",
+
           }
         : undefined,
     });
@@ -371,7 +378,7 @@ const validateGoalSchema = z.object({
 router.post('/goal-wizard/validate', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = validateGoalSchema.parse(req.body);
-    const result = validateGoalBasic(data);
+    const result = validateGoalBasic(data as GoalForValidation);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -385,7 +392,7 @@ router.post('/goal-wizard/validate', requireAuth, requireOnboarded, async (req, 
 router.post('/goal-wizard/validate/ai', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = validateGoalSchema.parse(req.body);
-    const result = await validateGoalWithAI(data);
+    const result = await validateGoalWithAI(data as GoalForValidation);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -400,7 +407,7 @@ router.post('/goal-wizard/validate/ai', requireAuth, requireOnboarded, async (re
 router.post('/goal-wizard/improve', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = validateGoalSchema.parse(req.body);
-    const result = await suggestGoalImprovements(data);
+    const result = await suggestGoalImprovements(data as GoalForValidation);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
