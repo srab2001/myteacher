@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requireStudentAccess } from '../middleware/permissions.js';
-import { AssessmentType } from '../prisma/generated/client/index.js';
+import { AssessmentType } from '../../prisma/generated/client/index.js';
 
 const router = Router();
 
@@ -284,7 +284,6 @@ router.post(
           // Header
           school: data.school || student.schoolName,
           grade: data.grade || student.grade,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : student.dateOfBirth,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : null,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : null,
           assessmentType: (data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType,
@@ -418,7 +417,6 @@ router.put(
           // Header
           school: data.school,
           grade: data.grade,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : undefined,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : undefined,
           assessmentType: data.assessmentType ? ((data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType) : undefined,

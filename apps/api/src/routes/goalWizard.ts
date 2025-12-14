@@ -195,6 +195,7 @@ router.post('/goal-wizard/draft', requireAuth, requireOnboarded, async (req, res
             strengthsNoted: Array.isArray(data.presentLevels.strengthsNoted) ? data.presentLevels.strengthsNoted : [],
             challengesNoted: Array.isArray(data.presentLevels.challengesNoted) ? data.presentLevels.challengesNoted : [],
             recentProgress: data.presentLevels.recentProgress || "",
+            dataSourceSummary: data.presentLevels.dataSourceSummary || "",
 
           }
         : undefined,
