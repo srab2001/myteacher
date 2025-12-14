@@ -290,9 +290,6 @@ router.post(
           assessmentTypeOther: data.assessmentTypeOther,
 
           // Part I
-          schoolReviewerName: data.schoolReviewerName,
-          schoolReviewerTitle: data.schoolReviewerTitle,
-          schoolReviewerCredentials: data.schoolReviewerCredentials,
           examinerName: data.examinerName,
           examinerTitle: data.examinerTitle,
           examinerLicensed: data.examinerLicensed,
@@ -424,9 +421,6 @@ router.put(
           planInstanceId: data.planInstanceId,
 
           // Part I
-          schoolReviewerName: data.schoolReviewerName,
-          schoolReviewerTitle: data.schoolReviewerTitle,
-          schoolReviewerCredentials: data.schoolReviewerCredentials,
           examinerName: data.examinerName,
           examinerTitle: data.examinerTitle,
           examinerLicensed: data.examinerLicensed,
