@@ -41,6 +41,10 @@ const createReviewSchema = z.object({
   assessmentType: z.enum(assessmentTypeValues),
   assessmentTypeOther: z.string().optional(),
   planInstanceId: z.string().optional(),
+  evaluator: z.string().optional(),
+  summary: z.string().optional(),
+  recommendations: z.string().optional(),
+  attachmentUrl: z.string().optional(),
 
   // Part I: Review by Qualified Personnel
   schoolReviewerName: z.string().optional(),
