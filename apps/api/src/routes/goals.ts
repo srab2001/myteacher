@@ -36,7 +36,7 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
 
     const goal = await prisma.goal.create({
       data: {
-        planInstanceId: plan.id,
+        planInstance: { connect: { id: plan.id } },
         goalCode: data.goalCode,
         area: data.area,
         annualGoalText: data.annualGoalText,
