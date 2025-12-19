@@ -117,7 +117,7 @@ router.post('/logout', (req, res, next) => {
       if (err) {
         return next(err);
       }
-      res.clearCookie('connect.sid');
+      res.clearCookie('myteacher.sid');
       res.json({ success: true });
     });
   });
