@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,7 +24,7 @@ function AuthCallbackContent() {
 
     const exchangeToken = async () => {
       try {
-        const response = await fetch(`/api/proxy/auth/token-exchange?code=${code}`, {
+        const response = await fetch(`${API_URL}/auth/token-exchange?code=${code}`, {
           credentials: 'include',
         });
 
