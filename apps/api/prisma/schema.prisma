@@ -149,6 +149,8 @@ model AppUser {
   permission     UserPermission?
   studentAccess  StudentAccess[]
   artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
+    authCodes           AuthCode[]           @relation("AuthCodeUser")
+
 
   @@index([googleId])
   @@index([email])
