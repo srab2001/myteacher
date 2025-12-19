@@ -989,3 +989,18 @@ model IEPIndependentAssessmentReview {
   @@index([studentId])
   @@index([planInstanceId])
 }
+
+// ============================================
+// AUTH CODE MODEL (For serverless OAuth token exchange)
+// ============================================
+
+model AuthCode {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      AppUser  @relation("AuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
