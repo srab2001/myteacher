@@ -1,6 +1,18 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI();
+// Lazy-initialize OpenAI client to prevent app crash if API key is missing
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
+    }
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
 
 export interface ValidationIssue {
   type: 'error' | 'warning' | 'suggestion';
@@ -360,7 +372,7 @@ Respond in JSON format:
 }`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
@@ -493,7 +505,7 @@ Respond in JSON:
 }`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {

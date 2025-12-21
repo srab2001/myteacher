@@ -4,7 +4,19 @@
 import OpenAI from 'openai';
 import mammoth from 'mammoth';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+// Lazy-initialize OpenAI client to prevent app crash if API key is missing
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
+    }
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
 
 // Lazy-load PDF parser to avoid initialization issues in serverless
 async function parsePdfBuffer(buffer: Buffer): Promise<string> {
@@ -115,7 +127,7 @@ ${compareText}
 `;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
@@ -214,7 +226,7 @@ Description: ${description ?? 'No description provided'}
   }
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o', // Use gpt-4o for vision capabilities
       messages: [
         { role: 'system', content: systemPrompt },

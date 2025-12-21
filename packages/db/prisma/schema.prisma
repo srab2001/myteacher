@@ -175,10 +175,21 @@ model AppUser {
   studentAccess  StudentAccess[]
   artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
   assessmentReviews   IEPIndependentAssessmentReview[] @relation("AssessmentReviewCreatedBy")
+  // ... existing fields ...
+  authCodes AuthCode[] @relation("AuthCodeUser")
 
   @@index([googleId])
   @@index([email])
   @@index([username])
+}
+model AuthCode {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      AppUser  @relation("AuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 // ============================================
