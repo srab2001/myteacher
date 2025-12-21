@@ -15,6 +15,17 @@ const createGoalSchema = z.object({
   progressSchedule: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly']).optional(),
   targetDate: z.string().optional(),
 });
+const createGoalSchema = z.object({
+  goalCode: z.string().min(1),
+  area: z.enum(['READING', 'WRITING', 'MATH', 'COMMUNICATION', 'SOCIAL_EMOTIONAL', 'BEHAVIOR', 'MOTOR_SKILLS', 'DAILY_LIVING', 'VOCATIONAL', 'OTHER']),
+  annualGoalText: z.string().min(10),
+  baselineJson: z.record(z.unknown()).optional(),
+  shortTermObjectives: z.array(z.string()).optional(),
+  progressSchedule: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly']).optional(),
+  targetDate: z.string().optional(),
+  draftStatus: z.enum(['DRAFT', 'FINAL', 'WIZARD_DRAFT', 'FINALIZED']).optional(),  // ADD THIS LINE
+});
+
 
 router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, res) => {
   try {
@@ -44,8 +55,10 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
         shortTermObjectives: data.shortTermObjectives || [],
         progressSchedule: data.progressSchedule,
         targetDate: data.targetDate ? new Date(data.targetDate) : null,
+        draftStatus: data.draftStatus || 'FINAL',  
       },
     });
+    
 
     res.status(201).json({ goal });
   } catch (error) {
