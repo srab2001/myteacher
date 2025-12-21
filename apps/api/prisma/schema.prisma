@@ -117,7 +117,6 @@ enum BehaviorMeasurementType {
 
 model AppUser {
   id            String    @id @default(uuid())
-  googleId      String?   @unique  // Optional for local auth users
   username      String?   @unique  // For local auth
   passwordHash  String?            // For local auth (bcrypt hashed)
   email         String    @unique
