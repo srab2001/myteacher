@@ -1306,12 +1306,18 @@ class ApiClient {
   }
 
   // Wizard Sessions
-  async startWizardSession(planId: string, goalArea: string, linkedArtifactIds?: string[]): Promise<{ sessionId: string; message: string }> {
+  async startWizardSession(
+    planId: string,
+    goalArea: string,
+    linkedArtifactIds?: string[],
+    presentLevels?: PresentLevelData
+  ): Promise<{ sessionId: string; message: string }> {
     return this.fetch('/api/goal-wizard/session/start', {
       method: 'POST',
-      body: JSON.stringify({ planId, goalArea, linkedArtifactIds }),
+      body: JSON.stringify({ planId, goalArea, linkedArtifactIds, presentLevels }),
     });
   }
+
 
   async sendWizardMessage(sessionId: string, message: string): Promise<{ response: string; currentDraft: GoalDraft | null }> {
     return this.fetch(`/api/goal-wizard/session/${sessionId}/chat`, {
