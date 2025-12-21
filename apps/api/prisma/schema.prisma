@@ -240,7 +240,7 @@ enum SchoolType {
 
 model School {
   id           String     @id @default(cuid())
-  districtId   String
+  districtId   String?
   name         String              // e.g., "Wilde Lake High School"
   code         String?             // Optional school code
   stateCode    String?
@@ -250,10 +250,9 @@ model School {
   updatedAt    DateTime   @updatedAt
 
   // Relations
-  district     District   @relation(fields: [districtId], references: [id])
+  district     District?  @relation(fields: [districtId], references: [id])
   students     Student[]
 
-  @@unique([districtId, name])
   @@index([districtId])
   @@index([isActive])
 }
@@ -886,7 +885,7 @@ model FormFieldDefinition {
 
 model FormFieldOption {
   id                    String              @id @default(uuid())
-  formFieldDefinitionId String
+  formFieldDefinitionId String?
   value                 String
   label                 String
   sortOrder             Int                 @default(0)
@@ -894,7 +893,7 @@ model FormFieldOption {
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
-  fieldDefinition       FormFieldDefinition @relation(fields: [formFieldDefinitionId], references: [id], onDelete: Cascade)
+  fieldDefinition       FormFieldDefinition? @relation(fields: [formFieldDefinitionId], references: [id], onDelete: Cascade)
 
   @@index([formFieldDefinitionId])
 }
