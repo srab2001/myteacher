@@ -1,0 +1,163 @@
+diff --git a/apps/api/src/services/artifactCompareService.ts b/apps/api/src/services/artifactCompareService.ts
+index 04a1701..9fa0535 100644
+--- a/apps/api/src/services/artifactCompareService.ts
++++ b/apps/api/src/services/artifactCompareService.ts
+@@ -4,7 +4,19 @@
+ import OpenAI from 'openai';
+ import mammoth from 'mammoth';
+ 
+-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
++// Lazy-initialize OpenAI client to prevent app crash if API key is missing
++let openaiClient: OpenAI | null = null;
++
++function getOpenAIClient(): OpenAI {
++  if (!openaiClient) {
++    const apiKey = process.env.OPENAI_API_KEY;
++    if (!apiKey) {
++      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
++    }
++    openaiClient = new OpenAI({ apiKey });
++  }
++  return openaiClient;
++}
+ 
+ // Lazy-load PDF parser to avoid initialization issues in serverless
+ async function parsePdfBuffer(buffer: Buffer): Promise<string> {
+@@ -115,7 +127,7 @@ ${compareText}
+ `;
+ 
+   try {
+-    const response = await openai.chat.completions.create({
++    const response = await getOpenAIClient().chat.completions.create({
+       model: 'gpt-4o-mini',
+       messages: [
+         { role: 'system', content: systemPrompt },
+@@ -214,7 +226,7 @@ Description: ${description ?? 'No description provided'}
+   }
+ 
+   try {
+-    const response = await openai.chat.completions.create({
++    const response = await getOpenAIClient().chat.completions.create({
+       model: 'gpt-4o', // Use gpt-4o for vision capabilities
+       messages: [
+         { role: 'system', content: systemPrompt },
+diff --git a/apps/api/src/services/goalValidationService.ts b/apps/api/src/services/goalValidationService.ts
+index d44fb8f..6432086 100644
+--- a/apps/api/src/services/goalValidationService.ts
++++ b/apps/api/src/services/goalValidationService.ts
+@@ -1,6 +1,18 @@
+ import OpenAI from 'openai';
+ 
+-const openai = new OpenAI();
++// Lazy-initialize OpenAI client to prevent app crash if API key is missing
++let openaiClient: OpenAI | null = null;
++
++function getOpenAIClient(): OpenAI {
++  if (!openaiClient) {
++    const apiKey = process.env.OPENAI_API_KEY;
++    if (!apiKey) {
++      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
++    }
++    openaiClient = new OpenAI({ apiKey });
++  }
++  return openaiClient;
++}
+ 
+ export interface ValidationIssue {
+   type: 'error' | 'warning' | 'suggestion';
+@@ -360,7 +372,7 @@ Respond in JSON format:
+ }`;
+ 
+   try {
+-    const completion = await openai.chat.completions.create({
++    const completion = await getOpenAIClient().chat.completions.create({
+       model: 'gpt-4o',
+       messages: [
+         {
+@@ -493,7 +505,7 @@ Respond in JSON:
+ }`;
+ 
+   try {
+-    const completion = await openai.chat.completions.create({
++    const completion = await getOpenAIClient().chat.completions.create({
+       model: 'gpt-4o',
+       messages: [
+         {
+diff --git a/apps/api/src/services/goalWizardService.ts b/apps/api/src/services/goalWizardService.ts
+index 6936904..37d897c 100644
+--- a/apps/api/src/services/goalWizardService.ts
++++ b/apps/api/src/services/goalWizardService.ts
+@@ -2,7 +2,19 @@ import { prisma, Prisma } from '../lib/db.js';
+ import OpenAI from 'openai';
+ import { gatherStudentContext, PresentLevelData } from './presentLevelsService.js';
+ 
+-const openai = new OpenAI();
++// Lazy-initialize OpenAI client to prevent app crash if API key is missing
++let openaiClient: OpenAI | null = null;
++
++function getOpenAIClient(): OpenAI {
++  if (!openaiClient) {
++    const apiKey = process.env.OPENAI_API_KEY;
++    if (!apiKey) {
++      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
++    }
++    openaiClient = new OpenAI({ apiKey });
++  }
++  return openaiClient;
++}
+ 
+ export interface GoalDraftInput {
+   planId: string;
+@@ -351,7 +363,7 @@ export async function generateGoalDraft(input: GoalDraftInput): Promise<GoalDraf
+   });
+ 
+   try {
+-    const completion = await openai.chat.completions.create({
++    const completion = await getOpenAIClient().chat.completions.create({
+       model: 'gpt-4o',
+       messages: [
+         {
+@@ -447,7 +459,7 @@ IMPORTANT: When providing a goal, you MUST include it in this exact JSON format
+ Always include the JSON block when providing or updating a goal. The teacher needs the structured data.`;
+ 
+   try {
+-    const completion = await openai.chat.completions.create({
++    const completion = await getOpenAIClient().chat.completions.create({
+       model: 'gpt-4o',
+       messages: [
+         { role: 'system', content: systemMessage },
+diff --git a/apps/api/src/services/presentLevelsService.ts b/apps/api/src/services/presentLevelsService.ts
+index f01857a..1ab2a63 100644
+--- a/apps/api/src/services/presentLevelsService.ts
++++ b/apps/api/src/services/presentLevelsService.ts
+@@ -1,8 +1,19 @@
+ import { prisma, Prisma } from '../lib/db.js';
+ import OpenAI from 'openai';
+ 
+-// Initialize OpenAI client - will use OPENAI_API_KEY from env
+-const openai = new OpenAI();
++// Lazy-initialize OpenAI client to prevent app crash if API key is missing
++let openaiClient: OpenAI | null = null;
++
++function getOpenAIClient(): OpenAI {
++  if (!openaiClient) {
++    const apiKey = process.env.OPENAI_API_KEY;
++    if (!apiKey) {
++      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
++    }
++    openaiClient = new OpenAI({ apiKey });
++  }
++  return openaiClient;
++}
+ 
+ export interface PresentLevelData {
+   area: string;
+@@ -273,7 +284,7 @@ export async function generatePresentLevels(
+   const prompt = buildPresentLevelsPrompt(context, params.goalArea);
+ 
+   try {
+-    const completion = await openai.chat.completions.create({
++    const completion = await getOpenAIClient().chat.completions.create({
+       model: 'gpt-4o',
+       messages: [
+         {

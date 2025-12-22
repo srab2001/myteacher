@@ -1,3 +1,4 @@
+import { WorkSampleRating } from "../types/prisma-enums.js";
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';

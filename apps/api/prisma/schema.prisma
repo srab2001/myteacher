@@ -117,8 +117,8 @@ enum BehaviorMeasurementType {
 
 model AppUser {
   id            String    @id @default(uuid())
-  googleId      String?   @unique  // Optional for local auth users
   username      String?   @unique  // For local auth
+  googleId      String?   @unique  // Optional for local auth users
   passwordHash  String?            // For local auth (bcrypt hashed)
   email         String    @unique
   displayName   String
@@ -141,6 +141,7 @@ model AppUser {
   progressRecords GoalProgress[] @relation("ProgressRecordedBy")
   workSamples    WorkSample[]   @relation("WorkSampleUploadedBy")
   serviceLogs    ServiceLog[]   @relation("ServiceProvider")
+  iepAssessmentReviews IEPIndependentAssessmentReview[] @relation("AssessmentReviewCreator")
   priorPlanUploads PriorPlanDocument[] @relation("PriorPlanUploadedBy")
   bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
   formTemplateUploads FormTemplate[] @relation("FormTemplateUploadedBy")
@@ -148,10 +149,13 @@ model AppUser {
   permission     UserPermission?
   studentAccess  StudentAccess[]
   artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
+    authCodes           AuthCode[]           @relation("AuthCodeUser")
+
 
   @@index([googleId])
   @@index([email])
   @@index([username])
+  createdStudentFieldValues StudentFieldValue[] @relation("StudentFieldValueCreator")
 }
 
 // ============================================
@@ -235,19 +239,19 @@ enum SchoolType {
 
 model School {
   id           String     @id @default(cuid())
-  districtId   String
+  districtId   String?
   name         String              // e.g., "Wilde Lake High School"
   code         String?             // Optional school code
+  stateCode    String?
   schoolType   SchoolType @default(OTHER)
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   // Relations
-  district     District   @relation(fields: [districtId], references: [id])
+  district     District?  @relation(fields: [districtId], references: [id])
   students     Student[]
 
-  @@unique([districtId, name])
   @@index([districtId])
   @@index([isActive])
 }
@@ -288,6 +292,8 @@ model Student {
   @@index([lastName, firstName])
   @@index([teacherId])
   @@index([schoolId])
+  studentFieldValues  StudentFieldValue[]
+  iepReviews          IEPIndependentAssessmentReview[]
 }
 
 // ============================================
@@ -411,6 +417,7 @@ model PlanInstance {
   serviceLogs  ServiceLog[]
   behaviorPlan BehaviorPlan?
   artifactComparisons ArtifactComparison[]
+  iepReviews   IEPIndependentAssessmentReview[]
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -440,27 +447,31 @@ model PlanFieldValue {
 // ============================================
 
 model Goal {
-  id               String    @id @default(uuid())
-  goalCode         String    // e.g., "GOAL-1", "GOAL-2"
-  area             GoalArea
-  baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
-  annualGoalText   String    @db.Text
-  shortTermObjectives Json?  // Array of short-term objectives
-  progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
-  targetDate       DateTime?
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                  String            @id @default(uuid())
+  planInstanceId      String
+  goalCode            String
+  area                GoalArea
+  annualGoalText      String            @db.Text
+  shortTermObjectives Json?
+  baselineJson        Json?
+  baselineValue       Float?
+  targetValue         Float?
+  presentLevelJson    Json?
+  draftStatus         String?
+  comarAlignmentJson  Json?
+  progressSchedule    String            @default("WEEKLY")
+  targetDate          DateTime
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
-  // Relations
-  planInstanceId String
-  planInstance   PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  progressRecords GoalProgress[]
-  workSamples    WorkSample[]
+  planInstance        PlanInstance      @relation(fields: [planInstanceId], references: [id])
+  progressRecords     GoalProgress[]
+  objectives          GoalObjective[]
+  workSamples         WorkSample[]
+  artifactLinks       GoalArtifactLink[]
 
-  @@unique([planInstanceId, goalCode])
   @@index([planInstanceId])
-  @@index([area])
 }
 
 // ============================================
@@ -472,6 +483,9 @@ model GoalProgress {
   date         DateTime      @default(now())
   quickSelect  ProgressLevel // One-tap progress level
   measureJson  Json?         // Detailed measurement data
+  percentCorrect Float?
+  trials       String?
+  notes        String?       @db.Text
   comment      String?       @db.Text
   isDictated   Boolean       @default(false) // True if entered via voice
   createdAt    DateTime      @default(now())
@@ -782,6 +796,7 @@ model ArtifactComparison {
   student          Student      @relation(fields: [studentId], references: [id])
   planType         PlanType     @relation(fields: [planTypeId], references: [id])
   createdBy        AppUser      @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+  goalArtifactLinks GoalArtifactLink[]
 
   @@index([planInstanceId])
   @@index([studentId])
@@ -798,4 +813,195 @@ model Session {
 
   @@index([expire], name: "IDX_session_expire")
   @@map("session")
+}
+
+// ============================================
+// FORM FIELD ENUMS (Added for formFields feature)
+// ============================================
+
+enum FormType {
+  IEP
+  IEP_REPORT
+  FIVE_OH_FOUR
+  BIP
+}
+
+enum ControlType {
+  TEXT
+  TEXTAREA
+  DROPDOWN
+  RADIO
+  CHECKBOX
+  CHECKBOX_GROUP
+  DATE
+  SIGNATURE
+}
+
+enum OptionsEditableBy {
+  ADMIN_ONLY
+  TEACHER_ALLOWED
+  NONE
+}
+
+enum AssessmentType {
+  INITIAL
+  REEVALUATION
+  TRIENNIAL
+  INDEPENDENT
+}
+
+// ============================================
+// FORM FIELD DEFINITION MODEL
+// ============================================
+
+model FormFieldDefinition {
+  id                String            @id @default(uuid())
+  formType          FormType
+  fieldKey          String
+  fieldLabel        String
+  section           String
+  sectionOrder      Int               @default(0)
+  controlType       ControlType
+  placeholder       String?
+  helpText          String?
+  isRequired        Boolean           @default(false)
+  isGoalsSection    Boolean           @default(false)
+  sortOrder         Int               @default(0)
+  valueEditableBy   String[]          @default(["ADMIN", "TEACHER", "CASE_MANAGER"])
+  optionsEditableBy OptionsEditableBy @default(NONE)
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  options           FormFieldOption[]
+
+  @@unique([formType, fieldKey])
+}
+
+// ============================================
+// FORM FIELD OPTION MODEL
+// ============================================
+
+model FormFieldOption {
+  id                    String              @id @default(uuid())
+  formFieldDefinitionId String?
+  value                 String
+  label                 String
+  sortOrder             Int                 @default(0)
+  isActive              Boolean             @default(true)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  fieldDefinition       FormFieldDefinition? @relation(fields: [formFieldDefinitionId], references: [id], onDelete: Cascade)
+
+  @@index([formFieldDefinitionId])
+}
+
+// ============================================
+// STUDENT FIELD VALUE MODEL
+// ============================================
+
+model StudentFieldValue {
+  id              String    @id @default(uuid())
+  studentId       String
+  fieldKey        String
+  value           Json?
+  createdById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  student         Student   @relation(fields: [studentId], references: [id])
+  createdBy       AppUser?  @relation("StudentFieldValueCreator", fields: [createdById], references: [id])
+
+  @@unique([studentId, fieldKey])
+  @@index([studentId])
+}
+
+// ============================================
+// GOAL ARTIFACT LINK MODEL
+// ============================================
+
+model GoalArtifactLink {
+  id                    String              @id @default(uuid())
+  goalId                String
+  artifactComparisonId  String
+  linkType              String              @default("EVIDENCE")
+  relevanceNote         String?             @db.Text
+  notes                 String              @default("")
+  linkedAt              DateTime            @default(now())
+  createdAt             DateTime            @default(now())
+
+  goal                  Goal                @relation(fields: [goalId], references: [id])
+  artifactComparison    ArtifactComparison  @relation(fields: [artifactComparisonId], references: [id])
+
+  @@index([goalId])
+  @@index([artifactComparisonId])
+}
+
+// ============================================
+// GOAL OBJECTIVE MODEL
+// ============================================
+
+model GoalObjective {
+  id                  String    @id @default(uuid())
+  goalId              String
+  sequence            Int       @default(0)
+  objectiveText       String    @db.Text
+  measurementCriteria String?   @db.Text
+  targetDate          DateTime?
+  sortOrder           Int       @default(0)
+  isCompleted         Boolean   @default(false)
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  goal                Goal      @relation(fields: [goalId], references: [id])
+
+  @@index([goalId])
+}
+
+// ============================================
+// IEP INDEPENDENT ASSESSMENT REVIEW MODEL
+// ============================================
+
+model IEPIndependentAssessmentReview {
+  id                  String          @id @default(uuid())
+  studentId           String
+  planInstanceId      String
+  assessmentType      AssessmentType
+  assessmentTypeOther String?
+  assessmentDate      DateTime?
+  dateOfReport        DateTime?
+  dateOfTeamReview    DateTime?
+  evaluator           String?
+  school              String?
+  grade               String?
+  summary             String          @default("") @db.Text
+  recommendations     String          @default("") @db.Text
+  attachmentUrl       String          @default("")
+  createdById         String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  student             Student         @relation(fields: [studentId], references: [id])
+  planInstance        PlanInstance    @relation(fields: [planInstanceId], references: [id])
+  createdBy           AppUser?        @relation("AssessmentReviewCreator", fields: [createdById], references: [id])
+
+  @@index([studentId])
+  @@index([planInstanceId])
+}
+
+// ============================================
+// AUTH CODE MODEL (For serverless OAuth token exchange)
+// ============================================
+
+model AuthCode {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      AppUser  @relation("AuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }

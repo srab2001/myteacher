@@ -2,7 +2,19 @@ import { prisma, Prisma } from '../lib/db.js';
 import OpenAI from 'openai';
 
 // Initialize OpenAI client - will use OPENAI_API_KEY from env
-const openai = new OpenAI();
+// Lazy-initialize OpenAI client to prevent app crash if API key is missing
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
+    }
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
 
 export interface PresentLevelData {
   area: string;
@@ -273,7 +285,7 @@ export async function generatePresentLevels(
   const prompt = buildPresentLevelsPrompt(context, params.goalArea);
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {

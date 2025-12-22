@@ -2,7 +2,19 @@ import { prisma, Prisma } from '../lib/db.js';
 import OpenAI from 'openai';
 import { gatherStudentContext, PresentLevelData } from './presentLevelsService.js';
 
-const openai = new OpenAI();
+// Lazy-initialize OpenAI client to prevent app crash if API key is missing
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
+    }
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
 
 export interface GoalDraftInput {
   planId: string;
@@ -351,7 +363,7 @@ export async function generateGoalDraft(input: GoalDraftInput): Promise<GoalDraf
   });
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
@@ -447,7 +459,7 @@ IMPORTANT: When providing a goal, you MUST include it in this exact JSON format 
 Always include the JSON block when providing or updating a goal. The teacher needs the structured data.`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemMessage },
@@ -579,7 +591,8 @@ export async function saveGoalDraft(params: {
   // Create goal with objectives
   const goal = await prisma.goal.create({
     data: {
-      planInstanceId: planId,
+      planInstance: { connect: { id: planId } },
+      targetDate: null,
       goalCode,
       area: draft.goalArea as Prisma.EnumGoalAreaFieldUpdateOperationsInput['set'],
       annualGoalText: draft.annualGoalText,

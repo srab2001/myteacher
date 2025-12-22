@@ -629,14 +629,11 @@ router.get('/schemas', requireAdmin, async (req, res) => {
   try {
     const { planType, jurisdictionId, activeOnly } = req.query;
 
-    const where: {
-      planType?: { code: string };
-      jurisdictionId?: string | null;
-      isActive?: boolean;
-    } = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
 
     if (planType && typeof planType === 'string') {
-      where.planType = { code: planType };
+      where.planType = { is: { code: planType } };
     }
     if (jurisdictionId && typeof jurisdictionId === 'string') {
       where.jurisdictionId = jurisdictionId === 'global' ? null : jurisdictionId;
@@ -1005,6 +1002,7 @@ router.post('/schemas', requireAdmin, async (req, res) => {
         version: nextVersion,
         planTypeId: planType.id,
         jurisdictionId: data.jurisdictionId || null,
+        effectiveFrom: new Date(),
         fields: data.fields,
         isActive: false, // New schemas start as inactive
       },
