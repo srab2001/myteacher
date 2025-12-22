@@ -35,6 +35,9 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
       return res.status(404).json({ error: 'Plan not found' });
     }
 
+    // Default targetDate to 1 year from now if not provided
+    const targetDate = data.targetDate ? new Date(data.targetDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
     const goal = await prisma.goal.create({
       data: {
         planInstance: { connect: { id: plan.id } },
@@ -43,8 +46,8 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
         annualGoalText: data.annualGoalText,
         baselineJson: (data.baselineJson || {}) as Prisma.InputJsonValue,
         shortTermObjectives: data.shortTermObjectives || [],
-        progressSchedule: data.progressSchedule,
-        targetDate: data.targetDate ? new Date(data.targetDate) : null,
+        progressSchedule: data.progressSchedule || 'weekly',
+        targetDate: targetDate,
         draftStatus: data.draftStatus || 'FINAL',
       },
     });
@@ -181,7 +184,7 @@ router.patch('/:goalId', requireAuth, requireOnboarded, async (req, res) => {
   }
 });
 
-// Quick progress entry (one-tap)
+// Quick progress entry
 const quickProgressSchema = z.object({
   quickSelect: z.enum(['NOT_ADDRESSED', 'FULL_SUPPORT', 'SOME_SUPPORT', 'LOW_SUPPORT', 'MET_TARGET']),
   comment: z.string().optional(),
@@ -191,15 +194,10 @@ const quickProgressSchema = z.object({
 router.post('/:goalId/progress/quick', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = quickProgressSchema.parse(req.body);
-
     const goal = await prisma.goal.findFirst({
       where: {
         id: req.params.goalId,
-        planInstance: {
-          student: {
-            teacherId: req.user!.id,
-          },
-        },
+        planInstance: { student: { teacherId: req.user!.id } },
       },
     });
 
@@ -215,11 +213,7 @@ router.post('/:goalId/progress/quick', requireAuth, requireOnboarded, async (req
         date: data.date ? new Date(data.date) : new Date(),
         recordedById: req.user!.id,
       },
-      include: {
-        recordedBy: {
-          select: { displayName: true },
-        },
-      },
+      include: { recordedBy: { select: { displayName: true } } },
     });
 
     res.status(201).json({ progress });
@@ -243,15 +237,10 @@ const dictationProgressSchema = z.object({
 router.post('/:goalId/progress/dictation', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = dictationProgressSchema.parse(req.body);
-
     const goal = await prisma.goal.findFirst({
       where: {
         id: req.params.goalId,
-        planInstance: {
-          student: {
-            teacherId: req.user!.id,
-          },
-        },
+        planInstance: { student: { teacherId: req.user!.id } },
       },
     });
 
@@ -269,11 +258,7 @@ router.post('/:goalId/progress/dictation', requireAuth, requireOnboarded, async 
         date: data.date ? new Date(data.date) : new Date(),
         recordedById: req.user!.id,
       },
-      include: {
-        recordedBy: {
-          select: { displayName: true },
-        },
-      },
+      include: { recordedBy: { select: { displayName: true } } },
     });
 
     res.status(201).json({ progress });
@@ -292,19 +277,9 @@ router.get('/:goalId/progress', requireAuth, requireOnboarded, async (req, res) 
     const progressRecords = await prisma.goalProgress.findMany({
       where: {
         goalId: req.params.goalId,
-        goal: {
-          planInstance: {
-            student: {
-              teacherId: req.user!.id,
-            },
-          },
-        },
+        goal: { planInstance: { student: { teacherId: req.user!.id } } },
       },
-      include: {
-        recordedBy: {
-          select: { displayName: true },
-        },
-      },
+      include: { recordedBy: { select: { displayName: true } } },
       orderBy: { date: 'desc' },
     });
 
