@@ -49,7 +49,7 @@ export default function IEPInterviewPage() {
       const { plan: loadedPlan } = await api.getPlan(planId);
       setPlan(loadedPlan);
       setFormData(loadedPlan.fieldValues || {});
-    } catch (_err) {
+    } catch {
       console.error('Failed to load plan:', err);
       setError('Failed to load plan');
     } finally {
@@ -76,7 +76,7 @@ export default function IEPInterviewPage() {
           setUseDynamicFields(true);
         }
         setSchools(schoolsRes.schools || []);
-      } catch (_err) {
+      } catch {
         // If field definitions not available, fall back to schema-based rendering
         console.log('Dynamic fields not available, using schema-based rendering');
       }
@@ -116,7 +116,7 @@ export default function IEPInterviewPage() {
         const result = await api.getGenerationAvailability(planId);
         setGenerationAvailable(result.available);
         setGeneratingSections(result.sections);
-      } catch (_err) {
+      } catch {
         // Generation not available - silently fail
         setGenerationAvailable(false);
       }
@@ -133,7 +133,7 @@ export default function IEPInterviewPage() {
       try {
         const result = await api.getStudentArtifactCompares(studentId);
         setAvailableArtifacts(result.comparisons || []);
-      } catch (_err) {
+      } catch {
         // Artifacts not available - silently fail
         console.error('Failed to load artifacts:', err);
       }
@@ -152,7 +152,7 @@ export default function IEPInterviewPage() {
       if (result.text) {
         setFormData(prev => ({ ...prev, [fieldKey]: result.text }));
       }
-    } catch (_err) {
+    } catch {
       console.error('Generation failed:', err);
     } finally {
       setGeneratingFields(prev => {
@@ -182,7 +182,7 @@ export default function IEPInterviewPage() {
 
     try {
       await api.updatePlanFields(plan.id, formData);
-    } catch (_err) {
+    } catch {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
@@ -211,7 +211,7 @@ export default function IEPInterviewPage() {
       await handleSave();
       await api.finalizePlan(plan.id);
       router.push(`/students/${studentId}/plans/${planId}`);
-    } catch (_err) {
+    } catch {
       setError(err instanceof Error ? err.message : 'Failed to finalize');
     } finally {
       setSaving(false);

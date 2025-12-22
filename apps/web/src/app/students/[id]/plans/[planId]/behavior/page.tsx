@@ -38,7 +38,7 @@ export default function BehaviorPlanInterviewPage() {
       const { plan: loadedPlan } = await api.getPlan(planId);
       setPlan(loadedPlan);
       setFormData(loadedPlan.fieldValues || {});
-    } catch (_err) {
+    } catch {
       console.error('Failed to load plan:', err);
       setError('Failed to load plan');
     } finally {
@@ -59,7 +59,7 @@ export default function BehaviorPlanInterviewPage() {
         const result = await api.getGenerationAvailability(planId);
         setGenerationAvailable(result.available);
         setGeneratingSections(result.sections);
-      } catch (_err) {
+      } catch {
         setGenerationAvailable(false);
       }
     };
@@ -77,7 +77,7 @@ export default function BehaviorPlanInterviewPage() {
       if (result.text) {
         setFormData(prev => ({ ...prev, [fieldKey]: result.text }));
       }
-    } catch (_err) {
+    } catch {
       console.error('Generation failed:', err);
     } finally {
       setGeneratingFields(prev => {
@@ -102,7 +102,7 @@ export default function BehaviorPlanInterviewPage() {
 
     try {
       await api.updatePlanFields(plan.id, formData);
-    } catch (_err) {
+    } catch {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
@@ -131,7 +131,7 @@ export default function BehaviorPlanInterviewPage() {
       await handleSave();
       await api.finalizePlan(plan.id);
       router.push(`/students/${studentId}`);
-    } catch (_err) {
+    } catch {
       setError(err instanceof Error ? err.message : 'Failed to finalize');
     } finally {
       setSaving(false);
