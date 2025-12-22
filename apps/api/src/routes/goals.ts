@@ -14,16 +14,7 @@ const createGoalSchema = z.object({
   shortTermObjectives: z.array(z.string()).optional(),
   progressSchedule: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly']).optional(),
   targetDate: z.string().optional(),
-});
-const createGoalSchema = z.object({
-  goalCode: z.string().min(1),
-  area: z.enum(['READING', 'WRITING', 'MATH', 'COMMUNICATION', 'SOCIAL_EMOTIONAL', 'BEHAVIOR', 'MOTOR_SKILLS', 'DAILY_LIVING', 'VOCATIONAL', 'OTHER']),
-  annualGoalText: z.string().min(10),
-  baselineJson: z.record(z.unknown()).optional(),
-  shortTermObjectives: z.array(z.string()).optional(),
-  progressSchedule: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly']).optional(),
-  targetDate: z.string().optional(),
-  draftStatus: z.enum(['DRAFT', 'FINAL', 'WIZARD_DRAFT', 'FINALIZED']).optional(),  // ADD THIS LINE
+  draftStatus: z.enum(['DRAFT', 'FINAL', 'WIZARD_DRAFT', 'FINALIZED']).optional(),
 });
 
 
