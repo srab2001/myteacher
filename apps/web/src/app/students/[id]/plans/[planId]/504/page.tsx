@@ -62,7 +62,7 @@ export default function FiveOhFourInterviewPage() {
         setShowStartStep(false);
       }
     } catch {
-      console.error('Failed to load plan:', err);
+      console.error('Failed to load plan:');
       setError('Failed to load plan');
     } finally {
       setLoadingPlan(false);
@@ -145,7 +145,7 @@ export default function FiveOhFourInterviewPage() {
         setFormData(prev => ({ ...prev, [fieldKey]: result.text }));
       }
     } catch {
-      console.error('Generation failed:', err);
+      console.error('Generation failed:');
     } finally {
       setGeneratingFields(prev => {
         const next = new Set(prev);
