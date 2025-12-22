@@ -183,7 +183,7 @@ export default function IEPInterviewPage() {
     try {
       await api.updatePlanFields(plan.id, formData);
     } catch {
-      setError(err instanceof Error ? err.message : 'Failed to save');
+      setError('Failed to save');
     } finally {
       setSaving(false);
     }
@@ -212,7 +212,7 @@ export default function IEPInterviewPage() {
       await api.finalizePlan(plan.id);
       router.push(`/students/${studentId}/plans/${planId}`);
     } catch {
-      setError(err instanceof Error ? err.message : 'Failed to finalize');
+      setError('Failed to finalize');
     } finally {
       setSaving(false);
     }

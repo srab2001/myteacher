@@ -103,7 +103,7 @@ export default function BehaviorPlanInterviewPage() {
     try {
       await api.updatePlanFields(plan.id, formData);
     } catch {
-      setError(err instanceof Error ? err.message : 'Failed to save');
+      setError('Failed to save');
     } finally {
       setSaving(false);
     }
@@ -132,7 +132,7 @@ export default function BehaviorPlanInterviewPage() {
       await api.finalizePlan(plan.id);
       router.push(`/students/${studentId}`);
     } catch {
-      setError(err instanceof Error ? err.message : 'Failed to finalize');
+      setError('Failed to finalize');
     } finally {
       setSaving(false);
     }
