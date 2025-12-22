@@ -61,7 +61,7 @@ export default function FiveOhFourInterviewPage() {
       if (Object.keys(planRes.plan.fieldValues || {}).length > 0 || prior504Plans.length === 0) {
         setShowStartStep(false);
       }
-    } catch (err) {
+    } catch (_err) {
       console.error('Failed to load plan:', err);
       setError('Failed to load plan');
     } finally {
@@ -88,7 +88,7 @@ export default function FiveOhFourInterviewPage() {
           setUseDynamicFields(true);
         }
         setSchools(schoolsRes.schools || []);
-      } catch (err) {
+      } catch (_err) {
         console.log('Dynamic fields not available, using schema-based rendering');
       }
     };
@@ -126,7 +126,7 @@ export default function FiveOhFourInterviewPage() {
         const result = await api.getGenerationAvailability(planId);
         setGenerationAvailable(result.available);
         setGeneratingSections(result.sections);
-      } catch (err) {
+      } catch (_err) {
         setGenerationAvailable(false);
       }
     };
@@ -144,7 +144,7 @@ export default function FiveOhFourInterviewPage() {
       if (result.text) {
         setFormData(prev => ({ ...prev, [fieldKey]: result.text }));
       }
-    } catch (err) {
+    } catch (_err) {
       console.error('Generation failed:', err);
     } finally {
       setGeneratingFields(prev => {
@@ -178,7 +178,7 @@ export default function FiveOhFourInterviewPage() {
 
     try {
       await api.updatePlanFields(plan.id, formData);
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
@@ -207,7 +207,7 @@ export default function FiveOhFourInterviewPage() {
       await handleSave();
       await api.finalizePlan(plan.id);
       router.push(`/students/${studentId}`);
-    } catch (err) {
+    } catch (_err) {
       setError(err instanceof Error ? err.message : 'Failed to finalize');
     } finally {
       setSaving(false);
