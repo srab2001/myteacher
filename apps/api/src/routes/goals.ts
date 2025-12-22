@@ -17,7 +17,6 @@ const createGoalSchema = z.object({
   draftStatus: z.enum(['DRAFT', 'FINAL', 'WIZARD_DRAFT', 'FINALIZED']).optional(),
 });
 
-
 router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, res) => {
   try {
     const data = createGoalSchema.parse(req.body);
@@ -46,10 +45,9 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
         shortTermObjectives: data.shortTermObjectives || [],
         progressSchedule: data.progressSchedule,
         targetDate: data.targetDate ? new Date(data.targetDate) : null,
-        draftStatus: data.draftStatus || 'FINAL',  
+        draftStatus: data.draftStatus || 'FINAL',
       },
     });
-    
 
     res.status(201).json({ goal });
   } catch (error) {
@@ -237,7 +235,7 @@ router.post('/:goalId/progress/quick', requireAuth, requireOnboarded, async (req
 // Dictation progress entry
 const dictationProgressSchema = z.object({
   quickSelect: z.enum(['NOT_ADDRESSED', 'FULL_SUPPORT', 'SOME_SUPPORT', 'LOW_SUPPORT', 'MET_TARGET']),
-  comment: z.string().min(1), // Transcribed text
+  comment: z.string().min(1),
   measureJson: z.record(z.unknown()).optional(),
   date: z.string().optional(),
 });
