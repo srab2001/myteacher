@@ -10,6 +10,7 @@ export interface User {
   districtName: string | null;
   schoolName: string | null;
   isOnboarded: boolean;
+  mustChangePassword?: boolean;
 }
 
 export interface StudentStatus {
@@ -485,6 +486,13 @@ class ApiClient {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<{ success: boolean; message: string }> {
+    return this.fetch('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    });
+  }
+
   async getMe(): Promise<{ user: User }> {
     return this.fetch('/auth/me');
   }
@@ -582,6 +590,7 @@ class ApiClient {
     shortTermObjectives?: string[];
     progressSchedule?: string;
     targetDate?: string;
+    draftStatus?: 'DRAFT' | 'FINAL' | 'WIZARD_DRAFT' | 'FINALIZED';
   }): Promise<{ goal: Goal }> {
     return this.fetch(`/api/plans/${planId}/goals`, {
       method: 'POST',
@@ -1409,6 +1418,7 @@ class ApiClient {
     objectiveText: string;
     measurementCriteria?: string;
     targetDate?: string;
+    draftStatus?: 'DRAFT' | 'FINAL' | 'WIZARD_DRAFT' | 'FINALIZED';
   }): Promise<{ objective: GoalObjective }> {
     return this.fetch(`/api/goals/${goalId}/objectives`, {
       method: 'POST',
@@ -1420,6 +1430,7 @@ class ApiClient {
     objectiveText?: string;
     measurementCriteria?: string;
     targetDate?: string;
+    draftStatus?: 'DRAFT' | 'FINAL' | 'WIZARD_DRAFT' | 'FINALIZED';
   }): Promise<{ objective: GoalObjective }> {
     return this.fetch(`/api/goals/${goalId}/objectives/${objectiveId}`, {
       method: 'PATCH',
@@ -1810,6 +1821,7 @@ export interface GoalObjective {
   objectiveText: string;
   measurementCriteria?: string;
   targetDate?: string;
+    draftStatus?: 'DRAFT' | 'FINAL' | 'WIZARD_DRAFT' | 'FINALIZED';
   isCompleted?: boolean;
 }
 
