@@ -36,6 +36,10 @@ import referenceRoutes from './routes/reference.js';
 import goalWizardRoutes from './routes/goalWizard.js';
 import iepReportsRoutes from './routes/iepReports.js';
 import formFieldsRoutes from './routes/formFields.js';
+import rulePacksRoutes from './routes/rulePacks.js';
+import adminRulePacksRoutes from './routes/adminRulePacks.js';
+import meetingsRoutes from './routes/meetings.js';
+import rulesRoutes from './routes/rules.js';
 
 export function createApp(): Express {
   const app = express();
@@ -119,6 +123,10 @@ export function createApp(): Express {
   app.use('/api', iepReportsRoutes); // IEP Reports routes (Independent Assessment Reviews)
   app.use('/api', iepReportsRoutes); // For /api/students/:studentId/iep-reports
   app.use('/api', formFieldsRoutes); // Form field definitions, values, and admin management
+  app.use('/api/rule-packs', rulePacksRoutes); // Compliance rule packs (read-only for non-admins)
+  app.use('/api/admin/rule-packs', adminRulePacksRoutes); // Admin rule pack management
+  app.use('/api/meetings', meetingsRoutes); // Meeting workflow and enforcement
+  app.use('/api/rules', rulesRoutes); // Rules context and resolver
 
   // 404 handler
   app.use((_req, res) => {
