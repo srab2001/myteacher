@@ -1593,6 +1593,88 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // ============================================
+  // Admin Rule Packs API
+  // ============================================
+
+  async getAdminRulePacks(filters?: {
+    scopeType?: string;
+    scopeId?: string;
+    planType?: string;
+    isActive?: boolean;
+  }): Promise<{ rulePacks: RulePack[] }> {
+    const params = new URLSearchParams();
+    if (filters?.scopeType) params.append('scopeType', filters.scopeType);
+    if (filters?.scopeId) params.append('scopeId', filters.scopeId);
+    if (filters?.planType) params.append('planType', filters.planType);
+    if (filters?.isActive !== undefined) params.append('isActive', String(filters.isActive));
+    const queryString = params.toString();
+    return this.fetch(`/api/admin/rule-packs${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getAdminRulePack(id: string): Promise<{ rulePack: RulePack }> {
+    return this.fetch(`/api/admin/rule-packs/${id}`);
+  }
+
+  async createAdminRulePack(data: {
+    scopeType: string;
+    scopeId: string;
+    planType: string;
+    name: string;
+    effectiveFrom: string;
+    effectiveTo?: string | null;
+    isActive?: boolean;
+  }): Promise<{ rulePack: RulePack }> {
+    return this.fetch('/api/admin/rule-packs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminRulePack(id: string, data: {
+    name?: string;
+    isActive?: boolean;
+    effectiveFrom?: string;
+    effectiveTo?: string | null;
+  }): Promise<{ rulePack: RulePack }> {
+    return this.fetch(`/api/admin/rule-packs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAdminRulePack(id: string): Promise<void> {
+    await this.fetch(`/api/admin/rule-packs/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async updateAdminRulePackRules(id: string, rules: BulkRuleUpdate[]): Promise<{ rulePack: RulePack }> {
+    return this.fetch(`/api/admin/rule-packs/${id}/rules`, {
+      method: 'PUT',
+      body: JSON.stringify({ rules }),
+    });
+  }
+
+  async updateAdminRulePackEvidence(id: string, data: BulkEvidenceUpdate): Promise<{ rule: RulePackRule }> {
+    return this.fetch(`/api/admin/rule-packs/${id}/evidence`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAdminRuleDefinitions(): Promise<{ definitions: RuleDefinition[] }> {
+    return this.fetch('/api/admin/rule-packs/definitions');
+  }
+
+  async getAdminEvidenceTypes(): Promise<{ evidenceTypes: RuleEvidenceType[] }> {
+    return this.fetch('/api/admin/rule-packs/evidence-types');
+  }
+
+  async getAdminMeetingTypes(): Promise<{ meetingTypes: MeetingType[] }> {
+    return this.fetch('/api/admin/rule-packs/meeting-types');
+  }
 }
 
 // ============================================
@@ -1986,6 +2068,90 @@ export interface UpdateFieldData {
   placeholder?: string | null;
   sortOrder?: number;
   isActive?: boolean;
+}
+
+// ============================================
+// Admin Rule Pack Types
+// ============================================
+
+export type RuleScopeType = 'STATE' | 'DISTRICT' | 'SCHOOL';
+export type RulePlanType = 'IEP' | 'PLAN504' | 'BIP' | 'ALL';
+
+export interface RuleDefinition {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  defaultConfig: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RuleEvidenceType {
+  id: string;
+  key: string;
+  name: string;
+  planType: RulePlanType | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MeetingType {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RulePackEvidenceRequirement {
+  id: string;
+  rulePackRuleId: string;
+  evidenceTypeId: string;
+  isRequired: boolean;
+  evidenceType: RuleEvidenceType;
+}
+
+export interface RulePackRule {
+  id: string;
+  rulePackId: string;
+  ruleDefinitionId: string;
+  isEnabled: boolean;
+  config: Record<string, unknown> | null;
+  sortOrder: number;
+  ruleDefinition: RuleDefinition;
+  evidenceRequirements: RulePackEvidenceRequirement[];
+}
+
+export interface RulePack {
+  id: string;
+  scopeType: RuleScopeType;
+  scopeId: string;
+  planType: RulePlanType;
+  name: string;
+  version: number;
+  isActive: boolean;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  createdAt: string;
+  updatedAt: string;
+  rules: RulePackRule[];
+}
+
+export interface BulkRuleUpdate {
+  ruleDefinitionId: string;
+  isEnabled: boolean;
+  config?: Record<string, unknown> | null;
+  sortOrder?: number;
+}
+
+export interface BulkEvidenceUpdate {
+  ruleId: string;
+  evidenceRequirements: Array<{
+    evidenceTypeId: string;
+    isRequired: boolean;
+  }>;
 }
 
 export const api = new ApiClient();
