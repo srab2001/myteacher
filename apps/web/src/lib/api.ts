@@ -1,5 +1,4 @@
-// Force rebuild: 2025-12-29-v2
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://myteacher-api.vercel.app';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface User {
   id: string;
@@ -1890,6 +1889,30 @@ export interface PresentLevelData {
   recentProgress: string;
   dataSourceSummary: string;
   suggestedGoalAreas?: string[];
+  // Enhanced fields with standards references
+  gradeStandardsComparison?: string;
+  standardsReferenced?: Array<{
+    standard: string;
+    code: string;
+    studentPerformance: string;
+    gapAnalysis: string;
+  }>;
+  impactOnGeneralEducation?: string;
+  accommodationsNeeded?: string[];
+  assessmentResults?: Array<{
+    assessmentName: string;
+    date: string;
+    score: string;
+    interpretation: string;
+  }>;
+  parentConcerns?: string;
+  functionalImplications?: string;
+  baselineData?: Array<{
+    metric: string;
+    currentLevel: string;
+    expectedLevel: string;
+    measurementMethod: string;
+  }>;
 }
 
 export interface PresentLevelsHelpers {

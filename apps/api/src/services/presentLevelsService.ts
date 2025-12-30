@@ -23,6 +23,30 @@ export interface PresentLevelData {
   challengesNoted: string[];
   recentProgress: string;
   dataSourceSummary: string;
+  // Enhanced fields with standards references
+  gradeStandardsComparison?: string;
+  standardsReferenced?: Array<{
+    standard: string;
+    code: string;
+    studentPerformance: string;
+    gapAnalysis: string;
+  }>;
+  impactOnGeneralEducation?: string;
+  accommodationsNeeded?: string[];
+  assessmentResults?: Array<{
+    assessmentName: string;
+    date: string;
+    score: string;
+    interpretation: string;
+  }>;
+  parentConcerns?: string;
+  functionalImplications?: string;
+  baselineData?: Array<{
+    metric: string;
+    currentLevel: string;
+    expectedLevel: string;
+    measurementMethod: string;
+  }>;
 }
 
 export interface PresentLevelsContext {
@@ -181,32 +205,145 @@ export async function gatherStudentContext(params: PresentLevelsContext): Promis
   };
 }
 
+// Maryland College and Career Ready Standards (MCCRS) grade-level expectations
+const GRADE_STANDARDS: Record<string, Record<string, string[]>> = {
+  READING: {
+    'K': ['RF.K.1: Demonstrate understanding of print concepts', 'RF.K.2: Demonstrate phonological awareness', 'RF.K.3: Know letter-sound correspondences'],
+    '1': ['RF.1.1: Know letter-sound correspondences', 'RF.1.2: Decode one-syllable words', 'RL.1.1: Ask and answer questions about key details'],
+    '2': ['RF.2.3: Know spelling-sound correspondences', 'RF.2.4: Read with accuracy and fluency (90 WCPM)', 'RL.2.1: Ask and answer who, what, where, when, why, how'],
+    '3': ['RF.3.3: Decode multisyllable words', 'RF.3.4: Read with fluency (110 WCPM)', 'RL.3.1: Demonstrate literal and inferential comprehension'],
+    '4': ['RF.4.3: Use letter-sound knowledge to decode', 'RF.4.4: Read with fluency (130 WCPM)', 'RL.4.1: Refer to details and examples in text'],
+    '5': ['RF.5.3: Use morphology to decode', 'RF.5.4: Read with fluency (140 WCPM)', 'RL.5.1: Quote accurately from text'],
+    '6': ['RL.6.1: Cite textual evidence', 'RL.6.2: Determine theme', 'RI.6.4: Determine meaning of words and phrases'],
+    '7': ['RL.7.1: Cite several pieces of evidence', 'RL.7.2: Analyze theme development', 'RI.7.5: Analyze structure'],
+    '8': ['RL.8.1: Cite strongest textual evidence', 'RL.8.2: Determine theme and analyze development', 'RI.8.6: Determine author POV'],
+    '9-12': ['RL.9-10.1: Cite strong evidence', 'RL.9-10.2: Determine theme and analyze development', 'RI.9-10.5: Analyze structure'],
+  },
+  MATH: {
+    'K': ['K.CC.1: Count to 100', 'K.CC.4: Understand counting', 'K.OA.1: Represent addition/subtraction'],
+    '1': ['1.OA.1: Add/subtract within 20', '1.NBT.1: Count to 120', '1.NBT.4: Add within 100'],
+    '2': ['2.OA.2: Fluently add/subtract within 20', '2.NBT.1: Understand place value to 1000', '2.NBT.5: Fluently add/subtract within 100'],
+    '3': ['3.OA.7: Fluently multiply/divide within 100', '3.NBT.2: Fluently add/subtract within 1000', '3.NF.1: Understand fractions'],
+    '4': ['4.NBT.4: Fluently add/subtract multi-digit', '4.NF.1: Equivalent fractions', '4.OA.1: Multiplicative comparisons'],
+    '5': ['5.NBT.5: Fluently multiply multi-digit', '5.NF.1: Add/subtract fractions', '5.NBT.7: Operations with decimals'],
+    '6': ['6.RP.1: Understand ratio concepts', '6.NS.1: Divide fractions', '6.EE.1: Evaluate expressions'],
+    '7': ['7.RP.1: Compute unit rates', '7.NS.1: Add/subtract rational numbers', '7.EE.1: Apply properties'],
+    '8': ['8.EE.1: Integer exponents', '8.F.1: Understand functions', '8.G.1: Geometric transformations'],
+    '9-12': ['A-SSE.1: Interpret expressions', 'A-REI.1: Explain reasoning', 'F-IF.1: Understand function notation'],
+  },
+  WRITING: {
+    'K': ['W.K.1: Use drawing/writing for opinions', 'W.K.2: Compose informative texts', 'W.K.3: Narrate single event'],
+    '1': ['W.1.1: Write opinion pieces', 'W.1.2: Write informative texts', 'W.1.3: Write narratives'],
+    '2': ['W.2.1: Write opinions with reasons', 'W.2.2: Write informative with facts', 'W.2.3: Write narratives with sequence'],
+    '3': ['W.3.1: Write opinions supporting POV', 'W.3.2: Write informative with categories', 'W.3.3: Write narratives with dialogue'],
+    '4': ['W.4.1: Write opinions with organized reasons', 'W.4.2: Write informative with formatting', 'W.4.3: Write narratives with description'],
+    '5': ['W.5.1: Write opinions with logically organized support', 'W.5.2: Write informative with varied sentence structure', 'W.5.3: Write narratives with pacing'],
+    '6': ['W.6.1: Write arguments with claims and evidence', 'W.6.2: Write informative with relevant content', 'W.6.3: Write narratives with technique'],
+    '7': ['W.7.1: Write arguments acknowledging opposing claims', 'W.7.2: Write informative with coherence', 'W.7.3: Write narratives with point of view'],
+    '8': ['W.8.1: Write arguments with credible sources', 'W.8.2: Write informative with transitions', 'W.8.3: Write narratives with reflection'],
+    '9-12': ['W.9-10.1: Write arguments analyzing substantive topics', 'W.9-10.2: Write informative with complex ideas', 'W.9-10.3: Write narratives with multiple plot lines'],
+  },
+  COMMUNICATION: {
+    'K-2': ['SL.K-2.1: Participate in collaborative conversations', 'SL.K-2.4: Describe people, places, things', 'SL.K-2.6: Speak audibly'],
+    '3-5': ['SL.3-5.1: Engage in collaborative discussions', 'SL.3-5.4: Report on topic with facts', 'SL.3-5.6: Adapt speech to context'],
+    '6-8': ['SL.6-8.1: Engage in range of discussions', 'SL.6-8.4: Present claims with evidence', 'SL.6-8.6: Adapt speech to variety of contexts'],
+    '9-12': ['SL.9-12.1: Initiate and participate in discussions', 'SL.9-12.4: Present information with evidence', 'SL.9-12.6: Adapt speech to task'],
+  },
+};
+
+// Fluency benchmarks by grade (WCPM = Words Correct Per Minute)
+const FLUENCY_BENCHMARKS: Record<string, { fall: number; winter: number; spring: number }> = {
+  '1': { fall: 0, winter: 23, spring: 53 },
+  '2': { fall: 50, winter: 72, spring: 89 },
+  '3': { fall: 71, winter: 92, spring: 110 },
+  '4': { fall: 94, winter: 112, spring: 124 },
+  '5': { fall: 110, winter: 127, spring: 139 },
+  '6': { fall: 127, winter: 140, spring: 150 },
+  '7': { fall: 128, winter: 136, spring: 150 },
+  '8': { fall: 133, winter: 146, spring: 151 },
+};
+
+/**
+ * Get grade-appropriate standards for the goal area
+ */
+function getRelevantStandards(grade: string, goalArea: string): string[] {
+  const normalizedGrade = grade.replace(/[^0-9kK]/g, '').toUpperCase();
+  const gradeKey = normalizedGrade === 'K' ? 'K' : normalizedGrade;
+
+  const areaStandards = GRADE_STANDARDS[goalArea];
+  if (!areaStandards) return [];
+
+  // Try exact grade match first
+  if (areaStandards[gradeKey]) {
+    return areaStandards[gradeKey];
+  }
+
+  // Try grade bands for communication
+  if (goalArea === 'COMMUNICATION') {
+    const gradeNum = parseInt(gradeKey) || 0;
+    if (gradeNum <= 2) return areaStandards['K-2'] || [];
+    if (gradeNum <= 5) return areaStandards['3-5'] || [];
+    if (gradeNum <= 8) return areaStandards['6-8'] || [];
+    return areaStandards['9-12'] || [];
+  }
+
+  // Try high school band
+  const gradeNum = parseInt(gradeKey) || 0;
+  if (gradeNum >= 9) {
+    return areaStandards['9-12'] || [];
+  }
+
+  return [];
+}
+
 /**
  * Build the prompt for present levels generation
  */
 function buildPresentLevelsPrompt(context: StudentContextData, goalArea?: string): string {
   const { student, recentStatuses, artifactComparisons, existingGoals } = context;
   const areaLabel = goalArea ? GOAL_AREA_LABELS[goalArea] || goalArea : 'all areas';
+  const gradeStandards = goalArea ? getRelevantStandards(student.grade, goalArea) : [];
+  const fluencyBenchmark = FLUENCY_BENCHMARKS[student.grade.replace(/[^0-9]/g, '')] || null;
 
   let prompt = `You are an expert special education specialist helping write Present Levels of Academic Achievement and Functional Performance (PLAAFP) for a Maryland IEP.
 
 ## Student Information
 - Name: ${student.firstName} ${student.lastName}
 - Grade: ${student.grade}
+- Date of Birth: ${student.dateOfBirth.toLocaleDateString()}
 - Focus Area: ${areaLabel}
 
-## Maryland COMAR Compliance Requirements
-Present levels must include:
-1. Current academic achievement and functional performance
-2. How the disability affects involvement in the general education curriculum
+## Maryland COMAR 13A.05.01 Compliance Requirements
+Present levels must include (per COMAR 13A.05.01.09):
+1. Current academic achievement and functional performance with measurable data
+2. How the disability affects involvement and progress in the general education curriculum
 3. Strengths of the student
 4. Concerns of the parent/guardian
-5. Results of most recent evaluations
+5. Results of most recent evaluations with specific scores/metrics
 6. Needs that result from the disability
+7. Baseline data for goal development
 
-## Recent Status Updates
+## Grade-Level Standards Reference (Maryland College and Career Ready Standards)
 `;
 
+  if (gradeStandards.length > 0) {
+    prompt += `For Grade ${student.grade} in ${areaLabel}, students are expected to demonstrate:\n`;
+    gradeStandards.forEach((standard) => {
+      prompt += `- ${standard}\n`;
+    });
+  } else {
+    prompt += `Standard grade-level expectations for ${areaLabel}\n`;
+  }
+
+  if (fluencyBenchmark && (goalArea === 'READING' || !goalArea)) {
+    prompt += `\n## Reading Fluency Benchmarks (Grade ${student.grade})
+- Fall: ${fluencyBenchmark.fall} WCPM
+- Winter: ${fluencyBenchmark.winter} WCPM
+- Spring: ${fluencyBenchmark.spring} WCPM
+`;
+  }
+
+  prompt += '\n## Recent Status Updates\n';
   if (recentStatuses.length > 0) {
     recentStatuses.forEach((status) => {
       prompt += `- [${status.effectiveDate.toLocaleDateString()}] ${status.scope}: ${status.code}`;
@@ -219,7 +356,7 @@ Present levels must include:
     prompt += '- No recent status updates available\n';
   }
 
-  prompt += '\n## Artifact Comparison Analyses\n';
+  prompt += '\n## Artifact Comparison Analyses (Work Sample Data)\n';
   if (artifactComparisons.length > 0) {
     artifactComparisons.forEach((ac) => {
       prompt += `### ${ac.artifactDate.toLocaleDateString()}`;
@@ -235,13 +372,13 @@ Present levels must include:
     prompt += 'No artifact analyses available\n';
   }
 
-  prompt += '\n## Existing Goals and Progress\n';
+  prompt += '\n## Existing Goals and Progress Monitoring Data\n';
   if (existingGoals.length > 0) {
     existingGoals.forEach((goal) => {
       prompt += `### ${GOAL_AREA_LABELS[goal.area] || goal.area}\n`;
       prompt += `Goal: ${goal.annualGoalText}\n`;
       if (goal.progressRecords.length > 0) {
-        prompt += 'Recent Progress:\n';
+        prompt += 'Progress Monitoring Data:\n';
         goal.progressRecords.forEach((pr) => {
           prompt += `  - [${pr.date.toLocaleDateString()}] ${pr.quickSelect}`;
           if (pr.comment) {
@@ -258,19 +395,71 @@ Present levels must include:
 
   prompt += `
 ## Instructions
-Based on the information above, generate a comprehensive Present Levels statement for ${areaLabel}.
+Based on the information above, generate a COMPREHENSIVE Present Levels statement for ${areaLabel} that meets Maryland COMAR requirements.
+
+BE SPECIFIC AND DATA-DRIVEN. Include:
+- Exact metrics, percentages, and scores where available
+- Specific standard codes (e.g., RF.3.4, 3.OA.7) when referencing skills
+- Comparison to grade-level expectations
+- Measurable baseline data for goal development
 
 Respond in JSON format with the following structure:
 {
-  "currentPerformance": "A detailed description of current academic/functional performance",
-  "strengthsNoted": ["Strength 1", "Strength 2", ...],
-  "challengesNoted": ["Challenge 1", "Challenge 2", ...],
-  "recentProgress": "Summary of recent progress observed",
-  "dataSourceSummary": "Brief description of data sources used",
-  "suggestedGoalAreas": ["Area 1", "Area 2", ...] // Areas that may need new goals
+  "currentPerformance": "Detailed description of current performance with SPECIFIC DATA (scores, percentages, levels). Example: 'Student reads at 85 WCPM compared to grade-level expectation of 110 WCPM (77% of benchmark).'",
+
+  "strengthsNoted": ["Specific strength with evidence", "Another strength with data", ...],
+
+  "challengesNoted": ["Specific challenge with measurable gap", "Another challenge with data", ...],
+
+  "recentProgress": "Summary of progress with trend data (e.g., 'Improved from 70 WCPM to 85 WCPM over 3 months')",
+
+  "dataSourceSummary": "List of data sources used (observations, assessments, work samples, progress monitoring)",
+
+  "gradeStandardsComparison": "Detailed comparison to Maryland College and Career Ready Standards with specific standard codes",
+
+  "standardsReferenced": [
+    {
+      "standard": "Full standard description",
+      "code": "Standard code (e.g., RF.3.4)",
+      "studentPerformance": "How student performs on this standard with data",
+      "gapAnalysis": "Specific gap between current and expected performance"
+    }
+  ],
+
+  "impactOnGeneralEducation": "How disability affects access to general curriculum with specific examples",
+
+  "accommodationsNeeded": ["Specific accommodation 1", "Specific accommodation 2", ...],
+
+  "assessmentResults": [
+    {
+      "assessmentName": "Name of assessment",
+      "date": "Date administered",
+      "score": "Score/result with percentile or grade equivalent",
+      "interpretation": "What this score means for instruction"
+    }
+  ],
+
+  "parentConcerns": "Note any parent concerns from the data or state 'Parent input to be gathered at IEP meeting'",
+
+  "functionalImplications": "How challenges affect daily functioning and learning",
+
+  "baselineData": [
+    {
+      "metric": "What is being measured",
+      "currentLevel": "Current performance level with number",
+      "expectedLevel": "Grade-level expectation with number",
+      "measurementMethod": "How this will be measured for progress monitoring"
+    }
+  ],
+
+  "suggestedGoalAreas": ["Area 1", "Area 2", ...] // Areas that may need new goals based on gaps
 }
 
-Be specific, data-driven, and maintain a strengths-based perspective while clearly identifying needs.`;
+IMPORTANT:
+- Be specific with numbers, percentages, and standard codes
+- Reference actual Maryland/Common Core standards where applicable
+- Provide measurable baseline data that can be used for IEP goal development
+- Maintain strengths-based language while clearly identifying needs`;
 
   return prompt;
 }
@@ -317,6 +506,15 @@ export async function generatePresentLevels(
       recentProgress: parsed.recentProgress || '',
       dataSourceSummary: parsed.dataSourceSummary || '',
       suggestedGoalAreas: Array.isArray(parsed.suggestedGoalAreas) ? parsed.suggestedGoalAreas : [],
+      // Enhanced fields with standards references
+      gradeStandardsComparison: parsed.gradeStandardsComparison || undefined,
+      standardsReferenced: Array.isArray(parsed.standardsReferenced) ? parsed.standardsReferenced : undefined,
+      impactOnGeneralEducation: parsed.impactOnGeneralEducation || undefined,
+      accommodationsNeeded: Array.isArray(parsed.accommodationsNeeded) ? parsed.accommodationsNeeded : undefined,
+      assessmentResults: Array.isArray(parsed.assessmentResults) ? parsed.assessmentResults : undefined,
+      parentConcerns: parsed.parentConcerns || undefined,
+      functionalImplications: parsed.functionalImplications || undefined,
+      baselineData: Array.isArray(parsed.baselineData) ? parsed.baselineData : undefined,
     };
   } catch (error) {
     console.error('GPT present levels generation error:', error);
