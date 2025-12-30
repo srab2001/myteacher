@@ -132,9 +132,12 @@ export function GoalWizardPanel({
     }
   };
 
-  const startWizardSession = async () => {
-    if (!selectedArea) return;
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
+  const startWizardSession = async (): Promise<boolean> => {
+    if (!selectedArea) return false;
     setLoadingChat(true);
+    setSessionError(null);
     try {
       const result = await api.startWizardSession(planId, selectedArea, selectedArtifacts, presentLevels || undefined);
       setSessionId(result.sessionId);
@@ -144,15 +147,28 @@ export function GoalWizardPanel({
         initialMessage += `\n\nBased on the present levels analysis:\n- Current Performance: ${presentLevels.currentPerformance}\n- Key Challenges: ${presentLevels.challengesNoted.join(', ')}`;
       }
       setChatMessages([{ role: 'assistant', content: initialMessage }]);
+      return true;
     } catch (error) {
       console.error('Failed to start wizard session:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start wizard session';
+      setSessionError(errorMessage);
+      setChatMessages([{ role: 'assistant', content: `Error starting session: ${errorMessage}. Please try again.` }]);
+      return false;
     } finally {
       setLoadingChat(false);
     }
   };
 
   const sendMessage = async () => {
-    if (!sessionId || !chatInput.trim()) return;
+    if (!chatInput.trim()) return;
+
+    // If session not started yet, start it first
+    if (!sessionId) {
+      const started = await startWizardSession();
+      if (!started) return;
+    }
+
+    if (!sessionId) return; // Double check after starting
     const message = chatInput.trim();
     setChatInput('');
     setChatMessages((prev) => [...prev, { role: 'user', content: message }]);
