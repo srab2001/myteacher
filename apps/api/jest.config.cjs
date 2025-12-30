@@ -10,10 +10,13 @@ module.exports = {
   coverageReporters: ['text', 'lcov'],
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   clearMocks: true,
+  injectGlobals: true,
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
+    '^(\\.\\./)+lib/db(\\.js)?$': '<rootDir>/src/__mocks__/lib/db.ts',
+    '^@prisma/client$': '<rootDir>/src/__mocks__/lib/db.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^(.*)/prisma/generated/client/index\\.js$': '$1/prisma/generated/client',
+    '^(.*)/prisma/generated/client/index\\.js$': '<rootDir>/src/__mocks__/lib/db.ts',
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {

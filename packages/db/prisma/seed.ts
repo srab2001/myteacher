@@ -1,4 +1,4 @@
-import { PrismaClient, PlanTypeCode, UserRole, GoalArea, ProgressLevel, ServiceType, ServiceSetting, FormType, ControlType, OptionsEditableBy } from '@prisma/client';
+import { PrismaClient, PlanTypeCode, UserRole, GoalArea, ProgressLevel, ServiceType, ServiceSetting, FormType, ControlType, OptionsEditableBy, RuleScopeType, RulePlanType, MeetingTypeCode } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as bcrypt from 'bcryptjs';
@@ -1067,6 +1067,7 @@ async function seedFormFieldDefinitions() {
 
   // Seed some sample schools
   await seedSchools();
+  await seedComplianceRules();
 }
 
 /**
@@ -1110,6 +1111,319 @@ async function seedSchools() {
   }
 
   console.log(`✅ Seeded ${schools.length} schools`);
+}
+
+/**
+ * Seeds compliance rule definitions, evidence types, meeting types, and default rule packs
+ */
+async function seedComplianceRules() {
+  console.log('📋 Seeding compliance rules...');
+
+  // ============================================
+  // MEETING TYPES
+  // ============================================
+  const meetingTypes = [
+    { code: MeetingTypeCode.INITIAL, name: 'Initial IEP Meeting', description: 'First IEP meeting for a newly identified student' },
+    { code: MeetingTypeCode.ANNUAL, name: 'Annual Review', description: 'Yearly IEP review meeting' },
+    { code: MeetingTypeCode.REVIEW, name: 'Review Meeting', description: 'Meeting to review progress or make changes' },
+    { code: MeetingTypeCode.AMENDMENT, name: 'IEP Amendment', description: 'Meeting to amend the current IEP' },
+    { code: MeetingTypeCode.CONTINUED, name: 'Continued Meeting', description: 'Continuation of a previous meeting' },
+  ];
+
+  for (const mt of meetingTypes) {
+    await prisma.meetingType.upsert({
+      where: { code: mt.code },
+      update: { name: mt.name, description: mt.description },
+      create: mt,
+    });
+  }
+  console.log(`✅ Seeded ${meetingTypes.length} meeting types`);
+
+  // ============================================
+  // RULE DEFINITIONS
+  // ============================================
+  const ruleDefinitions = [
+    {
+      key: 'PRE_MEETING_DOCS_DAYS',
+      name: 'Pre-Meeting Document Delivery Timeline',
+      description: 'Number of business days before a meeting that documents must be delivered to parents',
+      defaultConfig: { days: 5 },
+    },
+    {
+      key: 'POST_MEETING_DOCS_DAYS',
+      name: 'Post-Meeting Document Delivery Timeline',
+      description: 'Number of business days after a meeting that final documents must be delivered to parents',
+      defaultConfig: { days: 5 },
+    },
+    {
+      key: 'DEFAULT_DELIVERY_METHOD',
+      name: 'Default Parent Delivery Method',
+      description: 'Default method for delivering documents to parents if not specified',
+      defaultConfig: { method: 'SEND_HOME' },
+    },
+    {
+      key: 'US_MAIL_PRE_MEETING_DAYS',
+      name: 'US Mail Pre-Meeting Offset',
+      description: 'Minimum business days before meeting when using US Mail for pre-meeting documents',
+      defaultConfig: { days: 8 },
+    },
+    {
+      key: 'US_MAIL_POST_MEETING_DAYS',
+      name: 'US Mail Post-Meeting Offset',
+      description: 'Business days after meeting when using US Mail for post-meeting documents',
+      defaultConfig: { days: 2 },
+    },
+    {
+      key: 'CONFERENCE_NOTES_REQUIRED',
+      name: 'Conference Notes Required',
+      description: 'Conference notes form must be completed after each meeting',
+      defaultConfig: { required: true },
+    },
+    {
+      key: 'INITIAL_IEP_CONSENT_GATE',
+      name: 'Initial IEP Consent Gate',
+      description: 'Block IEP implementation until parent consent is obtained for initial IEPs',
+      defaultConfig: { enabled: true },
+    },
+    {
+      key: 'CONTINUED_MEETING_NOTICE_DAYS',
+      name: 'Continued Meeting Notice Requirement',
+      description: 'Minimum days notice required for continued meetings without waiver',
+      defaultConfig: { days: 10 },
+    },
+    {
+      key: 'CONTINUED_MEETING_MUTUAL_AGREEMENT',
+      name: 'Continued Meeting Mutual Agreement',
+      description: 'Capture whether continued meeting date was mutually agreed',
+      defaultConfig: { required: true },
+    },
+    {
+      key: 'AUDIO_RECORDING_RULE',
+      name: 'Audio Recording Rule',
+      description: 'If parent records meeting, staff must also record. Store acknowledgment.',
+      defaultConfig: { staffMustRecordIfParentRecords: true, markAsNotOfficialRecord: true },
+    },
+  ];
+
+  for (const rd of ruleDefinitions) {
+    await prisma.ruleDefinition.upsert({
+      where: { key: rd.key },
+      update: { name: rd.name, description: rd.description, defaultConfig: rd.defaultConfig },
+      create: rd,
+    });
+  }
+  console.log(`✅ Seeded ${ruleDefinitions.length} rule definitions`);
+
+  // ============================================
+  // RULE EVIDENCE TYPES
+  // ============================================
+  const evidenceTypes = [
+    { key: 'PARENT_DOCS_SENT', name: 'Pre-Meeting Documents Sent', planType: RulePlanType.ALL },
+    { key: 'FINAL_DOC_SENT', name: 'Final Document Sent to Parent', planType: RulePlanType.ALL },
+    { key: 'CONFERENCE_NOTES', name: 'Conference Notes', planType: RulePlanType.IEP },
+    { key: 'CONSENT_FORM', name: 'Parent Consent Form', planType: RulePlanType.IEP },
+    { key: 'NOTICE_WAIVER', name: 'Notice Waiver for Continued Meeting', planType: RulePlanType.ALL },
+    { key: 'RECORDING_ACK', name: 'Recording Acknowledgment', planType: RulePlanType.ALL },
+    { key: 'DELIVERY_CONFIRMATION', name: 'Document Delivery Confirmation', planType: RulePlanType.ALL },
+  ];
+
+  for (const et of evidenceTypes) {
+    await prisma.ruleEvidenceType.upsert({
+      where: { key: et.key },
+      update: { name: et.name, planType: et.planType },
+      create: et,
+    });
+  }
+  console.log(`✅ Seeded ${evidenceTypes.length} evidence types`);
+
+  // ============================================
+  // DEFAULT RULE PACKS
+  // ============================================
+
+  // Maryland State-wide pack (base rules)
+  const mdStatePack = await prisma.rulePack.upsert({
+    where: {
+      scopeType_scopeId_planType_version: {
+        scopeType: RuleScopeType.STATE,
+        scopeId: 'MD',
+        planType: RulePlanType.ALL,
+        version: 1,
+      },
+    },
+    update: { name: 'Maryland State Compliance Rules', isActive: true },
+    create: {
+      scopeType: RuleScopeType.STATE,
+      scopeId: 'MD',
+      planType: RulePlanType.ALL,
+      name: 'Maryland State Compliance Rules',
+      version: 1,
+      isActive: true,
+      effectiveFrom: new Date('2024-01-01'),
+    },
+  });
+  console.log('✅ Created Maryland state rule pack');
+
+  // Get rule definitions for linking
+  const preMeetingDocsRule = await prisma.ruleDefinition.findUnique({ where: { key: 'PRE_MEETING_DOCS_DAYS' } });
+  const postMeetingDocsRule = await prisma.ruleDefinition.findUnique({ where: { key: 'POST_MEETING_DOCS_DAYS' } });
+  const usMailPreRule = await prisma.ruleDefinition.findUnique({ where: { key: 'US_MAIL_PRE_MEETING_DAYS' } });
+  const usMailPostRule = await prisma.ruleDefinition.findUnique({ where: { key: 'US_MAIL_POST_MEETING_DAYS' } });
+  const conferenceNotesRule = await prisma.ruleDefinition.findUnique({ where: { key: 'CONFERENCE_NOTES_REQUIRED' } });
+  const consentGateRule = await prisma.ruleDefinition.findUnique({ where: { key: 'INITIAL_IEP_CONSENT_GATE' } });
+  const continuedMeetingRule = await prisma.ruleDefinition.findUnique({ where: { key: 'CONTINUED_MEETING_NOTICE_DAYS' } });
+  const audioRecordingRule = await prisma.ruleDefinition.findUnique({ where: { key: 'AUDIO_RECORDING_RULE' } });
+
+  // Get evidence types for linking
+  const conferenceNotesEvidence = await prisma.ruleEvidenceType.findUnique({ where: { key: 'CONFERENCE_NOTES' } });
+  const consentFormEvidence = await prisma.ruleEvidenceType.findUnique({ where: { key: 'CONSENT_FORM' } });
+  const noticeWaiverEvidence = await prisma.ruleEvidenceType.findUnique({ where: { key: 'NOTICE_WAIVER' } });
+  const recordingAckEvidence = await prisma.ruleEvidenceType.findUnique({ where: { key: 'RECORDING_ACK' } });
+
+  // Add rules to Maryland state pack
+  if (preMeetingDocsRule) {
+    await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: mdStatePack.id, ruleDefinitionId: preMeetingDocsRule.id } },
+      update: { config: { days: 5 }, isEnabled: true },
+      create: { rulePackId: mdStatePack.id, ruleDefinitionId: preMeetingDocsRule.id, config: { days: 5 }, isEnabled: true, sortOrder: 1 },
+    });
+  }
+
+  if (postMeetingDocsRule) {
+    await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: mdStatePack.id, ruleDefinitionId: postMeetingDocsRule.id } },
+      update: { config: { days: 5 }, isEnabled: true },
+      create: { rulePackId: mdStatePack.id, ruleDefinitionId: postMeetingDocsRule.id, config: { days: 5 }, isEnabled: true, sortOrder: 2 },
+    });
+  }
+
+  if (usMailPreRule) {
+    await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: mdStatePack.id, ruleDefinitionId: usMailPreRule.id } },
+      update: { config: { days: 8 }, isEnabled: true },
+      create: { rulePackId: mdStatePack.id, ruleDefinitionId: usMailPreRule.id, config: { days: 8 }, isEnabled: true, sortOrder: 3 },
+    });
+  }
+
+  if (usMailPostRule) {
+    await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: mdStatePack.id, ruleDefinitionId: usMailPostRule.id } },
+      update: { config: { days: 2 }, isEnabled: true },
+      create: { rulePackId: mdStatePack.id, ruleDefinitionId: usMailPostRule.id, config: { days: 2 }, isEnabled: true, sortOrder: 4 },
+    });
+  }
+
+  if (continuedMeetingRule) {
+    await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: mdStatePack.id, ruleDefinitionId: continuedMeetingRule.id } },
+      update: { config: { days: 10 }, isEnabled: true },
+      create: { rulePackId: mdStatePack.id, ruleDefinitionId: continuedMeetingRule.id, config: { days: 10 }, isEnabled: true, sortOrder: 5 },
+    });
+  }
+
+  if (audioRecordingRule) {
+    await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: mdStatePack.id, ruleDefinitionId: audioRecordingRule.id } },
+      update: { config: { staffMustRecordIfParentRecords: true, markAsNotOfficialRecord: true }, isEnabled: true },
+      create: { rulePackId: mdStatePack.id, ruleDefinitionId: audioRecordingRule.id, config: { staffMustRecordIfParentRecords: true, markAsNotOfficialRecord: true }, isEnabled: true, sortOrder: 6 },
+    });
+  }
+
+  // Howard County District pack (IEP-specific rules)
+  const hcDistrictPack = await prisma.rulePack.upsert({
+    where: {
+      scopeType_scopeId_planType_version: {
+        scopeType: RuleScopeType.DISTRICT,
+        scopeId: 'HCPSS',
+        planType: RulePlanType.IEP,
+        version: 1,
+      },
+    },
+    update: { name: 'Howard County IEP Compliance Rules', isActive: true },
+    create: {
+      scopeType: RuleScopeType.DISTRICT,
+      scopeId: 'HCPSS',
+      planType: RulePlanType.IEP,
+      name: 'Howard County IEP Compliance Rules',
+      version: 1,
+      isActive: true,
+      effectiveFrom: new Date('2024-01-01'),
+    },
+  });
+  console.log('✅ Created Howard County district rule pack');
+
+  // Add IEP-specific rules to Howard County pack
+  if (conferenceNotesRule) {
+    const rule = await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: hcDistrictPack.id, ruleDefinitionId: conferenceNotesRule.id } },
+      update: { config: { required: true }, isEnabled: true },
+      create: { rulePackId: hcDistrictPack.id, ruleDefinitionId: conferenceNotesRule.id, config: { required: true }, isEnabled: true, sortOrder: 1 },
+    });
+
+    // Link conference notes evidence requirement
+    if (conferenceNotesEvidence) {
+      await prisma.rulePackEvidenceRequirement.upsert({
+        where: { rulePackRuleId_evidenceTypeId: { rulePackRuleId: rule.id, evidenceTypeId: conferenceNotesEvidence.id } },
+        update: { isRequired: true },
+        create: { rulePackRuleId: rule.id, evidenceTypeId: conferenceNotesEvidence.id, isRequired: true },
+      });
+    }
+  }
+
+  if (consentGateRule) {
+    const rule = await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: hcDistrictPack.id, ruleDefinitionId: consentGateRule.id } },
+      update: { config: { enabled: true }, isEnabled: true },
+      create: { rulePackId: hcDistrictPack.id, ruleDefinitionId: consentGateRule.id, config: { enabled: true }, isEnabled: true, sortOrder: 2 },
+    });
+
+    // Link consent form evidence requirement for initial IEP
+    if (consentFormEvidence) {
+      await prisma.rulePackEvidenceRequirement.upsert({
+        where: { rulePackRuleId_evidenceTypeId: { rulePackRuleId: rule.id, evidenceTypeId: consentFormEvidence.id } },
+        update: { isRequired: true },
+        create: { rulePackRuleId: rule.id, evidenceTypeId: consentFormEvidence.id, isRequired: true },
+      });
+    }
+  }
+
+  // Add continued meeting rule with waiver evidence
+  if (continuedMeetingRule) {
+    const rule = await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: hcDistrictPack.id, ruleDefinitionId: continuedMeetingRule.id } },
+      update: { config: { days: 10 }, isEnabled: true },
+      create: { rulePackId: hcDistrictPack.id, ruleDefinitionId: continuedMeetingRule.id, config: { days: 10 }, isEnabled: true, sortOrder: 3 },
+    });
+
+    // Link notice waiver evidence requirement
+    if (noticeWaiverEvidence) {
+      await prisma.rulePackEvidenceRequirement.upsert({
+        where: { rulePackRuleId_evidenceTypeId: { rulePackRuleId: rule.id, evidenceTypeId: noticeWaiverEvidence.id } },
+        update: { isRequired: true },
+        create: { rulePackRuleId: rule.id, evidenceTypeId: noticeWaiverEvidence.id, isRequired: true },
+      });
+    }
+  }
+
+  // Add audio recording rule with acknowledgment evidence
+  if (audioRecordingRule) {
+    const rule = await prisma.rulePackRule.upsert({
+      where: { rulePackId_ruleDefinitionId: { rulePackId: hcDistrictPack.id, ruleDefinitionId: audioRecordingRule.id } },
+      update: { config: { staffMustRecordIfParentRecords: true, markAsNotOfficialRecord: true }, isEnabled: true },
+      create: { rulePackId: hcDistrictPack.id, ruleDefinitionId: audioRecordingRule.id, config: { staffMustRecordIfParentRecords: true, markAsNotOfficialRecord: true }, isEnabled: true, sortOrder: 4 },
+    });
+
+    // Link recording acknowledgment evidence requirement
+    if (recordingAckEvidence) {
+      await prisma.rulePackEvidenceRequirement.upsert({
+        where: { rulePackRuleId_evidenceTypeId: { rulePackRuleId: rule.id, evidenceTypeId: recordingAckEvidence.id } },
+        update: { isRequired: true },
+        create: { rulePackRuleId: rule.id, evidenceTypeId: recordingAckEvidence.id, isRequired: true },
+      });
+    }
+  }
+
+  console.log('✅ Created evidence requirements for rule packs');
+  console.log('🎉 Compliance rules seeding complete!');
 }
 
 main()

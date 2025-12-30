@@ -61,6 +61,7 @@ export function GoalWizardPanel({
   const [presentLevels, setPresentLevels] = useState<PresentLevelData | null>(null);
   const [loadingHelpers, setLoadingHelpers] = useState(false);
   const [generatingLevels, setGeneratingLevels] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   // Draft State
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -74,6 +75,7 @@ export function GoalWizardPanel({
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fixingWithAI, setFixingWithAI] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -113,11 +115,18 @@ export function GoalWizardPanel({
   const generatePresentLevels = async () => {
     if (!selectedArea) return;
     setGeneratingLevels(true);
+    setGenerateError(null);
     try {
       const result = await api.generatePresentLevels(studentId, selectedArea, planId);
       setPresentLevels(result);
     } catch (error) {
       console.error('Failed to generate present levels:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate present levels';
+      if (errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('AI features')) {
+        setGenerateError('AI features require OPENAI_API_KEY to be configured. Please contact your administrator.');
+      } else {
+        setGenerateError(errorMessage);
+      }
     } finally {
       setGeneratingLevels(false);
     }
@@ -127,9 +136,14 @@ export function GoalWizardPanel({
     if (!selectedArea) return;
     setLoadingChat(true);
     try {
-      const result = await api.startWizardSession(planId, selectedArea, selectedArtifacts);
+      const result = await api.startWizardSession(planId, selectedArea, selectedArtifacts, presentLevels || undefined);
       setSessionId(result.sessionId);
-      setChatMessages([{ role: 'assistant', content: result.message }]);
+
+      let initialMessage = result.message;
+      if (presentLevels) {
+        initialMessage += `\n\nBased on the present levels analysis:\n- Current Performance: ${presentLevels.currentPerformance}\n- Key Challenges: ${presentLevels.challengesNoted.join(', ')}`;
+      }
+      setChatMessages([{ role: 'assistant', content: initialMessage }]);
     } catch (error) {
       console.error('Failed to start wizard session:', error);
     } finally {
@@ -210,16 +224,47 @@ export function GoalWizardPanel({
     }
   };
 
-  const saveGoal = async () => {
+  const fixWithAI = async () => {
+    if (!currentDraft || !selectedArea) return;
+    setFixingWithAI(true);
+    try {
+      const result = await api.improveGoal({
+        annualGoalText: currentDraft.annualGoalText,
+        area: selectedArea,
+        baselineDescription: currentDraft.baselineDescription,
+        studentGrade,
+      });
+
+      if (result.improvedGoal && result.improvedGoal !== currentDraft.annualGoalText) {
+        setCurrentDraft({
+          ...currentDraft,
+          annualGoalText: result.improvedGoal,
+        });
+        setValidation(null);
+        setCurrentStep('draft');
+        setChatMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: `I've improved your goal to address the compliance issues:\n\n**Improved Goal:**\n${result.improvedGoal}\n\n**Changes made:**\n${result.explanation}\n\nYou can edit this further or proceed to review.` },
+        ]);
+      } else {
+        alert('The goal is already well-structured. No changes needed.');
+      }
+    } catch (error) {
+      console.error('Failed to fix with AI:', error);
+      alert('Failed to improve goal with AI. Please try editing manually.');
+    } finally {
+      setFixingWithAI(false);
+    }
+  };
+
+  const saveGoal = async (asDraft: boolean = false) => {
     if (!currentDraft || !selectedArea) return;
     setSaving(true);
     try {
-      // Generate a goal code (e.g., G1, G2, etc.)
       const existingGoals = await api.getPlanGoals(planId);
       const nextNumber = (existingGoals.goals?.length || 0) + 1;
-      const goalCode = `G${nextNumber}`;
+      const goalCode = asDraft ? `DRAFT-${nextNumber}` : `G${nextNumber}`;
 
-      // Create goal directly using the goals API
       const result = await api.createGoal(planId, {
         goalCode,
         area: selectedArea,
@@ -229,15 +274,18 @@ export function GoalWizardPanel({
           measurementMethod: currentDraft.measurementMethod,
           rationale: currentDraft.rationale,
           comarReference: currentDraft.comarReference,
+          isDraft: asDraft,
+          validationScore: validation?.score || null,
+          validatedAt: asDraft ? null : new Date().toISOString(),
         },
         shortTermObjectives: currentDraft.objectives.map(obj => obj.objectiveText),
         progressSchedule: currentDraft.progressSchedule as 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly',
+        draftStatus: asDraft ? 'DRAFT' : 'FINAL',
       });
 
       onGoalCreated(result.goal.id);
     } catch (error) {
       console.error('Failed to save goal:', error);
-      // Show error to user
       alert('Failed to save goal. Please try again.');
     } finally {
       setSaving(false);
@@ -269,11 +317,7 @@ export function GoalWizardPanel({
       case 'draft':
         if (currentDraft) {
           setCurrentStep('review');
-          await validateDraft();
         }
-        break;
-      case 'review':
-        await saveGoal();
         break;
     }
   };
@@ -345,7 +389,6 @@ export function GoalWizardPanel({
               ))}
             </div>
 
-            {/* Artifact Selection */}
             {availableArtifacts.length > 0 && (
               <div className={styles.artifactSelection}>
                 <h4>Link Artifact Comparisons (Optional)</h4>
@@ -382,7 +425,6 @@ export function GoalWizardPanel({
               </div>
             ) : (
               <>
-                {/* Status Summary */}
                 {helpers && Object.keys(helpers.statusSummary).length > 0 && (
                   <div className={styles.helperCard}>
                     <h4>Recent Status Updates</h4>
@@ -393,74 +435,27 @@ export function GoalWizardPanel({
                         </span>
                       ))}
                     </div>
-                    {helpers.progressTrend && (
-                      <p style={{ marginTop: '0.5rem' }}>{helpers.progressTrend}</p>
-                    )}
                   </div>
                 )}
 
-                {/* Artifact Highlights */}
-                {helpers && helpers.artifactHighlights.length > 0 && (
-                  <div className={styles.helperCard}>
-                    <h4>Recent Artifact Analyses</h4>
-                    {helpers.artifactHighlights.map((highlight, i) => (
-                      <p key={i}>
-                        <strong>{highlight.date}:</strong> {highlight.summary}
-                      </p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Generate Present Levels */}
                 <button
                   className={`btn btn-primary ${styles.generateBtn}`}
                   onClick={generatePresentLevels}
                   disabled={generatingLevels}
                 >
-                  {generatingLevels ? (
-                    <>
-                      <div className={styles.spinner} style={{ width: 16, height: 16 }} />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Present Levels with AI'
-                  )}
+                  {generatingLevels ? 'Generating...' : 'Generate Present Levels with AI'}
                 </button>
 
-                {/* Generated Present Levels */}
+                {generateError && (
+                  <div style={{ color: '#dc2626', padding: '0.75rem', backgroundColor: '#fef2f2', borderRadius: '0.375rem', marginTop: '0.5rem' }}>
+                    {generateError}
+                  </div>
+                )}
+
                 {presentLevels && (
                   <div className={styles.generatedContent}>
                     <h4>Current Performance</h4>
                     <p>{presentLevels.currentPerformance}</p>
-
-                    {presentLevels.strengthsNoted.length > 0 && (
-                      <>
-                        <h4 style={{ marginTop: '1rem' }}>Strengths</h4>
-                        <ul className={styles.listItems}>
-                          {presentLevels.strengthsNoted.map((s, i) => (
-                            <li key={i}>{s}</li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-
-                    {presentLevels.challengesNoted.length > 0 && (
-                      <>
-                        <h4 style={{ marginTop: '1rem' }}>Challenges</h4>
-                        <ul className={styles.listItems}>
-                          {presentLevels.challengesNoted.map((c, i) => (
-                            <li key={i}>{c}</li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-
-                    {presentLevels.recentProgress && (
-                      <>
-                        <h4 style={{ marginTop: '1rem' }}>Recent Progress</h4>
-                        <p>{presentLevels.recentProgress}</p>
-                      </>
-                    )}
                   </div>
                 )}
               </>
@@ -470,24 +465,17 @@ export function GoalWizardPanel({
 
         {currentStep === 'draft' && (
           <div className={styles.chatContainer}>
-            {/* Template Library */}
             {templates.length > 0 && !currentDraft && (
               <div className={styles.templateLibrary}>
-                <h4>Goal Templates (COMAR-aligned)</h4>
+                <h4>Goal Templates</h4>
                 {templates.slice(0, 3).map((template, i) => (
-                  <div
-                    key={i}
-                    className={styles.templateItem}
-                    onClick={() => generateDraft(`Use this template: ${template.template}`)}
-                  >
+                  <div key={i} className={styles.templateItem} onClick={() => generateDraft(`Use this template: ${template.template}`)}>
                     <div className={styles.templateText}>{template.template}</div>
-                    <div className={styles.templateRef}>{template.comarRef}</div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Chat Messages */}
             <div className={styles.chatMessages}>
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`${styles.chatMessage} ${styles[msg.role]}`}>
@@ -502,88 +490,18 @@ export function GoalWizardPanel({
               <div ref={chatEndRef} />
             </div>
 
-            {/* Editable Draft Preview */}
             {currentDraft && (
               <div className={styles.draftPreview}>
                 <h4>Generated Goal (Edit as needed)</h4>
-                <div className={styles.editableField}>
-                  <label>Annual Goal:</label>
-                  <textarea
-                    className={styles.goalTextArea}
-                    value={currentDraft.annualGoalText}
-                    onChange={(e) => setCurrentDraft({
-                      ...currentDraft,
-                      annualGoalText: e.target.value
-                    })}
-                    rows={4}
-                  />
-                </div>
-                {currentDraft.objectives.length > 0 && (
-                  <div className={styles.objectivesList}>
-                    <label>Short-Term Objectives:</label>
-                    {currentDraft.objectives.map((obj, index) => (
-                      <div key={obj.sequence} className={styles.editableObjective}>
-                        <span className={styles.objectiveNumber}>{obj.sequence}.</span>
-                        <textarea
-                          className={styles.objectiveTextArea}
-                          value={obj.objectiveText}
-                          onChange={(e) => {
-                            const newObjectives = [...currentDraft.objectives];
-                            newObjectives[index] = {
-                              ...newObjectives[index],
-                              objectiveText: e.target.value
-                            };
-                            setCurrentDraft({
-                              ...currentDraft,
-                              objectives: newObjectives
-                            });
-                          }}
-                          rows={2}
-                        />
-                      </div>
-                    ))}
-                    <button
-                      className={`btn btn-sm ${styles.addObjectiveBtn}`}
-                      type="button"
-                      onClick={() => {
-                        const newObjective = {
-                          sequence: currentDraft.objectives.length + 1,
-                          objectiveText: '',
-                          measurementCriteria: '',
-                          suggestedTargetWeeks: 12
-                        };
-                        setCurrentDraft({
-                          ...currentDraft,
-                          objectives: [...currentDraft.objectives, newObjective]
-                        });
-                      }}
-                    >
-                      + Add Objective
-                    </button>
-                  </div>
-                )}
-                <div className={styles.editableField} style={{ marginTop: '1rem' }}>
-                  <label>Baseline Description:</label>
-                  <textarea
-                    className={styles.baselineTextArea}
-                    value={currentDraft.baselineDescription}
-                    onChange={(e) => setCurrentDraft({
-                      ...currentDraft,
-                      baselineDescription: e.target.value
-                    })}
-                    rows={2}
-                    placeholder="Describe the student's current performance level..."
-                  />
-                </div>
-                <div className={styles.draftActions}>
-                  <p className={styles.draftHint}>
-                    ✓ Goal generated! Edit above if needed, then click Next to validate.
-                  </p>
-                </div>
+                <textarea
+                  className={styles.goalTextArea}
+                  value={currentDraft.annualGoalText}
+                  onChange={(e) => setCurrentDraft({ ...currentDraft, annualGoalText: e.target.value })}
+                  rows={4}
+                />
               </div>
             )}
 
-            {/* Chat Input */}
             <div className={styles.chatInputArea}>
               <textarea
                 className={styles.chatInput}
@@ -607,93 +525,47 @@ export function GoalWizardPanel({
 
         {currentStep === 'review' && (
           <div className={styles.validationSection}>
-            {validating ? (
-              <div className={styles.loading}>
-                <div className={styles.spinner} />
-                <span>Validating goal against COMAR requirements...</span>
-              </div>
-            ) : validation ? (
-              <>
-                {/* Score */}
-                <div className={styles.validationScore}>
-                  <div
-                    className={`${styles.scoreCircle} ${
-                      validation.score >= 80 ? styles.good : validation.score >= 60 ? styles.warning : styles.error
-                    }`}
-                  >
-                    {validation.score}
-                  </div>
-                  <div className={styles.scoreDetails}>
-                    <h4>{validation.isValid ? 'Goal Ready' : 'Needs Improvement'}</h4>
-                    <p>
-                      {validation.isValid
-                        ? 'This goal meets COMAR requirements'
-                        : 'Please address the issues below'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* COMAR Compliance */}
-                <div className={styles.comarCompliance}>
-                  <div className={`${styles.complianceItem} ${validation.comarCompliance.measurable ? styles.passed : styles.failed}`}>
-                    {validation.comarCompliance.measurable ? '✓' : '✗'} Measurable
-                  </div>
-                  <div className={`${styles.complianceItem} ${validation.comarCompliance.gradeAligned ? styles.passed : styles.failed}`}>
-                    {validation.comarCompliance.gradeAligned ? '✓' : '✗'} Grade-Aligned
-                  </div>
-                  <div className={`${styles.complianceItem} ${validation.comarCompliance.needsBased ? styles.passed : styles.failed}`}>
-                    {validation.comarCompliance.needsBased ? '✓' : '✗'} Needs-Based
-                  </div>
-                  <div className={`${styles.complianceItem} ${validation.comarCompliance.geAccessEnabled ? styles.passed : styles.failed}`}>
-                    {validation.comarCompliance.geAccessEnabled ? '✓' : '✗'} GE Curriculum Access
-                  </div>
-                </div>
-
-                {/* Issues */}
-                {validation.issues.length > 0 && (
-                  <div className={styles.issuesList}>
-                    {validation.issues.map((issue, i) => (
-                      <div key={i} className={`${styles.issue} ${styles[issue.type]}`}>
-                        <span className={styles.issueIcon}>
-                          {issue.type === 'error' ? '❌' : issue.type === 'warning' ? '⚠️' : '💡'}
-                        </span>
-                        <div>
-                          <div>{issue.message}</div>
-                          {issue.suggestion && (
-                            <div style={{ fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-                              Suggestion: {issue.suggestion}
-                            </div>
-                          )}
-                        </div>
+            {currentDraft && (
+              <div className={styles.draftPreview}>
+                <h4>Review Goal</h4>
+                <div className={styles.draftGoalText}>{currentDraft.annualGoalText}</div>
+                {currentDraft.objectives.length > 0 && (
+                  <div className={styles.objectivesList}>
+                    <strong>Objectives:</strong>
+                    {currentDraft.objectives.map((obj) => (
+                      <div key={obj.sequence} className={styles.objectiveItem}>
+                        <span>{obj.sequence}. {obj.objectiveText}</span>
                       </div>
                     ))}
                   </div>
                 )}
-
-                {/* Final Draft Preview */}
-                {currentDraft && (
-                  <div className={styles.draftPreview}>
-                    <h4>Final Goal</h4>
-                    <div className={styles.draftGoalText}>{currentDraft.annualGoalText}</div>
-                    {currentDraft.objectives.length > 0 && (
-                      <div className={styles.objectivesList}>
-                        <strong>Objectives:</strong>
-                        {currentDraft.objectives.map((obj) => (
-                          <div key={obj.sequence} className={styles.objectiveItem}>
-                            <span className={styles.objectiveNumber}>{obj.sequence}.</span>
-                            <span>{obj.objectiveText}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className={styles.loading}>
-                <span>Preparing validation...</span>
               </div>
             )}
+
+            {!validation && !validating && (
+              <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                <button className="btn btn-outline" onClick={validateDraft} disabled={validating}>
+                  Run COMAR Validation (Optional)
+                </button>
+              </div>
+            )}
+
+            {validating && <div className={styles.loading}><div className={styles.spinner} /><span>Validating...</span></div>}
+
+            {validation && (
+              <div style={{ marginTop: '1rem' }}>
+                <div className={styles.validationScore}>
+                  <div className={`${styles.scoreCircle} ${validation.score >= 80 ? styles.good : validation.score >= 60 ? styles.warning : styles.error}`}>
+                    {validation.score}
+                  </div>
+                  <div><h4>{validation.isValid ? 'Goal Ready' : 'Needs Improvement'}</h4></div>
+                </div>
+              </div>
+            )}
+
+            <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#666' }}>
+              Ready to save? Use the buttons below.
+            </p>
           </div>
         )}
       </div>
@@ -702,26 +574,29 @@ export function GoalWizardPanel({
       <div className={styles.footer}>
         <div className={styles.footerLeft}>
           {currentStep !== 'area' && (
-            <button className="btn btn-outline" onClick={handleBack}>
-              Back
-            </button>
+            <button className="btn btn-outline" onClick={handleBack}>Back</button>
           )}
         </div>
         <div className={styles.footerRight}>
-          <button className="btn btn-outline" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={handleNext}
-            disabled={
-              (currentStep === 'area' && !selectedArea) ||
-              (currentStep === 'draft' && !currentDraft) ||
-              (currentStep === 'review' && saving)
-            }
-          >
-            {saving ? 'Saving...' : currentStep === 'review' ? 'Save Goal' : 'Next'}
-          </button>
+          <button className="btn btn-outline" onClick={onClose}>Cancel</button>
+          {currentStep === 'review' ? (
+            <>
+              <button className="btn btn-outline" onClick={() => saveGoal(true)} disabled={saving}>
+                {saving ? 'Saving...' : 'Save as Draft'}
+              </button>
+              <button className="btn btn-primary" onClick={() => saveGoal(false)} disabled={saving}>
+                {saving ? 'Saving...' : 'Save as Final'}
+              </button>
+            </>
+          ) : (
+            <button
+              className="btn btn-primary"
+              onClick={handleNext}
+              disabled={(currentStep === 'area' && !selectedArea) || (currentStep === 'draft' && !currentDraft)}
+            >
+              Next
+            </button>
+          )}
         </div>
       </div>
     </div>

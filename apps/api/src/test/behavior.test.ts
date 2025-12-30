@@ -156,7 +156,7 @@ const mockBehaviorTarget = {
 const mockBehaviorEvent = {
   id: 'event-id',
   behaviorTargetId: 'target-id',
-  eventDate: new Date('2024-06-01'),
+  eventDate: new Date('2024-06-01T12:00:00'),
   startTime: null,
   endTime: null,
   count: 5,
@@ -301,7 +301,7 @@ describe('Behavior Event Recording', () => {
     (prisma.behaviorEvent.create as jest.Mock).mockResolvedValue(mockBehaviorEvent);
 
     const eventData = {
-      eventDate: new Date('2024-06-01'),
+      eventDate: new Date('2024-06-01T12:00:00'),
       count: 5,
       contextJson: { notes: 'During math class' },
     };
@@ -341,7 +341,7 @@ describe('Behavior Event Recording', () => {
     const event = await prisma.behaviorEvent.create({
       data: {
         behaviorTargetId: target!.id,
-        eventDate: new Date('2024-06-01'),
+        eventDate: new Date('2024-06-01T12:00:00'),
         durationSeconds: 180,
         contextJson: { notes: 'Tantrum during transition' },
         recordedById: mockUser.id,
@@ -369,7 +369,7 @@ describe('Behavior Event Recording', () => {
     const event = await prisma.behaviorEvent.create({
       data: {
         behaviorTargetId: target!.id,
-        eventDate: new Date('2024-06-01'),
+        eventDate: new Date('2024-06-01T12:00:00'),
         rating: 3,
         contextJson: { notes: 'Average participation today' },
         recordedById: mockUser.id,
@@ -412,15 +412,14 @@ describe('Behavior Event Retrieval', () => {
 
   it('filters events by date range', async () => {
     const allEvents = [
-      { ...mockBehaviorEvent, eventDate: new Date('2024-05-15') },
-      { ...mockBehaviorEvent, id: 'event-2', eventDate: new Date('2024-06-01') },
-      { ...mockBehaviorEvent, id: 'event-3', eventDate: new Date('2024-06-15') },
-      { ...mockBehaviorEvent, id: 'event-4', eventDate: new Date('2024-07-01') },
+      { ...mockBehaviorEvent, eventDate: new Date('2024-05-15T12:00:00') },
+      { ...mockBehaviorEvent, id: 'event-2', eventDate: new Date('2024-06-01T12:00:00') },
+      { ...mockBehaviorEvent, id: 'event-3', eventDate: new Date('2024-06-15T12:00:00') },
+      { ...mockBehaviorEvent, id: 'event-4', eventDate: new Date('2024-07-01T12:00:00') },
     ];
-
     // Filter to June only
-    const from = new Date('2024-06-01');
-    const to = new Date('2024-06-30');
+    const from = new Date('2024-06-01T12:00:00');
+    const to = new Date('2024-06-30T23:59:59');
     const filteredEvents = allEvents.filter(
       e => e.eventDate >= from && e.eventDate <= to
     );
@@ -429,7 +428,6 @@ describe('Behavior Event Retrieval', () => {
     expect(filteredEvents.every(e => e.eventDate.getMonth() === 5)).toBe(true); // June is month 5
   });
 });
-
 describe('Behavior Target Access Control', () => {
   it('only allows access to targets for students assigned to the teacher', async () => {
     const otherTeacherStudent = {

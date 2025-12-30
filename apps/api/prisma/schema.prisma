@@ -2,9 +2,8 @@
 // Database: PostgreSQL
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
-  output        = "./generated/client"
+  provider = "prisma-client-js"
+  output   = "./generated/client"
 }
 
 datasource db {
@@ -20,6 +19,34 @@ enum UserRole {
   TEACHER
   CASE_MANAGER
   ADMIN
+  RELATED_SERVICE_PROVIDER
+  READ_ONLY
+}
+
+// ============================================
+// FORM FIELD DEFINITION ENUMS
+// ============================================
+
+enum FormType {
+  IEP
+  IEP_REPORT
+  FIVE_OH_FOUR
+}
+
+enum ControlType {
+  TEXT
+  TEXTAREA
+  DROPDOWN
+  RADIO
+  SIGNATURE
+  CHECKBOX
+  DATE
+}
+
+enum OptionsEditableBy {
+  ADMIN_ONLY
+  TEACHER_ALLOWED
+  NONE
 }
 
 enum PlanTypeCode {
@@ -148,10 +175,23 @@ model AppUser {
   permission     UserPermission?
   studentAccess  StudentAccess[]
   artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
+  assessmentReviews   IEPIndependentAssessmentReview[] @relation("AssessmentReviewCreatedBy")
+  meetingEvidence     MeetingEvidence[] @relation("MeetingEvidenceCreatedBy")
+  fileUploads         FileUpload[] @relation("FileUploadCreatedBy")
+  authCodes AuthCode[] @relation("AuthCodeUser")
 
   @@index([googleId])
   @@index([email])
   @@index([username])
+}
+model AuthCode {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      AppUser  @relation("AuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 // ============================================
@@ -174,82 +214,10 @@ model Jurisdiction {
   planSchemas      PlanSchema[]           @relation("PlanSchemaJurisdiction")
   bestPracticeDocs BestPracticeDocument[] @relation("BestPracticeJurisdiction")
   formTemplates    FormTemplate[]         @relation("FormTemplateJurisdiction")
+  goalTemplates    GoalTemplate[]         @relation("GoalTemplateJurisdiction")
 
   @@unique([stateCode, districtCode])
   @@index([stateCode])
-}
-
-// ============================================
-// STATE MODEL (Reference Data)
-// ============================================
-
-model State {
-  id           String    @id @default(cuid())
-  code         String    @unique  // e.g., "MD", "VA", "DC"
-  name         String              // e.g., "Maryland", "Virginia"
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  districts    District[]
-
-  @@index([code])
-  @@index([isActive])
-}
-
-// ============================================
-// DISTRICT MODEL (Reference Data)
-// ============================================
-
-model District {
-  id           String    @id @default(cuid())
-  stateId      String
-  name         String              // e.g., "Howard County Public School System"
-  code         String              // e.g., "HCPSS"
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  state        State     @relation(fields: [stateId], references: [id])
-  schools      School[]
-
-  @@unique([stateId, code])
-  @@index([stateId])
-  @@index([isActive])
-}
-
-// ============================================
-// SCHOOL MODEL (Reference Data)
-// ============================================
-
-enum SchoolType {
-  ELEMENTARY
-  MIDDLE
-  HIGH
-  K8
-  K12
-  OTHER
-}
-
-model School {
-  id           String     @id @default(cuid())
-  districtId   String
-  name         String              // e.g., "Wilde Lake High School"
-  code         String?             // Optional school code
-  schoolType   SchoolType @default(OTHER)
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  // Relations
-  district     District   @relation(fields: [districtId], references: [id])
-  students     Student[]
-
-  @@unique([districtId, name])
-  @@index([districtId])
-  @@index([isActive])
 }
 
 // ============================================
@@ -258,14 +226,14 @@ model School {
 
 model Student {
   id            String    @id @default(uuid())
-  recordId      String    @unique  // System-generated ID (e.g., "STU-000123")
+  recordId      String    @unique  // Stable, human-readable ID (e.g., "HCPSS-000123")
   externalId    String?             // External SIS ID if used
   firstName     String
   lastName      String
-  dateOfBirth   DateTime?
-  grade         String?
-  schoolName    String?             // Legacy field for backwards compatibility
-  districtName  String?             // Legacy field for backwards compatibility
+  dateOfBirth   DateTime
+  grade         String
+  schoolName    String
+  districtName  String?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -275,19 +243,18 @@ model Student {
   jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
   teacherId      String
   teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
-  schoolId       String?
-  school         School?         @relation(fields: [schoolId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
   accessGrants   StudentAccess[]
   artifactComparisons ArtifactComparison[]
+  assessmentReviews   IEPIndependentAssessmentReview[]
+  planMeetings   PlanMeeting[]
 
   @@index([recordId])
   @@index([externalId])
   @@index([lastName, firstName])
   @@index([teacherId])
-  @@index([schoolId])
 }
 
 // ============================================
@@ -412,6 +379,15 @@ model PlanInstance {
   behaviorPlan BehaviorPlan?
   artifactComparisons ArtifactComparison[]
 
+  // Maryland IEP-specific relations
+  iepServices              IEPService[]
+  iepAccommodations        IEPAccommodation[]
+  iepAssessmentDecisions   IEPAssessmentDecision[]
+  iepTransition            IEPTransition?
+  iepExtendedSchoolYear    IEPExtendedSchoolYear?
+  assessmentReviews        IEPIndependentAssessmentReview[]
+  planMeetings             PlanMeeting[]
+
   @@index([studentId, planTypeId])
   @@index([status])
 }
@@ -445,22 +421,102 @@ model Goal {
   area             GoalArea
   baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
   annualGoalText   String    @db.Text
-  shortTermObjectives Json?  // Array of short-term objectives
+  shortTermObjectives Json?  // Array of short-term objectives (legacy, use GoalObjective relation)
   progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
   targetDate       DateTime?
   isActive         Boolean   @default(true)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  // Present Levels and Wizard fields
+  presentLevelJson    Json?      // Structured present levels data from wizard
+  draftStatus         String?    // WIZARD_DRAFT, REVIEW, FINALIZED
+  comarAlignmentJson  Json?      // COMAR compliance validation data
+  templateSourceId    String?    // Reference to template used if any
+
   // Relations
   planInstanceId String
   planInstance   PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
   progressRecords GoalProgress[]
   workSamples    WorkSample[]
+  objectives     GoalObjective[]
+  artifactLinks  GoalArtifactLink[]
 
   @@unique([planInstanceId, goalCode])
   @@index([planInstanceId])
   @@index([area])
+  @@index([draftStatus])
+}
+
+// ============================================
+// GOAL OBJECTIVE MODEL (Short-Term Objectives)
+// ============================================
+
+model GoalObjective {
+  id           String   @id @default(uuid())
+  sequence     Int      // Order of the objective (1, 2, 3...)
+  objectiveText String  @db.Text
+  targetDate   DateTime?
+  measurementCriteria String? @db.Text // How progress will be measured
+  isCompleted  Boolean  @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  goalId String
+  goal   Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, sequence])
+  @@index([goalId])
+}
+
+// ============================================
+// GOAL ARTIFACT LINK MODEL (Links Artifact Comparisons to Goals)
+// ============================================
+
+model GoalArtifactLink {
+  id                   String   @id @default(uuid())
+  relevanceNote        String?  @db.Text // Why this artifact is relevant to this goal
+  linkedAt             DateTime @default(now())
+
+  // Relations
+  goalId               String
+  goal                 Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  artifactComparisonId String
+  artifactComparison   ArtifactComparison @relation(fields: [artifactComparisonId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, artifactComparisonId])
+  @@index([goalId])
+  @@index([artifactComparisonId])
+}
+
+// ============================================
+// GOAL TEMPLATE MODEL (Pre-built Goal Templates)
+// ============================================
+
+model GoalTemplate {
+  id                 String    @id @default(uuid())
+  title              String    // Short descriptive title
+  area               GoalArea
+  gradeBand          String?   // e.g., "K-2", "3-5", "6-8", "9-12"
+  goalTextTemplate   String    @db.Text // Template text with placeholders
+  objectivesTemplate Json?     // Array of objective templates
+  comarReference     String?   // Maryland COMAR reference (e.g., "13A.05.01.09")
+  measurementSuggestions Json? // Suggested measurement methods
+  isActive           Boolean   @default(true)
+  usageCount         Int       @default(0) // Track popularity
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  jurisdictionId     String?
+  jurisdiction       Jurisdiction? @relation("GoalTemplateJurisdiction", fields: [jurisdictionId], references: [id])
+
+  @@index([area])
+  @@index([gradeBand])
+  @@index([isActive])
+  @@index([jurisdictionId])
 }
 
 // ============================================
@@ -761,9 +817,9 @@ model StudentAccess {
 
 model ArtifactComparison {
   id               String   @id @default(uuid())
-  planInstanceId   String
+  planInstanceId   String?
   studentId        String
-  planTypeId       String
+  planTypeId       String?
 
   artifactDate     DateTime
   description      String?  @db.Text
@@ -778,24 +834,771 @@ model ArtifactComparison {
   updatedAt        DateTime @updatedAt
 
   // Relations
-  planInstance     PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  student          Student      @relation(fields: [studentId], references: [id])
-  planType         PlanType     @relation(fields: [planTypeId], references: [id])
-  createdBy        AppUser      @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+  planInstance     PlanInstance? @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  student          Student       @relation(fields: [studentId], references: [id])
+  planType         PlanType?     @relation(fields: [planTypeId], references: [id])
+  createdBy        AppUser       @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
+  goalLinks        GoalArtifactLink[]
 
   @@index([planInstanceId])
   @@index([studentId])
 }
 
 // ============================================
-// SESSION MODEL (For connect-pg-simple)
+// MARYLAND IEP ENUMS
 // ============================================
 
-model Session {
-  sid    String   @id @db.VarChar(255)
-  sess   Json
-  expire DateTime @db.Timestamp(6)
+enum AssessmentType {
+  AUDIOLOGICAL
+  EDUCATIONAL
+  OCCUPATIONAL_THERAPY
+  PHYSICAL_THERAPY
+  PSYCHOLOGICAL
+  SPEECH_LANGUAGE
+  OTHER
+}
 
-  @@index([expire], name: "IDX_session_expire")
-  @@map("session")
+enum IEPServiceCategory {
+  SPECIAL_EDUCATION
+  RELATED_SERVICE
+  SUPPLEMENTARY_AID
+  PROGRAM_MODIFICATION
+  SUPPORT_FOR_PERSONNEL
+}
+
+enum IEPServiceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  AS_NEEDED
+  OTHER
+}
+
+enum TransitionAssessmentType {
+  INTEREST_INVENTORY
+  APTITUDE_ASSESSMENT
+  CAREER_ASSESSMENT
+  INDEPENDENT_LIVING_ASSESSMENT
+  SELF_DETERMINATION_ASSESSMENT
+  OTHER
+}
+
+enum PostsecondaryGoalArea {
+  EDUCATION_TRAINING
+  EMPLOYMENT
+  INDEPENDENT_LIVING
+}
+
+enum AccommodationType {
+  PRESENTATION
+  RESPONSE
+  SETTING
+  TIMING_SCHEDULING
+  OTHER
+}
+
+enum AssessmentDecision {
+  STANDARD_WITH_ACCOMMODATIONS
+  ALTERNATE_ASSESSMENT
+  NOT_APPLICABLE
+}
+
+// ============================================
+// IEP SERVICE MODEL (Planned Services - Maryland IEP)
+// Maryland COMAR 13A.05.01.09 requires documentation of:
+// - Special education services
+// - Related services
+// - Supplementary aids and services
+// - Program modifications
+// - Supports for school personnel
+// ============================================
+
+model IEPService {
+  id                String              @id @default(uuid())
+  category          IEPServiceCategory
+  serviceType       String              // Specific service (e.g., "Speech Therapy", "Reading Instruction")
+  description       String?             @db.Text
+  provider          String?             // Who provides the service
+  location          String?             // Where service is provided (e.g., "General Education Classroom")
+  frequency         IEPServiceFrequency
+  frequencyDetail   String?             // e.g., "3 times per week"
+  duration          Int?                // Minutes per session
+  startDate         DateTime
+  endDate           DateTime?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  // Relations
+  planInstanceId    String
+  planInstance      PlanInstance        @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([planInstanceId])
+  @@index([category])
+}
+
+// ============================================
+// IEP ACCOMMODATION MODEL (Testing & Classroom Accommodations)
+// Maryland requires documentation of accommodations for:
+// - State and district assessments
+// - Classroom instruction and tests
+// ============================================
+
+model IEPAccommodation {
+  id                String            @id @default(uuid())
+  accommodationType AccommodationType
+  description       String            @db.Text // Specific accommodation description
+  setting           String?           // Where it applies (classroom, testing, both)
+
+  // Assessment-specific fields
+  forStateAssessment    Boolean       @default(false)
+  forDistrictAssessment Boolean       @default(false)
+  forClassroom          Boolean       @default(true)
+
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  planInstanceId    String
+  planInstance      PlanInstance      @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([planInstanceId])
+  @@index([accommodationType])
+}
+
+// ============================================
+// IEP ASSESSMENT DECISION MODEL (State/District Assessment Participation)
+// Maryland COMAR requires documentation of assessment decisions
+// ============================================
+
+model IEPAssessmentDecision {
+  id                    String             @id @default(uuid())
+  assessmentName        String             // e.g., "MCAP ELA", "MCAP Math", "MISA"
+  assessmentArea        String?            // e.g., "English Language Arts", "Mathematics", "Science"
+  decision              AssessmentDecision
+  alternateAssessmentRationale String?     @db.Text // Required if alternate assessment selected
+  accommodationsApplied String?            @db.Text // List of accommodations for this assessment
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  // Relations
+  planInstanceId        String
+  planInstance          PlanInstance       @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([planInstanceId])
+}
+
+// ============================================
+// IEP TRANSITION MODEL (Secondary Transition - Age 14+/16+)
+// Maryland COMAR 13A.05.01.09 requires transition planning starting at age 14
+// and transition services starting at age 16
+// ============================================
+
+model IEPTransition {
+  id                        String                   @id @default(uuid())
+
+  // Student's vision and preferences (required starting at age 14)
+  studentVision             String?                  @db.Text // Student's vision for future
+  studentStrengths          String?                  @db.Text
+  studentPreferences        String?                  @db.Text
+  studentInterests          String?                  @db.Text
+
+  // Age-appropriate transition assessments
+  assessmentsCompleted      Json?                    // Array of TransitionAssessment objects
+  assessmentsSummary        String?                  @db.Text
+
+  // Course of study (starting at age 14)
+  courseOfStudy             String?                  @db.Text
+  diplomaTrack              String?                  // e.g., "Maryland High School Diploma", "Maryland High School Certificate"
+
+  // Postsecondary goals (required at age 16)
+  educationTrainingGoal     String?                  @db.Text
+  employmentGoal            String?                  @db.Text
+  independentLivingGoal     String?                  @db.Text // Required if applicable
+  independentLivingApplicable Boolean               @default(true)
+
+  // Transition services and activities
+  transitionServices        Json?                    // Detailed services linked to postsecondary goals
+  agencyParticipation       String?                  @db.Text // Agency involvement
+  agenciesInvited           Json?                    // List of agencies invited to IEP meeting
+
+  // Student participation
+  studentInvited            Boolean                  @default(true)
+  studentAttended           Boolean?
+  transferOfRightsDiscussed Boolean?                 // Required at age 17 in Maryland
+
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+
+  // Relations
+  planInstanceId            String                   @unique
+  planInstance              PlanInstance             @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([planInstanceId])
+}
+
+// ============================================
+// IEP EXTENDED SCHOOL YEAR MODEL (ESY Decision)
+// Maryland COMAR requires documentation of ESY factors:
+// - Regression/Recoupment
+// - Critical life skills
+// - Emerging skills/breakthrough opportunities
+// - Interfering behaviors
+// - Nature and severity of disability
+// - Special circumstances
+// ============================================
+
+model IEPExtendedSchoolYear {
+  id                        String    @id @default(uuid())
+
+  // ESY Decision
+  esyEligible               Boolean
+  esyDecisionDate           DateTime?
+
+  // Factor analysis (Maryland-specific factors)
+  regressionRecoupmentData  String?   @db.Text // Evidence of significant regression
+  regressionRisk            Boolean?
+  regressionNotes           String?   @db.Text
+
+  criticalLifeSkillsAtRisk  Boolean?
+  criticalLifeSkillsNotes   String?   @db.Text
+
+  emergingSkillsAtRisk      Boolean?  // Breakthrough opportunity at risk
+  emergingSkillsNotes       String?   @db.Text
+
+  interferingBehaviors      Boolean?
+  interferingBehaviorsNotes String?   @db.Text
+
+  severityOfDisability      String?   @db.Text // Nature and severity considerations
+
+  specialCircumstances      Boolean?
+  specialCircumstancesNotes String?   @db.Text
+
+  // ESY Services (if eligible)
+  esyServicesDescription    String?   @db.Text
+  esyGoals                  Json?     // Goals to be addressed during ESY
+  esyStartDate              DateTime?
+  esyEndDate                DateTime?
+  esyLocation               String?
+
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  // Relations
+  planInstanceId            String    @unique
+  planInstance              PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([planInstanceId])
+}
+
+// ============================================
+// IEP INDEPENDENT ASSESSMENT REVIEW MODEL
+// Based on Howard County "Review of Independent Assessment" form
+// Used when an independent educational evaluation (IEE) is reviewed
+// ============================================
+
+model IEPIndependentAssessmentReview {
+  id                          String         @id @default(uuid())
+
+  // Header information
+  school                      String?
+  grade                       String?
+  dateOfBirth                 DateTime?
+  dateOfReport                DateTime?      // Date of the independent assessment report
+  dateOfTeamReview            DateTime?      // Date IEP team reviewed the assessment
+  assessmentType              AssessmentType
+  assessmentTypeOther         String?        // If assessmentType is OTHER
+
+  // Part I: Review by Qualified School Personnel
+  // Reviewer information
+  schoolReviewerName          String?
+  schoolReviewerTitle         String?
+  schoolReviewerCredentials   String?
+
+  // Examiner information
+  examinerName                String?
+  examinerTitle               String?
+  examinerLicensed            Boolean?       // Is the examiner appropriately licensed?
+  examinerLicenseDetails      String?
+  examinerQualified           Boolean?       // Is the examiner professionally qualified?
+  examinerQualificationNotes  String?        @db.Text
+
+  // Report quality checks
+  reportWrittenDatedSigned    Boolean?       // Is the report written, dated, and signed?
+
+  // Assessment materials review
+  materialsTechnicallySound     Boolean?     // Are materials technically sound?
+  materialsFollowedInstructions Boolean?     // Were materials administered per instructions?
+  materialsInstructionsNotes    String?      @db.Text
+  materialsLanguageAccurate     Boolean?     // Materials in appropriate language/form?
+  materialsLanguageNotes        String?      @db.Text
+  materialsBiasFree             Boolean?     // Materials racially/culturally bias-free?
+  materialsBiasNotes            String?      @db.Text
+  materialsValidPurpose         Boolean?     // Materials valid for their purpose?
+  materialsValidNotes           String?      @db.Text
+
+  // Results review
+  resultsReflectAptitude        Boolean?     // Results reflect aptitude/achievement?
+  resultsReflectAptitudeNA      Boolean?     // Not applicable
+  resultsNotes                  String?      @db.Text
+
+  // Part II: Review by IEP/504 Team
+  describesPerformanceAllAreas  Boolean?     // Describes performance in all areas of suspected disability?
+  performanceAreasNotes         String?      @db.Text
+  includesVariedAssessmentData  Boolean?     // Includes varied assessment tools/strategies?
+  assessmentDataNotes           String?      @db.Text
+  includesInstructionalImplications Boolean? // Includes instructional implications?
+  instructionalNotes            String?      @db.Text
+
+  // Part III: Conclusions
+  findingsMatchData             Boolean?     // Are findings consistent with assessment data?
+  findingsMatchDataNote         String?      @db.Text
+  dataMatchExistingSchoolData   Boolean?     // Data consistent with existing school data?
+  dataMatchExistingNote         String?      @db.Text
+  recommendationsSupported      Boolean?     // Are recommendations supported by data?
+  recommendationsToConsider     String?      @db.Text // Which recommendations will team consider?
+
+  // Assessment waiver decision
+  schoolAssessmentWaived        Boolean?     // Is additional school assessment waived?
+  schoolAssessmentWaivedNote    String?      @db.Text // If no, what additional assessments recommended?
+
+  // Part IV: For IEP Teams Only
+  includesDataForIEPContent     Boolean?     // Includes data for IEP content and participation?
+  iepContentNotes               String?      @db.Text
+  disabilityConsistentWithCOMAR Boolean?     // Is identified disability consistent with COMAR?
+  comarDisabilityNotes          String?      @db.Text
+
+  // Additional notes
+  additionalNotes               String?      @db.Text
+
+  // Team members who participated in review
+  teamMembers                   Json?        // Array of team member names and roles
+
+  createdAt                     DateTime     @default(now())
+  updatedAt                     DateTime     @updatedAt
+
+  // Relations
+  studentId                     String
+  student                       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planInstanceId                String?      // Link to IEP if applicable
+  planInstance                  PlanInstance? @relation(fields: [planInstanceId], references: [id])
+  createdById                   String
+  createdBy                     AppUser      @relation("AssessmentReviewCreatedBy", fields: [createdById], references: [id])
+
+  @@index([studentId])
+  @@index([planInstanceId])
+  @@index([assessmentType])
+  @@index([dateOfTeamReview])
+}
+
+// ============================================
+// SCHOOL MODEL (Admin-Managed School List)
+// ============================================
+
+model School {
+  id           String   @id @default(uuid())
+  stateCode    String?
+  districtId   String?
+  name         String
+  code         String?  // Optional school code (e.g., "HCPSS-001")
+  address      String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([stateCode, code])
+  @@index([stateCode])
+  @@index([districtId])
+  @@index([isActive])
+}
+
+// ============================================
+// FORM FIELD DEFINITION MODEL (IEP/IEP Report Field Definitions)
+// Stores the configuration for each field in the IEP and IEP Report forms
+// Only admin can create/update these records
+// ============================================
+
+model FormFieldDefinition {
+  id                 String           @id @default(uuid())
+  formType           FormType
+  section            String           // Section name (e.g., "Student Information", "Present Levels")
+  sectionOrder       Int              @default(0) // Order of section in form
+  fieldKey           String           // Stable key (e.g., "student_name", "plaa_academic_performance")
+  fieldLabel         String           // Display label
+  controlType        ControlType
+  isRequired         Boolean          @default(false)
+  valueEditableBy    Json             // Array of roles that can edit the value: ["ADMIN", "CASE_MANAGER", "TEACHER"]
+  optionsEditableBy  OptionsEditableBy @default(NONE)
+  helpText           String?          // Optional help text for the field
+  placeholder        String?          // Optional placeholder text
+  validationRegex    String?          // Optional regex for validation
+  minLength          Int?             // Minimum length for text fields
+  maxLength          Int?             // Maximum length for text fields
+  sortOrder          Int              @default(0) // Order of field within section
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  // Relations
+  options            FormFieldOption[]
+
+  @@unique([formType, fieldKey])
+  @@index([formType])
+  @@index([formType, section])
+  @@index([isActive])
+}
+
+// ============================================
+// FORM FIELD OPTION MODEL (Dropdown/Radio Options)
+// Stores options for dropdown and radio fields
+// Only admin can modify options where optionsEditableBy = ADMIN_ONLY
+// ============================================
+
+model FormFieldOption {
+  id                   String              @id @default(uuid())
+  value                String              // Stored value
+  label                String              // Display label
+  sortOrder            Int                 @default(0)
+  isActive             Boolean             @default(true)
+  isDefault            Boolean             @default(false) // Default selection
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  // Relations
+  fieldDefinitionId    String
+  fieldDefinition      FormFieldDefinition @relation(fields: [fieldDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldDefinitionId, value])
+  @@index([fieldDefinitionId])
+  @@index([isActive])
+}
+
+// ============================================
+// FORM FIELD VALUE MODEL (Student/Plan Field Values)
+// Stores the actual values entered for each field
+// Uses the existing PlanFieldValue model for plan-specific values
+// This model is for student-level values that aren't plan-specific
+// ============================================
+
+model StudentFieldValue {
+  id           String   @id @default(uuid())
+  studentId    String
+  fieldKey     String   // References FormFieldDefinition.fieldKey
+  value        Json     // Flexible value storage
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, fieldKey])
+  @@index([studentId])
+  @@index([fieldKey])
+}
+
+// ============================================
+// COMPLIANCE RULES ENUMS
+// ============================================
+
+enum RuleScopeType {
+  STATE
+  DISTRICT
+  SCHOOL
+}
+
+enum RulePlanType {
+  IEP
+  PLAN504
+  BIP
+  ALL
+}
+
+enum MeetingTypeCode {
+  INITIAL
+  ANNUAL
+  REVIEW
+  AMENDMENT
+  CONTINUED
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  HELD
+  CLOSED
+  CANCELED
+}
+
+enum ParentDeliveryMethod {
+  SEND_HOME
+  US_MAIL
+  PICK_UP
+}
+
+// ============================================
+// RULE DEFINITION MODEL
+// Defines the available rule types in the system
+// ============================================
+
+model RuleDefinition {
+  id            String   @id @default(uuid())
+  key           String   @unique  // Unique rule key (e.g., "PRE_MEETING_DOCS_DAYS")
+  name          String   // Human-readable name
+  description   String?  @db.Text
+  defaultConfig Json?    // Default configuration values for this rule
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  rulePackRules RulePackRule[]
+
+  @@index([key])
+}
+
+// ============================================
+// RULE EVIDENCE TYPE MODEL
+// Defines types of evidence that can be required
+// ============================================
+
+model RuleEvidenceType {
+  id        String       @id @default(uuid())
+  key       String       @unique  // e.g., "PARENT_DOCS_SENT", "CONSENT_FORM"
+  name      String       // Human-readable name
+  planType  RulePlanType // Which plan type this evidence applies to
+  createdAt DateTime     @default(now())
+
+  // Relations
+  evidenceRequirements RulePackEvidenceRequirement[]
+  meetingEvidence      MeetingEvidence[]
+
+  @@index([key])
+  @@index([planType])
+}
+
+// ============================================
+// RULE PACK MODEL
+// A collection of rules scoped to a jurisdiction level
+// ============================================
+
+model RulePack {
+  id            String        @id @default(uuid())
+  scopeType     RuleScopeType // STATE, DISTRICT, or SCHOOL
+  scopeId       String        // ID of the state/district/school
+  planType      RulePlanType  // IEP, PLAN504, BIP, or ALL
+  name          String
+  version       Int           @default(1)
+  isActive      Boolean       @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  rules RulePackRule[]
+
+  @@unique([scopeType, scopeId, planType, version])
+  @@index([scopeType, scopeId])
+  @@index([planType])
+  @@index([isActive])
+}
+
+// ============================================
+// RULE PACK RULE MODEL
+// Links a rule definition to a rule pack with configuration
+// ============================================
+
+model RulePackRule {
+  id               String   @id @default(uuid())
+  rulePackId       String
+  ruleDefinitionId String
+  isEnabled        Boolean  @default(true)
+  config           Json?    // Rule-specific configuration (e.g., { "days": 5 })
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  rulePack             RulePack                      @relation(fields: [rulePackId], references: [id], onDelete: Cascade)
+  ruleDefinition       RuleDefinition                @relation(fields: [ruleDefinitionId], references: [id])
+  evidenceRequirements RulePackEvidenceRequirement[]
+
+  @@unique([rulePackId, ruleDefinitionId])
+  @@index([rulePackId])
+  @@index([ruleDefinitionId])
+}
+
+// ============================================
+// RULE PACK EVIDENCE REQUIREMENT MODEL
+// Specifies which evidence types are required for a rule
+// ============================================
+
+model RulePackEvidenceRequirement {
+  id             String  @id @default(uuid())
+  rulePackRuleId String
+  evidenceTypeId String
+  isRequired     Boolean @default(true)
+
+  // Relations
+  rulePackRule RulePackRule     @relation(fields: [rulePackRuleId], references: [id], onDelete: Cascade)
+  evidenceType RuleEvidenceType @relation(fields: [evidenceTypeId], references: [id])
+
+  @@unique([rulePackRuleId, evidenceTypeId])
+  @@index([rulePackRuleId])
+  @@index([evidenceTypeId])
+}
+
+// ============================================
+// MEETING TYPE MODEL
+// Reference table for meeting types
+// ============================================
+
+model MeetingType {
+  id          String          @id @default(uuid())
+  code        MeetingTypeCode @unique
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+
+  // Relations
+  meetings PlanMeeting[]
+
+  @@index([code])
+}
+
+// ============================================
+// PLAN MEETING MODEL
+// Tracks meetings for IEP/504/BIP plans
+// ============================================
+
+model PlanMeeting {
+  id                            String                @id @default(uuid())
+  studentId                     String
+  planInstanceId                String?               // Nullable - may not have plan yet for initial
+  planType                      RulePlanType
+  meetingTypeId                 String
+  scheduledAt                   DateTime
+  heldAt                        DateTime?
+  closedAt                      DateTime?             // When meeting was marked as closed
+  status                        MeetingStatus         @default(SCHEDULED)
+  isContinued                   Boolean               @default(false)
+  continuedFromMeetingId        String?
+  parentDeliveryMethod          ParentDeliveryMethod?
+  mutualAgreementForContinuedDate Boolean?            // For continued meetings: was the date mutually agreed?
+  noticeWaiverSigned            Boolean?              // If continued meeting with < 10 days notice
+  parentRecording               Boolean?              // Is parent recording the meeting?
+  staffRecording                Boolean?              // Is staff recording (required if parent records)?
+
+  // Document delivery tracking
+  preDocsDeliveredAt            DateTime?             // When pre-meeting docs were sent
+  preDocsDeliveryMethod         ParentDeliveryMethod? // How pre-meeting docs were delivered
+  postDocsDeliveredAt           DateTime?             // When post-meeting docs were sent
+  postDocsDeliveryMethod        ParentDeliveryMethod? // How post-meeting docs were delivered
+
+  // Initial IEP consent tracking
+  consentObtainedAt             DateTime?             // When consent was obtained
+  consentStatus                 String?               // 'PENDING', 'OBTAINED', 'REFUSED'
+
+  // Outcomes and notes
+  outcomeNotes                  String?   @db.Text    // Meeting outcome notes
+  actionItems                   Json?                 // Array of action items
+
+  // Audit fields
+  rulePackId                    String?               // Which rule pack version was used
+  rulePackVersion               Int?                  // Rule pack version number
+  closedByUserId                String?               // Who closed the meeting
+
+  createdAt                     DateTime              @default(now())
+  updatedAt                     DateTime              @updatedAt
+  createdByUserId               String?               // Who created the meeting
+
+  // Relations
+  student              Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planInstance         PlanInstance? @relation(fields: [planInstanceId], references: [id])
+  meetingType          MeetingType   @relation(fields: [meetingTypeId], references: [id])
+  continuedFromMeeting PlanMeeting?  @relation("ContinuedMeeting", fields: [continuedFromMeetingId], references: [id])
+  continuedMeetings    PlanMeeting[] @relation("ContinuedMeeting")
+  evidence             MeetingEvidence[]
+  tasks                MeetingTask[]
+
+  @@index([studentId])
+  @@index([planInstanceId])
+  @@index([meetingTypeId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// ============================================
+// MEETING TASK MODEL
+// Tracks tasks/action items from meetings
+// ============================================
+
+model MeetingTask {
+  id           String    @id @default(uuid())
+  meetingId    String
+  title        String
+  description  String?   @db.Text
+  assignedTo   String?   // Name or role of assignee
+  dueDate      DateTime?
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  meeting PlanMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@index([isCompleted])
+}
+
+// ============================================
+// MEETING EVIDENCE MODEL
+// Stores evidence documents/notes for meeting compliance
+// ============================================
+
+model MeetingEvidence {
+  id              String    @id @default(uuid())
+  meetingId       String
+  evidenceTypeId  String
+  fileUploadId    String?   // Optional file attachment
+  note            String?   @db.Text
+  evidenceDate    DateTime? // When the evidence was collected (e.g., consent date)
+  deliveryMethod  ParentDeliveryMethod? // For document delivery evidence
+  createdAt       DateTime  @default(now())
+  createdByUserId String
+
+  // Relations
+  meeting      PlanMeeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  evidenceType RuleEvidenceType @relation(fields: [evidenceTypeId], references: [id])
+  fileUpload   FileUpload?      @relation(fields: [fileUploadId], references: [id])
+  createdBy    AppUser          @relation("MeetingEvidenceCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@unique([meetingId, evidenceTypeId]) // One evidence record per type per meeting
+  @@index([meetingId])
+  @@index([evidenceTypeId])
+}
+
+// ============================================
+// FILE UPLOAD MODEL
+// Generic file upload storage
+// ============================================
+
+model FileUpload {
+  id           String   @id @default(uuid())
+  ownerType    String   // e.g., "meeting_evidence", "work_sample"
+  ownerId      String   // ID of the owner record
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int      // File size in bytes
+  storageKey   String   // Path or key in storage system
+  createdAt    DateTime @default(now())
+  createdByUserId String
+
+  // Relations
+  createdBy       AppUser           @relation("FileUploadCreatedBy", fields: [createdByUserId], references: [id])
+  meetingEvidence MeetingEvidence[]
+
+  @@index([ownerType, ownerId])
+  @@index([createdByUserId])
 }

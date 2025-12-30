@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { requireAuth, requireOnboarded } from '../middleware/auth.js';
 import { requireStudentAccess } from '../middleware/permissions.js';
-import { AssessmentType } from '@prisma/client';
+import { AssessmentType } from '../../prisma/generated/client/index.js';
 
 const router = Router();
 
@@ -41,6 +41,10 @@ const createReviewSchema = z.object({
   assessmentType: z.enum(assessmentTypeValues),
   assessmentTypeOther: z.string().optional(),
   planInstanceId: z.string().optional(),
+  evaluator: z.string().optional(),
+  summary: z.string().optional(),
+  recommendations: z.string().optional(),
+  attachmentUrl: z.string().optional(),
 
   // Part I: Review by Qualified Personnel
   schoolReviewerName: z.string().optional(),
@@ -284,63 +288,15 @@ router.post(
           // Header
           school: data.school || student.schoolName,
           grade: data.grade || student.grade,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : student.dateOfBirth,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : null,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : null,
-          assessmentType: data.assessmentType as AssessmentType,
+          assessmentType: (data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType,
           assessmentTypeOther: data.assessmentTypeOther,
+          evaluator: data.evaluator,
+          summary: data.summary || "",
+          recommendations: data.recommendations || "",
+          attachmentUrl: data.attachmentUrl || "",
 
-          // Part I
-          schoolReviewerName: data.schoolReviewerName,
-          schoolReviewerTitle: data.schoolReviewerTitle,
-          schoolReviewerCredentials: data.schoolReviewerCredentials,
-          examinerName: data.examinerName,
-          examinerTitle: data.examinerTitle,
-          examinerLicensed: data.examinerLicensed,
-          examinerLicenseDetails: data.examinerLicenseDetails,
-          examinerQualified: data.examinerQualified,
-          examinerQualificationNotes: data.examinerQualificationNotes,
-          reportWrittenDatedSigned: data.reportWrittenDatedSigned,
-          materialsTechnicallySound: data.materialsTechnicallySound,
-          materialsFollowedInstructions: data.materialsFollowedInstructions,
-          materialsInstructionsNotes: data.materialsInstructionsNotes,
-          materialsLanguageAccurate: data.materialsLanguageAccurate,
-          materialsLanguageNotes: data.materialsLanguageNotes,
-          materialsBiasFree: data.materialsBiasFree,
-          materialsBiasNotes: data.materialsBiasNotes,
-          materialsValidPurpose: data.materialsValidPurpose,
-          materialsValidNotes: data.materialsValidNotes,
-          resultsReflectAptitude: data.resultsReflectAptitude,
-          resultsReflectAptitudeNA: data.resultsReflectAptitudeNA,
-          resultsNotes: data.resultsNotes,
-
-          // Part II
-          describesPerformanceAllAreas: data.describesPerformanceAllAreas,
-          performanceAreasNotes: data.performanceAreasNotes,
-          includesVariedAssessmentData: data.includesVariedAssessmentData,
-          assessmentDataNotes: data.assessmentDataNotes,
-          includesInstructionalImplications: data.includesInstructionalImplications,
-          instructionalNotes: data.instructionalNotes,
-
-          // Part III
-          findingsMatchData: data.findingsMatchData,
-          findingsMatchDataNote: data.findingsMatchDataNote,
-          dataMatchExistingSchoolData: data.dataMatchExistingSchoolData,
-          dataMatchExistingNote: data.dataMatchExistingNote,
-          recommendationsSupported: data.recommendationsSupported,
-          recommendationsToConsider: data.recommendationsToConsider,
-          schoolAssessmentWaived: data.schoolAssessmentWaived,
-          schoolAssessmentWaivedNote: data.schoolAssessmentWaivedNote,
-
-          // Part IV
-          includesDataForIEPContent: data.includesDataForIEPContent,
-          iepContentNotes: data.iepContentNotes,
-          disabilityConsistentWithCOMAR: data.disabilityConsistentWithCOMAR,
-          comarDisabilityNotes: data.comarDisabilityNotes,
-
-          // Additional
-          additionalNotes: data.additionalNotes,
-          teamMembers: data.teamMembers || [],
         },
       });
 
@@ -418,64 +374,16 @@ router.put(
           // Header
           school: data.school,
           grade: data.grade,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
           dateOfReport: data.dateOfReport ? new Date(data.dateOfReport) : undefined,
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : undefined,
-          assessmentType: data.assessmentType as AssessmentType | undefined,
+          assessmentType: data.assessmentType ? ((data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType) : undefined,
           assessmentTypeOther: data.assessmentTypeOther,
+          evaluator: data.evaluator,
+          summary: data.summary || "",
+          recommendations: data.recommendations || "",
+          attachmentUrl: data.attachmentUrl || "",
           planInstanceId: data.planInstanceId,
 
-          // Part I
-          schoolReviewerName: data.schoolReviewerName,
-          schoolReviewerTitle: data.schoolReviewerTitle,
-          schoolReviewerCredentials: data.schoolReviewerCredentials,
-          examinerName: data.examinerName,
-          examinerTitle: data.examinerTitle,
-          examinerLicensed: data.examinerLicensed,
-          examinerLicenseDetails: data.examinerLicenseDetails,
-          examinerQualified: data.examinerQualified,
-          examinerQualificationNotes: data.examinerQualificationNotes,
-          reportWrittenDatedSigned: data.reportWrittenDatedSigned,
-          materialsTechnicallySound: data.materialsTechnicallySound,
-          materialsFollowedInstructions: data.materialsFollowedInstructions,
-          materialsInstructionsNotes: data.materialsInstructionsNotes,
-          materialsLanguageAccurate: data.materialsLanguageAccurate,
-          materialsLanguageNotes: data.materialsLanguageNotes,
-          materialsBiasFree: data.materialsBiasFree,
-          materialsBiasNotes: data.materialsBiasNotes,
-          materialsValidPurpose: data.materialsValidPurpose,
-          materialsValidNotes: data.materialsValidNotes,
-          resultsReflectAptitude: data.resultsReflectAptitude,
-          resultsReflectAptitudeNA: data.resultsReflectAptitudeNA,
-          resultsNotes: data.resultsNotes,
-
-          // Part II
-          describesPerformanceAllAreas: data.describesPerformanceAllAreas,
-          performanceAreasNotes: data.performanceAreasNotes,
-          includesVariedAssessmentData: data.includesVariedAssessmentData,
-          assessmentDataNotes: data.assessmentDataNotes,
-          includesInstructionalImplications: data.includesInstructionalImplications,
-          instructionalNotes: data.instructionalNotes,
-
-          // Part III
-          findingsMatchData: data.findingsMatchData,
-          findingsMatchDataNote: data.findingsMatchDataNote,
-          dataMatchExistingSchoolData: data.dataMatchExistingSchoolData,
-          dataMatchExistingNote: data.dataMatchExistingNote,
-          recommendationsSupported: data.recommendationsSupported,
-          recommendationsToConsider: data.recommendationsToConsider,
-          schoolAssessmentWaived: data.schoolAssessmentWaived,
-          schoolAssessmentWaivedNote: data.schoolAssessmentWaivedNote,
-
-          // Part IV
-          includesDataForIEPContent: data.includesDataForIEPContent,
-          iepContentNotes: data.iepContentNotes,
-          disabilityConsistentWithCOMAR: data.disabilityConsistentWithCOMAR,
-          comarDisabilityNotes: data.comarDisabilityNotes,
-
-          // Additional
-          additionalNotes: data.additionalNotes,
-          teamMembers: data.teamMembers,
         },
       });
 

@@ -4,12 +4,24 @@
 import OpenAI from 'openai';
 import mammoth from 'mammoth';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+// Lazy-initialize OpenAI client to prevent app crash if API key is missing
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set. AI features are unavailable.');
+    }
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
 
 // Lazy-load PDF parser to avoid initialization issues in serverless
 async function parsePdfBuffer(buffer: Buffer): Promise<string> {
   // Use pdf-parse with custom options to avoid DOM requirements
-  const pdfParse = (await import('pdf-parse')).default;
+  const pdfParseModule = await import('pdf-parse'); const pdfParse = (pdfParseModule as { default?: unknown }).default || pdfParseModule;
 
   // Custom page render function that doesn't require canvas
   const options = {
@@ -26,7 +38,7 @@ async function parsePdfBuffer(buffer: Buffer): Promise<string> {
   };
 
   try {
-    const data = await pdfParse(buffer, options);
+    const data = await (pdfParse as any)(buffer, options);
     return data.text || '';
   } catch (error) {
     console.error('pdf-parse error:', error);
@@ -115,7 +127,7 @@ ${compareText}
 `;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
@@ -214,7 +226,7 @@ Description: ${description ?? 'No description provided'}
   }
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o', // Use gpt-4o for vision capabilities
       messages: [
         { role: 'system', content: systemPrompt },

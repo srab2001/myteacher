@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import styles from './page.module.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://myteacher-api.vercel.app';
 
 function getOAuthErrorMessage(error: string | null): string | null {
   if (!error) return null;

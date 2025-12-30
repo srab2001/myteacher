@@ -1,0 +1,572 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.pageHeader {
+  margin-bottom: 1.5rem;
+}
+
+.pageHeader h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.description {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.accessDenied {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.accessDenied h2 {
+  margin-bottom: 0.5rem;
+}
+
+.accessDenied p {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+/* Layout: Left panel + main content */
+.layout {
+  display: flex;
+  gap: 1.5rem;
+  min-height: calc(100vh - 200px);
+}
+
+/* Left Panel */
+.leftPanel {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.filterPanel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.filterGroup {
+  margin-bottom: 0.75rem;
+}
+
+.filterGroup:last-child {
+  margin-bottom: 0;
+}
+
+.filterGroup label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.375rem;
+}
+
+.filterGroup select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+}
+
+.filterGroup select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.checkbox input {
+  cursor: pointer;
+}
+
+/* Rule Pack List */
+.rulePackList {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+.listHeader span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.createBtn {
+  padding: 0.375rem 0.75rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.createBtn:hover {
+  background: var(--primary-dark, #4f46e5);
+}
+
+.rulePackItem {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.rulePackItem:last-child {
+  border-bottom: none;
+}
+
+.rulePackItem:hover {
+  background: var(--background);
+}
+
+.rulePackItem.selected {
+  background: #eff6ff;
+  border-left: 3px solid var(--primary);
+}
+
+.rulePackName {
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.rulePackMeta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.scopeBadge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.planTypeBadge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.statusBadge.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.statusBadge.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.versionBadge {
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.emptyList {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* Main Content Area */
+.mainContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.emptyState {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.emptyState h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.emptyState p {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* Error State */
+.errorMessage {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Editor Panel */
+.editorPanel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.editorTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.editorActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.deleteBtn {
+  padding: 0.375rem 0.75rem;
+  background: white;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.deleteBtn:hover {
+  background: #fef2f2;
+}
+
+.saveBtn {
+  padding: 0.375rem 0.75rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.saveBtn:hover {
+  background: var(--primary-dark, #4f46e5);
+}
+
+.saveBtn:disabled,
+.createBtn:disabled,
+.deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+.tab {
+  padding: 0.75rem 1.25rem;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--foreground);
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: white;
+}
+
+/* Tab Content */
+.tabContent {
+  padding: 1.25rem;
+}
+
+/* Overview Tab */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.formGroup.fullWidth {
+  grid-column: span 2;
+}
+
+.formGroup label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.formGroup input,
+.formGroup select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.formGroup input:disabled,
+.formGroup select:disabled {
+  background: var(--background);
+  color: var(--muted);
+}
+
+.activeToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.activeToggle input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.activeToggle span {
+  font-size: 0.875rem;
+}
+
+/* Rules Tab */
+.rulesTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.rulesTable th,
+.rulesTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.rulesTable th {
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--background);
+}
+
+.rulesTable tbody tr:hover {
+  background: var(--background);
+}
+
+.rulesTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ruleToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.configBtn {
+  padding: 0.25rem 0.5rem;
+  background: white;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.configBtn:hover {
+  background: #eff6ff;
+}
+
+/* Evidence Tab */
+.evidenceSection {
+  margin-bottom: 1.5rem;
+}
+
+.evidenceSection h4 {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.evidenceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.evidenceItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--background);
+  border-radius: 0.375rem;
+}
+
+.evidenceItem input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.evidenceItem span {
+  font-size: 0.875rem;
+}
+
+.evidenceItem .required {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Preview Tab */
+.previewPanel {
+  background: var(--background);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+
+.previewPanel pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.8125rem;
+}
+
+/* Create Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalContent h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.cancelBtn {
+  padding: 0.5rem 1rem;
+  background: white;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: var(--background);
+}

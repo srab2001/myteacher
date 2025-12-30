@@ -65,6 +65,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/admin/schemas" className={styles.navLink}>
               Plan Schemas
             </Link>
+            <Link href="/admin/rules" className={styles.navLink}>
+              Compliance Rules
+            </Link>
             <div className={styles.divider} />
             <Link href="/admin/form-fields" className={styles.navLink}>
               Form Field Definitions

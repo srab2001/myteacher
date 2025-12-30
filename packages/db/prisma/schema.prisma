@@ -175,10 +175,22 @@ model AppUser {
   studentAccess  StudentAccess[]
   artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
   assessmentReviews   IEPIndependentAssessmentReview[] @relation("AssessmentReviewCreatedBy")
+  meetingEvidence     MeetingEvidence[] @relation("MeetingEvidenceCreatedBy")
+  fileUploads         FileUpload[] @relation("FileUploadCreatedBy")
+  authCodes AuthCode[] @relation("AuthCodeUser")
 
   @@index([googleId])
   @@index([email])
   @@index([username])
+}
+model AuthCode {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      AppUser  @relation("AuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 // ============================================
@@ -236,6 +248,7 @@ model Student {
   accessGrants   StudentAccess[]
   artifactComparisons ArtifactComparison[]
   assessmentReviews   IEPIndependentAssessmentReview[]
+  planMeetings   PlanMeeting[]
 
   @@index([recordId])
   @@index([externalId])
@@ -372,6 +385,7 @@ model PlanInstance {
   iepTransition            IEPTransition?
   iepExtendedSchoolYear    IEPExtendedSchoolYear?
   assessmentReviews        IEPIndependentAssessmentReview[]
+  planMeetings             PlanMeeting[]
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -1280,4 +1294,310 @@ model StudentFieldValue {
   @@unique([studentId, fieldKey])
   @@index([studentId])
   @@index([fieldKey])
+}
+
+// ============================================
+// COMPLIANCE RULES ENUMS
+// ============================================
+
+enum RuleScopeType {
+  STATE
+  DISTRICT
+  SCHOOL
+}
+
+enum RulePlanType {
+  IEP
+  PLAN504
+  BIP
+  ALL
+}
+
+enum MeetingTypeCode {
+  INITIAL
+  ANNUAL
+  REVIEW
+  AMENDMENT
+  CONTINUED
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  HELD
+  CLOSED
+  CANCELED
+}
+
+enum ParentDeliveryMethod {
+  SEND_HOME
+  US_MAIL
+  PICK_UP
+}
+
+// ============================================
+// RULE DEFINITION MODEL
+// Defines the available rule types in the system
+// ============================================
+
+model RuleDefinition {
+  id            String   @id @default(uuid())
+  key           String   @unique  // Unique rule key (e.g., "PRE_MEETING_DOCS_DAYS")
+  name          String   // Human-readable name
+  description   String?  @db.Text
+  defaultConfig Json?    // Default configuration values for this rule
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  rulePackRules RulePackRule[]
+
+  @@index([key])
+}
+
+// ============================================
+// RULE EVIDENCE TYPE MODEL
+// Defines types of evidence that can be required
+// ============================================
+
+model RuleEvidenceType {
+  id        String       @id @default(uuid())
+  key       String       @unique  // e.g., "PARENT_DOCS_SENT", "CONSENT_FORM"
+  name      String       // Human-readable name
+  planType  RulePlanType // Which plan type this evidence applies to
+  createdAt DateTime     @default(now())
+
+  // Relations
+  evidenceRequirements RulePackEvidenceRequirement[]
+  meetingEvidence      MeetingEvidence[]
+
+  @@index([key])
+  @@index([planType])
+}
+
+// ============================================
+// RULE PACK MODEL
+// A collection of rules scoped to a jurisdiction level
+// ============================================
+
+model RulePack {
+  id            String        @id @default(uuid())
+  scopeType     RuleScopeType // STATE, DISTRICT, or SCHOOL
+  scopeId       String        // ID of the state/district/school
+  planType      RulePlanType  // IEP, PLAN504, BIP, or ALL
+  name          String
+  version       Int           @default(1)
+  isActive      Boolean       @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  rules RulePackRule[]
+
+  @@unique([scopeType, scopeId, planType, version])
+  @@index([scopeType, scopeId])
+  @@index([planType])
+  @@index([isActive])
+}
+
+// ============================================
+// RULE PACK RULE MODEL
+// Links a rule definition to a rule pack with configuration
+// ============================================
+
+model RulePackRule {
+  id               String   @id @default(uuid())
+  rulePackId       String
+  ruleDefinitionId String
+  isEnabled        Boolean  @default(true)
+  config           Json?    // Rule-specific configuration (e.g., { "days": 5 })
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  rulePack             RulePack                      @relation(fields: [rulePackId], references: [id], onDelete: Cascade)
+  ruleDefinition       RuleDefinition                @relation(fields: [ruleDefinitionId], references: [id])
+  evidenceRequirements RulePackEvidenceRequirement[]
+
+  @@unique([rulePackId, ruleDefinitionId])
+  @@index([rulePackId])
+  @@index([ruleDefinitionId])
+}
+
+// ============================================
+// RULE PACK EVIDENCE REQUIREMENT MODEL
+// Specifies which evidence types are required for a rule
+// ============================================
+
+model RulePackEvidenceRequirement {
+  id             String  @id @default(uuid())
+  rulePackRuleId String
+  evidenceTypeId String
+  isRequired     Boolean @default(true)
+
+  // Relations
+  rulePackRule RulePackRule     @relation(fields: [rulePackRuleId], references: [id], onDelete: Cascade)
+  evidenceType RuleEvidenceType @relation(fields: [evidenceTypeId], references: [id])
+
+  @@unique([rulePackRuleId, evidenceTypeId])
+  @@index([rulePackRuleId])
+  @@index([evidenceTypeId])
+}
+
+// ============================================
+// MEETING TYPE MODEL
+// Reference table for meeting types
+// ============================================
+
+model MeetingType {
+  id          String          @id @default(uuid())
+  code        MeetingTypeCode @unique
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+
+  // Relations
+  meetings PlanMeeting[]
+
+  @@index([code])
+}
+
+// ============================================
+// PLAN MEETING MODEL
+// Tracks meetings for IEP/504/BIP plans
+// ============================================
+
+model PlanMeeting {
+  id                            String                @id @default(uuid())
+  studentId                     String
+  planInstanceId                String?               // Nullable - may not have plan yet for initial
+  planType                      RulePlanType
+  meetingTypeId                 String
+  scheduledAt                   DateTime
+  heldAt                        DateTime?
+  closedAt                      DateTime?             // When meeting was marked as closed
+  status                        MeetingStatus         @default(SCHEDULED)
+  isContinued                   Boolean               @default(false)
+  continuedFromMeetingId        String?
+  parentDeliveryMethod          ParentDeliveryMethod?
+  mutualAgreementForContinuedDate Boolean?            // For continued meetings: was the date mutually agreed?
+  noticeWaiverSigned            Boolean?              // If continued meeting with < 10 days notice
+  parentRecording               Boolean?              // Is parent recording the meeting?
+  staffRecording                Boolean?              // Is staff recording (required if parent records)?
+
+  // Document delivery tracking
+  preDocsDeliveredAt            DateTime?             // When pre-meeting docs were sent
+  preDocsDeliveryMethod         ParentDeliveryMethod? // How pre-meeting docs were delivered
+  postDocsDeliveredAt           DateTime?             // When post-meeting docs were sent
+  postDocsDeliveryMethod        ParentDeliveryMethod? // How post-meeting docs were delivered
+
+  // Initial IEP consent tracking
+  consentObtainedAt             DateTime?             // When consent was obtained
+  consentStatus                 String?               // 'PENDING', 'OBTAINED', 'REFUSED'
+
+  // Outcomes and notes
+  outcomeNotes                  String?   @db.Text    // Meeting outcome notes
+  actionItems                   Json?                 // Array of action items
+
+  // Audit fields
+  rulePackId                    String?               // Which rule pack version was used
+  rulePackVersion               Int?                  // Rule pack version number
+  closedByUserId                String?               // Who closed the meeting
+
+  createdAt                     DateTime              @default(now())
+  updatedAt                     DateTime              @updatedAt
+  createdByUserId               String?               // Who created the meeting
+
+  // Relations
+  student              Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planInstance         PlanInstance? @relation(fields: [planInstanceId], references: [id])
+  meetingType          MeetingType   @relation(fields: [meetingTypeId], references: [id])
+  continuedFromMeeting PlanMeeting?  @relation("ContinuedMeeting", fields: [continuedFromMeetingId], references: [id])
+  continuedMeetings    PlanMeeting[] @relation("ContinuedMeeting")
+  evidence             MeetingEvidence[]
+  tasks                MeetingTask[]
+
+  @@index([studentId])
+  @@index([planInstanceId])
+  @@index([meetingTypeId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// ============================================
+// MEETING TASK MODEL
+// Tracks tasks/action items from meetings
+// ============================================
+
+model MeetingTask {
+  id           String    @id @default(uuid())
+  meetingId    String
+  title        String
+  description  String?   @db.Text
+  assignedTo   String?   // Name or role of assignee
+  dueDate      DateTime?
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  meeting PlanMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@index([isCompleted])
+}
+
+// ============================================
+// MEETING EVIDENCE MODEL
+// Stores evidence documents/notes for meeting compliance
+// ============================================
+
+model MeetingEvidence {
+  id              String    @id @default(uuid())
+  meetingId       String
+  evidenceTypeId  String
+  fileUploadId    String?   // Optional file attachment
+  note            String?   @db.Text
+  evidenceDate    DateTime? // When the evidence was collected (e.g., consent date)
+  deliveryMethod  ParentDeliveryMethod? // For document delivery evidence
+  createdAt       DateTime  @default(now())
+  createdByUserId String
+
+  // Relations
+  meeting      PlanMeeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  evidenceType RuleEvidenceType @relation(fields: [evidenceTypeId], references: [id])
+  fileUpload   FileUpload?      @relation(fields: [fileUploadId], references: [id])
+  createdBy    AppUser          @relation("MeetingEvidenceCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@unique([meetingId, evidenceTypeId]) // One evidence record per type per meeting
+  @@index([meetingId])
+  @@index([evidenceTypeId])
+}
+
+// ============================================
+// FILE UPLOAD MODEL
+// Generic file upload storage
+// ============================================
+
+model FileUpload {
+  id           String   @id @default(uuid())
+  ownerType    String   // e.g., "meeting_evidence", "work_sample"
+  ownerId      String   // ID of the owner record
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int      // File size in bytes
+  storageKey   String   // Path or key in storage system
+  createdAt    DateTime @default(now())
+  createdByUserId String
+
+  // Relations
+  createdBy       AppUser           @relation("FileUploadCreatedBy", fields: [createdByUserId], references: [id])
+  meetingEvidence MeetingEvidence[]
+
+  @@index([ownerType, ownerId])
+  @@index([createdByUserId])
 }
