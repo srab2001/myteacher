@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://myteacher-api.vercel.app';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function AuthCallbackContent() {
   const router = useRouter();

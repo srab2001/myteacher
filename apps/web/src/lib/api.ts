@@ -1,5 +1,4 @@
-// Force rebuild: 2025-12-29-v2
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://myteacher-api.vercel.app';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface User {
   id: string;
