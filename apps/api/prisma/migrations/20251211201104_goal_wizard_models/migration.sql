@@ -34,21 +34,6 @@ CREATE TYPE "IngestionStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETE', 'ERR
 -- CreateEnum
 CREATE TYPE "BehaviorMeasurementType" AS ENUM ('FREQUENCY', 'DURATION', 'INTERVAL', 'RATING');
 
--- CreateEnum
-CREATE TYPE "SchoolType" AS ENUM ('ELEMENTARY', 'MIDDLE', 'HIGH', 'K8', 'K12', 'OTHER');
-
--- CreateEnum
-CREATE TYPE "FormType" AS ENUM ('IEP', 'IEP_REPORT', 'FIVE_OH_FOUR', 'BIP');
-
--- CreateEnum
-CREATE TYPE "ControlType" AS ENUM ('TEXT', 'TEXTAREA', 'DROPDOWN', 'RADIO', 'CHECKBOX', 'CHECKBOX_GROUP', 'DATE', 'SIGNATURE');
-
--- CreateEnum
-CREATE TYPE "OptionsEditableBy" AS ENUM ('ADMIN_ONLY', 'TEACHER_ALLOWED', 'NONE');
-
--- CreateEnum
-CREATE TYPE "AssessmentType" AS ENUM ('INITIAL', 'REEVALUATION', 'TRIENNIAL', 'INDEPENDENT');
-
 -- CreateTable
 CREATE TABLE "AppUser" (
     "id" TEXT NOT NULL,
@@ -86,62 +71,21 @@ CREATE TABLE "Jurisdiction" (
 );
 
 -- CreateTable
-CREATE TABLE "State" (
-    "id" TEXT NOT NULL,
-    "code" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "State_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "District" (
-    "id" TEXT NOT NULL,
-    "stateId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "code" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "District_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "School" (
-    "id" TEXT NOT NULL,
-    "districtId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "code" TEXT,
-    "stateCode" TEXT,
-    "schoolType" "SchoolType" NOT NULL DEFAULT 'OTHER',
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "School_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Student" (
     "id" TEXT NOT NULL,
     "recordId" TEXT NOT NULL,
     "externalId" TEXT,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
-    "dateOfBirth" TIMESTAMP(3),
-    "grade" TEXT,
-    "schoolName" TEXT,
+    "dateOfBirth" TIMESTAMP(3) NOT NULL,
+    "grade" TEXT NOT NULL,
+    "schoolName" TEXT NOT NULL,
     "districtName" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "jurisdictionId" TEXT NOT NULL,
     "teacherId" TEXT NOT NULL,
-    "schoolId" TEXT,
 
     CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
 );
@@ -234,22 +178,17 @@ CREATE TABLE "PlanFieldValue" (
 -- CreateTable
 CREATE TABLE "Goal" (
     "id" TEXT NOT NULL,
-    "planInstanceId" TEXT NOT NULL,
     "goalCode" TEXT NOT NULL,
     "area" "GoalArea" NOT NULL,
+    "baselineJson" JSONB,
     "annualGoalText" TEXT NOT NULL,
     "shortTermObjectives" JSONB,
-    "baselineJson" JSONB,
-    "baselineValue" DOUBLE PRECISION,
-    "targetValue" DOUBLE PRECISION,
-    "presentLevelJson" JSONB,
-    "draftStatus" TEXT,
-    "comarAlignmentJson" JSONB,
-    "progressSchedule" TEXT NOT NULL DEFAULT 'WEEKLY',
-    "targetDate" TIMESTAMP(3) NOT NULL,
+    "progressSchedule" TEXT,
+    "targetDate" TIMESTAMP(3),
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "planInstanceId" TEXT NOT NULL,
 
     CONSTRAINT "Goal_pkey" PRIMARY KEY ("id")
 );
@@ -260,9 +199,6 @@ CREATE TABLE "GoalProgress" (
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "quickSelect" "ProgressLevel" NOT NULL,
     "measureJson" JSONB,
-    "percentCorrect" DOUBLE PRECISION,
-    "trials" TEXT,
-    "notes" TEXT,
     "comment" TEXT,
     "isDictated" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -464,129 +400,6 @@ CREATE TABLE "ArtifactComparison" (
     CONSTRAINT "ArtifactComparison_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "session" (
-    "sid" VARCHAR(255) NOT NULL,
-    "sess" JSONB NOT NULL,
-    "expire" TIMESTAMP(6) NOT NULL,
-
-    CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
-);
-
--- CreateTable
-CREATE TABLE "FormFieldDefinition" (
-    "id" TEXT NOT NULL,
-    "formType" "FormType" NOT NULL,
-    "fieldKey" TEXT NOT NULL,
-    "fieldLabel" TEXT NOT NULL,
-    "section" TEXT NOT NULL,
-    "sectionOrder" INTEGER NOT NULL DEFAULT 0,
-    "controlType" "ControlType" NOT NULL,
-    "placeholder" TEXT,
-    "helpText" TEXT,
-    "isRequired" BOOLEAN NOT NULL DEFAULT false,
-    "isGoalsSection" BOOLEAN NOT NULL DEFAULT false,
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "valueEditableBy" TEXT[] DEFAULT ARRAY['ADMIN', 'TEACHER', 'CASE_MANAGER']::TEXT[],
-    "optionsEditableBy" "OptionsEditableBy" NOT NULL DEFAULT 'NONE',
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "FormFieldDefinition_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "FormFieldOption" (
-    "id" TEXT NOT NULL,
-    "formFieldDefinitionId" TEXT NOT NULL,
-    "value" TEXT NOT NULL,
-    "label" TEXT NOT NULL,
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "FormFieldOption_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "StudentFieldValue" (
-    "id" TEXT NOT NULL,
-    "studentId" TEXT NOT NULL,
-    "fieldKey" TEXT NOT NULL,
-    "value" JSONB,
-    "createdById" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "StudentFieldValue_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "GoalArtifactLink" (
-    "id" TEXT NOT NULL,
-    "goalId" TEXT NOT NULL,
-    "artifactComparisonId" TEXT NOT NULL,
-    "linkType" TEXT NOT NULL DEFAULT 'EVIDENCE',
-    "relevanceNote" TEXT,
-    "notes" TEXT NOT NULL DEFAULT '',
-    "linkedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "GoalArtifactLink_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "GoalObjective" (
-    "id" TEXT NOT NULL,
-    "goalId" TEXT NOT NULL,
-    "sequence" INTEGER NOT NULL DEFAULT 0,
-    "objectiveText" TEXT NOT NULL,
-    "measurementCriteria" TEXT,
-    "targetDate" TIMESTAMP(3),
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "isCompleted" BOOLEAN NOT NULL DEFAULT false,
-    "completedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "GoalObjective_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "IEPIndependentAssessmentReview" (
-    "id" TEXT NOT NULL,
-    "studentId" TEXT NOT NULL,
-    "planInstanceId" TEXT NOT NULL,
-    "assessmentType" "AssessmentType" NOT NULL,
-    "assessmentTypeOther" TEXT,
-    "assessmentDate" TIMESTAMP(3),
-    "dateOfReport" TIMESTAMP(3),
-    "dateOfTeamReview" TIMESTAMP(3),
-    "evaluator" TEXT,
-    "school" TEXT,
-    "grade" TEXT,
-    "summary" TEXT NOT NULL DEFAULT '',
-    "recommendations" TEXT NOT NULL DEFAULT '',
-    "attachmentUrl" TEXT NOT NULL DEFAULT '',
-    "createdById" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "IEPIndependentAssessmentReview_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "AuthCode" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "AuthCode_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "AppUser_googleId_key" ON "AppUser"("googleId");
 
@@ -612,33 +425,6 @@ CREATE INDEX "Jurisdiction_stateCode_idx" ON "Jurisdiction"("stateCode");
 CREATE UNIQUE INDEX "Jurisdiction_stateCode_districtCode_key" ON "Jurisdiction"("stateCode", "districtCode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "State_code_key" ON "State"("code");
-
--- CreateIndex
-CREATE INDEX "State_code_idx" ON "State"("code");
-
--- CreateIndex
-CREATE INDEX "State_isActive_idx" ON "State"("isActive");
-
--- CreateIndex
-CREATE INDEX "District_stateId_idx" ON "District"("stateId");
-
--- CreateIndex
-CREATE INDEX "District_isActive_idx" ON "District"("isActive");
-
--- CreateIndex
-CREATE UNIQUE INDEX "District_stateId_code_key" ON "District"("stateId", "code");
-
--- CreateIndex
-CREATE INDEX "School_districtId_idx" ON "School"("districtId");
-
--- CreateIndex
-CREATE INDEX "School_isActive_idx" ON "School"("isActive");
-
--- CreateIndex
-CREATE UNIQUE INDEX "School_districtId_name_key" ON "School"("districtId", "name");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Student_recordId_key" ON "Student"("recordId");
 
 -- CreateIndex
@@ -652,9 +438,6 @@ CREATE INDEX "Student_lastName_firstName_idx" ON "Student"("lastName", "firstNam
 
 -- CreateIndex
 CREATE INDEX "Student_teacherId_idx" ON "Student"("teacherId");
-
--- CreateIndex
-CREATE INDEX "Student_schoolId_idx" ON "Student"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "StudentStatus_studentId_scope_idx" ON "StudentStatus"("studentId", "scope");
@@ -691,6 +474,12 @@ CREATE UNIQUE INDEX "PlanFieldValue_planInstanceId_fieldKey_key" ON "PlanFieldVa
 
 -- CreateIndex
 CREATE INDEX "Goal_planInstanceId_idx" ON "Goal"("planInstanceId");
+
+-- CreateIndex
+CREATE INDEX "Goal_area_idx" ON "Goal"("area");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Goal_planInstanceId_goalCode_key" ON "Goal"("planInstanceId", "goalCode");
 
 -- CreateIndex
 CREATE INDEX "GoalProgress_goalId_date_idx" ON "GoalProgress"("goalId", "date");
@@ -788,56 +577,14 @@ CREATE INDEX "ArtifactComparison_planInstanceId_idx" ON "ArtifactComparison"("pl
 -- CreateIndex
 CREATE INDEX "ArtifactComparison_studentId_idx" ON "ArtifactComparison"("studentId");
 
--- CreateIndex
-CREATE INDEX "IDX_session_expire" ON "session"("expire");
-
--- CreateIndex
-CREATE UNIQUE INDEX "FormFieldDefinition_formType_fieldKey_key" ON "FormFieldDefinition"("formType", "fieldKey");
-
--- CreateIndex
-CREATE INDEX "FormFieldOption_formFieldDefinitionId_idx" ON "FormFieldOption"("formFieldDefinitionId");
-
--- CreateIndex
-CREATE INDEX "StudentFieldValue_studentId_idx" ON "StudentFieldValue"("studentId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "StudentFieldValue_studentId_fieldKey_key" ON "StudentFieldValue"("studentId", "fieldKey");
-
--- CreateIndex
-CREATE INDEX "GoalArtifactLink_goalId_idx" ON "GoalArtifactLink"("goalId");
-
--- CreateIndex
-CREATE INDEX "GoalArtifactLink_artifactComparisonId_idx" ON "GoalArtifactLink"("artifactComparisonId");
-
--- CreateIndex
-CREATE INDEX "GoalObjective_goalId_idx" ON "GoalObjective"("goalId");
-
--- CreateIndex
-CREATE INDEX "IEPIndependentAssessmentReview_studentId_idx" ON "IEPIndependentAssessmentReview"("studentId");
-
--- CreateIndex
-CREATE INDEX "IEPIndependentAssessmentReview_planInstanceId_idx" ON "IEPIndependentAssessmentReview"("planInstanceId");
-
--- CreateIndex
-CREATE INDEX "AuthCode_expiresAt_idx" ON "AuthCode"("expiresAt");
-
 -- AddForeignKey
 ALTER TABLE "AppUser" ADD CONSTRAINT "AppUser_jurisdictionId_fkey" FOREIGN KEY ("jurisdictionId") REFERENCES "Jurisdiction"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "District" ADD CONSTRAINT "District_stateId_fkey" FOREIGN KEY ("stateId") REFERENCES "State"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "School" ADD CONSTRAINT "School_districtId_fkey" FOREIGN KEY ("districtId") REFERENCES "District"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Student" ADD CONSTRAINT "Student_jurisdictionId_fkey" FOREIGN KEY ("jurisdictionId") REFERENCES "Jurisdiction"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Student" ADD CONSTRAINT "Student_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Student" ADD CONSTRAINT "Student_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "School"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "StudentStatus" ADD CONSTRAINT "StudentStatus_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -870,7 +617,7 @@ ALTER TABLE "PlanInstance" ADD CONSTRAINT "PlanInstance_schemaId_fkey" FOREIGN K
 ALTER TABLE "PlanFieldValue" ADD CONSTRAINT "PlanFieldValue_planInstanceId_fkey" FOREIGN KEY ("planInstanceId") REFERENCES "PlanInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Goal" ADD CONSTRAINT "Goal_planInstanceId_fkey" FOREIGN KEY ("planInstanceId") REFERENCES "PlanInstance"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Goal" ADD CONSTRAINT "Goal_planInstanceId_fkey" FOREIGN KEY ("planInstanceId") REFERENCES "PlanInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "GoalProgress" ADD CONSTRAINT "GoalProgress_goalId_fkey" FOREIGN KEY ("goalId") REFERENCES "Goal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -952,33 +699,3 @@ ALTER TABLE "ArtifactComparison" ADD CONSTRAINT "ArtifactComparison_planTypeId_f
 
 -- AddForeignKey
 ALTER TABLE "ArtifactComparison" ADD CONSTRAINT "ArtifactComparison_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "FormFieldOption" ADD CONSTRAINT "FormFieldOption_formFieldDefinitionId_fkey" FOREIGN KEY ("formFieldDefinitionId") REFERENCES "FormFieldDefinition"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "StudentFieldValue" ADD CONSTRAINT "StudentFieldValue_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "StudentFieldValue" ADD CONSTRAINT "StudentFieldValue_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "AppUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "GoalArtifactLink" ADD CONSTRAINT "GoalArtifactLink_goalId_fkey" FOREIGN KEY ("goalId") REFERENCES "Goal"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "GoalArtifactLink" ADD CONSTRAINT "GoalArtifactLink_artifactComparisonId_fkey" FOREIGN KEY ("artifactComparisonId") REFERENCES "ArtifactComparison"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "GoalObjective" ADD CONSTRAINT "GoalObjective_goalId_fkey" FOREIGN KEY ("goalId") REFERENCES "Goal"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "IEPIndependentAssessmentReview" ADD CONSTRAINT "IEPIndependentAssessmentReview_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "IEPIndependentAssessmentReview" ADD CONSTRAINT "IEPIndependentAssessmentReview_planInstanceId_fkey" FOREIGN KEY ("planInstanceId") REFERENCES "PlanInstance"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "IEPIndependentAssessmentReview" ADD CONSTRAINT "IEPIndependentAssessmentReview_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "AppUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "AuthCode" ADD CONSTRAINT "AuthCode_userId_fkey" FOREIGN KEY ("userId") REFERENCES "AppUser"("id") ON DELETE CASCADE ON UPDATE CASCADE;

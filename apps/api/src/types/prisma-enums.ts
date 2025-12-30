@@ -156,6 +156,49 @@ export const AssessmentType = {
 } as const;
 export type AssessmentType = (typeof AssessmentType)[keyof typeof AssessmentType];
 
+// ============================================
+// COMPLIANCE RULES ENUMS
+// ============================================
+
+export const RuleScopeType = {
+  STATE: 'STATE',
+  DISTRICT: 'DISTRICT',
+  SCHOOL: 'SCHOOL',
+} as const;
+export type RuleScopeType = (typeof RuleScopeType)[keyof typeof RuleScopeType];
+
+export const RulePlanType = {
+  IEP: 'IEP',
+  PLAN504: 'PLAN504',
+  BIP: 'BIP',
+  ALL: 'ALL',
+} as const;
+export type RulePlanType = (typeof RulePlanType)[keyof typeof RulePlanType];
+
+export const MeetingTypeCode = {
+  INITIAL: 'INITIAL',
+  ANNUAL: 'ANNUAL',
+  REVIEW: 'REVIEW',
+  AMENDMENT: 'AMENDMENT',
+  CONTINUED: 'CONTINUED',
+} as const;
+export type MeetingTypeCode = (typeof MeetingTypeCode)[keyof typeof MeetingTypeCode];
+
+export const MeetingStatus = {
+  SCHEDULED: 'SCHEDULED',
+  HELD: 'HELD',
+  CLOSED: 'CLOSED',
+  CANCELED: 'CANCELED',
+} as const;
+export type MeetingStatus = (typeof MeetingStatus)[keyof typeof MeetingStatus];
+
+export const ParentDeliveryMethod = {
+  SEND_HOME: 'SEND_HOME',
+  US_MAIL: 'US_MAIL',
+  PICK_UP: 'PICK_UP',
+} as const;
+export type ParentDeliveryMethod = (typeof ParentDeliveryMethod)[keyof typeof ParentDeliveryMethod];
+
 // Prisma namespace mock for InputJsonValue
 export namespace Prisma {
   export type InputJsonValue = string | number | boolean | null | { [key: string]: InputJsonValue } | InputJsonValue[];
