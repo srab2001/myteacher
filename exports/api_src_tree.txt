@@ -1,0 +1,12 @@
+.
+./__mocks__
+./__mocks__/lib
+./config
+./constants
+./lib
+./middleware
+./pdf-maps
+./routes
+./services
+./test
+./types

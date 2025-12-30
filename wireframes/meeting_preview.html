@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Pack Editor - Preview Tab | MyTeacher Admin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #1a1a2e; }
+
+    .header { background: #2563eb; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header .breadcrumb { font-size: 14px; opacity: 0.8; }
+
+    .container { display: flex; height: calc(100vh - 60px); }
+
+    .left-panel { width: 280px; background: white; border-right: 1px solid #e5e7eb; padding: 16px; }
+    .back-link { display: flex; align-items: center; gap: 8px; color: #6b7280; font-size: 14px; text-decoration: none; margin-bottom: 16px; }
+    .pack-summary { padding: 16px; background: #f9fafb; border-radius: 8px; }
+    .pack-summary-name { font-weight: 600; font-size: 16px; margin-bottom: 8px; }
+    .pack-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-right: 4px; }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-iep { background: #dbeafe; color: #1e40af; }
+
+    .right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .pack-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; background: white; }
+    .tabs { display: flex; gap: 4px; }
+    .tab { padding: 8px 16px; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+    .content-area { flex: 1; overflow-y: auto; padding: 24px; background: #f9fafb; }
+
+    .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .preview-title { font-size: 18px; font-weight: 600; }
+    .preview-controls { display: flex; gap: 12px; align-items: center; }
+    .preview-select { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; min-width: 200px; }
+
+    /* Simulated Meeting UI */
+    .meeting-preview { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+
+    .meeting-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: flex-start; }
+    .meeting-info h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .meeting-meta { font-size: 14px; color: #6b7280; }
+    .meeting-status { padding: 6px 12px; border-radius: 16px; font-size: 13px; font-weight: 500; }
+    .status-held { background: #dbeafe; color: #1e40af; }
+
+    .meeting-tabs { display: flex; gap: 4px; padding: 0 24px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+    .meeting-tab { padding: 12px 16px; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .meeting-tab.active { color: #2563eb; border-bottom-color: #2563eb; background: white; }
+
+    .meeting-content { padding: 24px; }
+
+    /* Enforcement Panel */
+    .enforcement-panel { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    .enforcement-panel.success { background: #f0fdf4; border-color: #bbf7d0; }
+    .enforcement-title { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 12px; }
+    .enforcement-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .enforcement-icon.error { background: #dc2626; color: white; }
+    .enforcement-icon.success { background: #16a34a; color: white; }
+    .enforcement-list { list-style: none; font-size: 14px; }
+    .enforcement-list li { padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 8px; }
+    .enforcement-list li:last-child { border-bottom: none; }
+    .enforcement-list .error-marker { color: #dc2626; font-weight: bold; }
+    .enforcement-list .success-marker { color: #16a34a; font-weight: bold; }
+    .enforcement-rule { font-size: 12px; color: #6b7280; font-family: monospace; margin-left: 16px; }
+
+    /* Evidence Checklist */
+    .evidence-section { margin-top: 24px; }
+    .evidence-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+
+    .evidence-checklist { display: grid; gap: 12px; }
+    .evidence-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: #f9fafb; border-radius: 8px; }
+    .evidence-item.completed { background: #f0fdf4; }
+    .evidence-item.missing { background: #fef2f2; }
+    .evidence-check { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .evidence-check.done { background: #16a34a; border-color: #16a34a; color: white; }
+    .evidence-check.missing { border-color: #dc2626; }
+    .evidence-details { flex: 1; }
+    .evidence-name { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+    .evidence-note { font-size: 13px; color: #6b7280; }
+    .evidence-action { padding: 6px 12px; font-size: 13px; border-radius: 4px; border: 1px solid #d1d5db; background: white; cursor: pointer; }
+    .evidence-action:hover { background: #f9fafb; }
+
+    /* Timeline */
+    .timeline-section { margin-top: 24px; }
+    .timeline-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+
+    .timeline { position: relative; padding-left: 32px; }
+    .timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: #e5e7eb; }
+    .timeline-item { position: relative; padding-bottom: 20px; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-dot { position: absolute; left: -32px; top: 2px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .timeline-dot.done { background: #16a34a; color: white; }
+    .timeline-dot.current { background: #2563eb; color: white; }
+    .timeline-dot.pending { background: white; border: 2px solid #d1d5db; color: #9ca3af; }
+    .timeline-dot.overdue { background: #dc2626; color: white; }
+    .timeline-content { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; }
+    .timeline-date { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+    .timeline-title { font-weight: 500; font-size: 14px; }
+    .timeline-desc { font-size: 13px; color: #6b7280; margin-top: 4px; }
+    .timeline-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; margin-left: 8px; }
+    .badge-overdue { background: #fef2f2; color: #dc2626; }
+    .badge-done { background: #f0fdf4; color: #16a34a; }
+
+    /* Action Buttons */
+    .action-bar { display: flex; gap: 12px; padding: 20px 24px; border-top: 1px solid #e5e7eb; background: white; }
+    .btn { padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-secondary { background: white; border: 1px solid #d1d5db; color: #374151; }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-danger { background: #dc2626; color: white; }
+
+    /* Preview Notes */
+    .preview-note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin-top: 24px; font-size: 13px; color: #1e40af; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>MyTeacher Admin</h1>
+    <span class="breadcrumb">/ Compliance Rules / Rule Packs / Maryland State IEP Rules / Preview</span>
+  </div>
+
+  <div class="container">
+    <div class="left-panel">
+      <a href="rules_index.html" class="back-link">
+        <span>&larr;</span> Back to Rule Packs
+      </a>
+      <div class="pack-summary">
+        <div class="pack-summary-name">Maryland State IEP Rules</div>
+        <div>
+          <span class="pack-badge badge-active">Active</span>
+          <span class="pack-badge badge-iep">IEP</span>
+        </div>
+        <div style="margin-top: 12px; font-size: 13px; color: #6b7280;">
+          <strong>Rules:</strong> 8 enabled<br>
+          <strong>Evidence:</strong> 5 types required
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="pack-header">
+        <div class="tabs">
+          <div class="tab">Overview</div>
+          <div class="tab">Rules</div>
+          <div class="tab">Evidence</div>
+          <div class="tab active">Preview</div>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <div class="preview-header">
+          <div class="preview-title">Meeting Enforcement Preview</div>
+          <div class="preview-controls">
+            <select class="preview-select">
+              <option>Initial IEP Meeting</option>
+              <option selected>Annual Review Meeting</option>
+              <option>Review Meeting</option>
+              <option>Amendment Meeting</option>
+              <option>Continued Meeting</option>
+            </select>
+            <select class="preview-select">
+              <option selected>Status: HELD (ready to close)</option>
+              <option>Status: SCHEDULED</option>
+              <option>Status: CLOSED</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Simulated Meeting View -->
+        <div class="meeting-preview">
+          <div class="meeting-header">
+            <div class="meeting-info">
+              <h2>Annual IEP Review - John Smith</h2>
+              <div class="meeting-meta">
+                Scheduled: January 15, 2024 at 2:00 PM &bull; Room 204
+              </div>
+            </div>
+            <span class="meeting-status status-held">HELD</span>
+          </div>
+
+          <div class="meeting-tabs">
+            <div class="meeting-tab">Details</div>
+            <div class="meeting-tab active">Evidence</div>
+            <div class="meeting-tab">Outcomes</div>
+          </div>
+
+          <div class="meeting-content">
+            <!-- Enforcement Status -->
+            <div class="enforcement-panel">
+              <div class="enforcement-title">
+                <div class="enforcement-icon error">!</div>
+                <span>Cannot Close Meeting - 2 Issues Found</span>
+              </div>
+              <ul class="enforcement-list">
+                <li>
+                  <span class="error-marker">&times;</span>
+                  <div>
+                    <div>Conference notes are required before closing this meeting</div>
+                    <div class="enforcement-rule">Rule: CONFERENCE_NOTES_REQUIRED</div>
+                  </div>
+                </li>
+                <li>
+                  <span class="error-marker">&times;</span>
+                  <div>
+                    <div>Post-meeting documents have not been marked as delivered (due by Jan 22, 2024)</div>
+                    <div class="enforcement-rule">Rule: POST_MEETING_DOCS_DAYS</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Evidence Checklist -->
+            <div class="evidence-section">
+              <h3>Required Evidence</h3>
+              <div class="evidence-checklist">
+                <div class="evidence-item completed">
+                  <div class="evidence-check done">&#10003;</div>
+                  <div class="evidence-details">
+                    <div class="evidence-name">Pre-Meeting Documents Sent</div>
+                    <div class="evidence-note">Sent home with student on Jan 8, 2024</div>
+                  </div>
+                </div>
+
+                <div class="evidence-item missing">
+                  <div class="evidence-check missing"></div>
+                  <div class="evidence-details">
+                    <div class="evidence-name">Conference Notes</div>
+                    <div class="evidence-note">Required - Meeting notes must be uploaded</div>
+                  </div>
+                  <button class="evidence-action">Add Notes</button>
+                </div>
+
+                <div class="evidence-item missing">
+                  <div class="evidence-check missing"></div>
+                  <div class="evidence-details">
+                    <div class="evidence-name">Final Document Sent</div>
+                    <div class="evidence-note">Due by Jan 22, 2024 (5 business days after meeting)</div>
+                  </div>
+                  <button class="evidence-action">Mark Delivered</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Document Delivery Timeline -->
+            <div class="timeline-section">
+              <h3>Document Delivery Timeline</h3>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="timeline-dot done">&#10003;</div>
+                  <div class="timeline-content">
+                    <div class="timeline-date">Jan 3, 2024 (US Mail deadline)</div>
+                    <div class="timeline-title">US Mail Pre-Meeting Docs Deadline</div>
+                    <div class="timeline-desc">If using US Mail, documents must be sent by this date</div>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-dot done">&#10003;</div>
+                  <div class="timeline-content">
+                    <div class="timeline-date">Jan 8, 2024</div>
+                    <div class="timeline-title">Pre-Meeting Documents Deadline <span class="badge-done">Completed</span></div>
+                    <div class="timeline-desc">Draft IEP sent home with student</div>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-dot done">&#10003;</div>
+                  <div class="timeline-content">
+                    <div class="timeline-date">Jan 15, 2024</div>
+                    <div class="timeline-title">Meeting Held</div>
+                    <div class="timeline-desc">Annual IEP review meeting conducted</div>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-dot overdue">!</div>
+                  <div class="timeline-content">
+                    <div class="timeline-date">Jan 22, 2024</div>
+                    <div class="timeline-title">Post-Meeting Documents Deadline <span class="badge-overdue">Overdue</span></div>
+                    <div class="timeline-desc">Final IEP must be delivered to parents</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="preview-note">
+              <strong>Preview Mode:</strong> This shows how rule enforcement will appear to teachers when managing meetings governed by this rule pack. The enforcement panel and evidence checklist dynamically update based on configured rules.
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-secondary">Cancel Meeting</button>
+            <button class="btn btn-primary" disabled>Close Meeting</button>
+            <div style="flex: 1;"></div>
+            <span style="font-size: 13px; color: #dc2626; align-self: center;">
+              Resolve 2 issues to enable closing
+            </span>
+          </div>
+        </div>
+
+        <!-- Success State Preview -->
+        <div style="margin-top: 32px;">
+          <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">When All Requirements Met:</h3>
+          <div class="enforcement-panel success">
+            <div class="enforcement-title">
+              <div class="enforcement-icon success">&#10003;</div>
+              <span>Ready to Close Meeting</span>
+            </div>
+            <ul class="enforcement-list">
+              <li>
+                <span class="success-marker">&#10003;</span>
+                <div>
+                  <div>Conference notes uploaded</div>
+                  <div class="enforcement-rule">Rule: CONFERENCE_NOTES_REQUIRED</div>
+                </div>
+              </li>
+              <li>
+                <span class="success-marker">&#10003;</span>
+                <div>
+                  <div>Pre-meeting documents delivered on time</div>
+                  <div class="enforcement-rule">Rule: PRE_MEETING_DOCS_DAYS</div>
+                </div>
+              </li>
+              <li>
+                <span class="success-marker">&#10003;</span>
+                <div>
+                  <div>Post-meeting documents delivered</div>
+                  <div class="enforcement-rule">Rule: POST_MEETING_DOCS_DAYS</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

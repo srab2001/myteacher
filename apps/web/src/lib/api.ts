@@ -1668,8 +1668,64 @@ class ApiClient {
     return this.fetch('/api/admin/rule-packs/definitions');
   }
 
+  async createAdminRuleDefinition(data: {
+    key: string;
+    name: string;
+    description?: string | null;
+    defaultConfig?: Record<string, unknown> | null;
+  }): Promise<{ definition: RuleDefinition }> {
+    return this.fetch('/api/admin/rule-packs/definitions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminRuleDefinition(id: string, data: {
+    name?: string;
+    description?: string | null;
+    defaultConfig?: Record<string, unknown> | null;
+  }): Promise<{ definition: RuleDefinition }> {
+    return this.fetch(`/api/admin/rule-packs/definitions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAdminRuleDefinition(id: string): Promise<void> {
+    await this.fetch(`/api/admin/rule-packs/definitions/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getAdminEvidenceTypes(): Promise<{ evidenceTypes: RuleEvidenceType[] }> {
     return this.fetch('/api/admin/rule-packs/evidence-types');
+  }
+
+  async createAdminEvidenceType(data: {
+    key: string;
+    name: string;
+    planType: RulePlanType;
+  }): Promise<{ evidenceType: RuleEvidenceType }> {
+    return this.fetch('/api/admin/rule-packs/evidence-types', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminEvidenceType(id: string, data: {
+    name?: string;
+    planType?: RulePlanType;
+  }): Promise<{ evidenceType: RuleEvidenceType }> {
+    return this.fetch(`/api/admin/rule-packs/evidence-types/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAdminEvidenceType(id: string): Promise<void> {
+    await this.fetch(`/api/admin/rule-packs/evidence-types/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   async getAdminMeetingTypes(): Promise<{ meetingTypes: MeetingType[] }> {

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Pack Editor - Rules Tab | MyTeacher Admin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #1a1a2e; }
+
+    .header { background: #2563eb; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header .breadcrumb { font-size: 14px; opacity: 0.8; }
+
+    .container { display: flex; height: calc(100vh - 60px); }
+
+    /* Left Panel - Simplified for this view */
+    .left-panel { width: 280px; background: white; border-right: 1px solid #e5e7eb; padding: 16px; }
+    .back-link { display: flex; align-items: center; gap: 8px; color: #6b7280; font-size: 14px; text-decoration: none; margin-bottom: 16px; }
+    .back-link:hover { color: #374151; }
+    .pack-summary { padding: 16px; background: #f9fafb; border-radius: 8px; }
+    .pack-summary-name { font-weight: 600; font-size: 16px; margin-bottom: 8px; }
+    .pack-summary-meta { font-size: 13px; color: #6b7280; }
+    .pack-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-right: 4px; }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-iep { background: #dbeafe; color: #1e40af; }
+
+    /* Right Panel */
+    .right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .pack-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; background: white; }
+    .tabs { display: flex; gap: 4px; }
+    .tab { padding: 8px 16px; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; }
+    .tab:hover { color: #374151; }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+    .content-area { flex: 1; overflow-y: auto; padding: 24px; background: #f9fafb; }
+
+    /* Rules List */
+    .rules-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .rules-title { font-size: 18px; font-weight: 600; }
+    .btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: white; border: 1px solid #d1d5db; color: #374151; }
+
+    .rule-card { background: white; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+    .rule-card.disabled { opacity: 0.6; }
+    .rule-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f3f4f6; }
+    .rule-info { display: flex; align-items: center; gap: 12px; }
+    .rule-toggle { width: 44px; height: 24px; background: #d1d5db; border-radius: 12px; position: relative; cursor: pointer; }
+    .rule-toggle.active { background: #2563eb; }
+    .rule-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; }
+    .rule-toggle.active::after { transform: translateX(20px); }
+    .rule-name { font-weight: 600; font-size: 15px; }
+    .rule-key { font-size: 12px; color: #6b7280; font-family: monospace; }
+    .rule-actions { display: flex; gap: 8px; }
+    .rule-action-btn { padding: 6px 12px; font-size: 13px; border-radius: 4px; border: 1px solid #e5e7eb; background: white; cursor: pointer; color: #374151; }
+    .rule-action-btn:hover { background: #f9fafb; }
+
+    .rule-body { padding: 16px 20px; background: #fafafa; }
+    .rule-description { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
+    .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .config-item { display: flex; flex-direction: column; gap: 6px; }
+    .config-label { font-size: 12px; font-weight: 500; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+    .config-input { padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+    .config-input:focus { outline: none; border-color: #2563eb; }
+    .config-hint { font-size: 12px; color: #9ca3af; }
+
+    /* Meeting Types Selector */
+    .meeting-types { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .meeting-type-chip { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 16px; font-size: 13px; cursor: pointer; background: white; }
+    .meeting-type-chip.selected { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+
+    /* Info Box */
+    .info-box { display: flex; gap: 12px; padding: 16px; background: #eff6ff; border-radius: 8px; margin-bottom: 24px; }
+    .info-icon { width: 24px; height: 24px; background: #2563eb; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; }
+    .info-content { font-size: 14px; color: #1e40af; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>MyTeacher Admin</h1>
+    <span class="breadcrumb">/ Compliance Rules / Rule Packs / Maryland State IEP Rules / Edit Rules</span>
+  </div>
+
+  <div class="container">
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <a href="rules_index.html" class="back-link">
+        <span>&larr;</span> Back to Rule Packs
+      </a>
+      <div class="pack-summary">
+        <div class="pack-summary-name">Maryland State IEP Rules</div>
+        <div class="pack-summary-meta">
+          <span class="pack-badge badge-active">Active</span>
+          <span class="pack-badge badge-iep">IEP</span>
+          <span>Version 3</span>
+        </div>
+        <div style="margin-top: 12px; font-size: 13px; color: #6b7280;">
+          <strong>Scope:</strong> State: Maryland<br>
+          <strong>Plan Type:</strong> IEP<br>
+          <strong>Rules:</strong> 8 enabled / 10 total
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      <div class="pack-header">
+        <div class="tabs">
+          <div class="tab">Overview</div>
+          <div class="tab active">Rules</div>
+          <div class="tab">Evidence</div>
+          <div class="tab">Preview</div>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <div class="info-box">
+          <div class="info-icon">i</div>
+          <div class="info-content">
+            Configure which compliance rules are active for this pack and customize their parameters.
+            Rules are evaluated during meeting workflow (scheduling, closing, implementing plans).
+          </div>
+        </div>
+
+        <div class="rules-header">
+          <div class="rules-title">Compliance Rules</div>
+          <button class="btn btn-secondary">+ Add Rule</button>
+        </div>
+
+        <!-- Document Delivery Rules -->
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">Pre-Meeting Document Delivery</div>
+                <div class="rule-key">PRE_MEETING_DOCS_DAYS</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Number of business days before meeting that draft documents must be delivered to parents.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Business Days Before Meeting</label>
+                <input type="number" class="config-input" value="5">
+                <span class="config-hint">Maryland requires 5 business days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">Post-Meeting Document Delivery</div>
+                <div class="rule-key">POST_MEETING_DOCS_DAYS</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Number of business days after meeting to deliver final documents.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Business Days After Meeting</label>
+                <input type="number" class="config-input" value="5">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">US Mail Pre-Meeting Offset</div>
+                <div class="rule-key">US_MAIL_PRE_MEETING_DAYS</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Additional business days added when using US Mail for pre-meeting document delivery.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Extra Days for US Mail</label>
+                <input type="number" class="config-input" value="3">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conference Notes Rule -->
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">Conference Notes Required</div>
+                <div class="rule-key">CONFERENCE_NOTES_REQUIRED</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Require conference notes before a meeting can be closed. Applies to specified meeting types.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Require Notes</label>
+                <select class="config-input">
+                  <option value="true" selected>Yes - Required</option>
+                  <option value="false">No - Optional</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: 12px;">
+              <label class="config-label">Apply to Meeting Types</label>
+              <div class="meeting-types">
+                <span class="meeting-type-chip selected">Initial IEP</span>
+                <span class="meeting-type-chip selected">Annual Review</span>
+                <span class="meeting-type-chip selected">Review Meeting</span>
+                <span class="meeting-type-chip">Amendment</span>
+                <span class="meeting-type-chip">Continued</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consent Gate Rule -->
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">Initial IEP Consent Gate</div>
+                <div class="rule-key">INITIAL_IEP_CONSENT_GATE</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Block implementation of initial IEPs until parent consent is obtained. Required for FAPE compliance.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Enable Consent Gate</label>
+                <select class="config-input">
+                  <option value="true" selected>Yes - Block until consent</option>
+                  <option value="false">No - Allow immediate implementation</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Continued Meeting Rules -->
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">Continued Meeting Notice</div>
+                <div class="rule-key">CONTINUED_MEETING_NOTICE_DAYS</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Minimum notice days for continued meetings. If less, a waiver is required.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Minimum Notice Days</label>
+                <input type="number" class="config-input" value="10">
+                <span class="config-hint">Waiver required if scheduled with less notice</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">Mutual Agreement for Continued Dates</div>
+                <div class="rule-key">CONTINUED_MEETING_MUTUAL_AGREEMENT</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Require documentation of mutual agreement for continued meeting dates.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Require Agreement Documentation</label>
+                <select class="config-input">
+                  <option value="true" selected>Yes - Required</option>
+                  <option value="false">No - Optional</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Recording Rule -->
+        <div class="rule-card">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle active"></div>
+              <div>
+                <div class="rule-name">Audio Recording Policy</div>
+                <div class="rule-key">AUDIO_RECORDING_RULE</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Policy for audio recording during meetings. If parent records, staff may be required to record as well.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Staff Must Record if Parent Records</label>
+                <select class="config-input">
+                  <option value="true" selected>Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+              <div class="config-item">
+                <label class="config-label">Mark as Not Official Record</label>
+                <select class="config-input">
+                  <option value="true" selected>Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disabled Rule Example -->
+        <div class="rule-card disabled">
+          <div class="rule-header">
+            <div class="rule-info">
+              <div class="rule-toggle"></div>
+              <div>
+                <div class="rule-name">Default Delivery Method</div>
+                <div class="rule-key">DEFAULT_DELIVERY_METHOD</div>
+              </div>
+            </div>
+            <div class="rule-actions">
+              <button class="rule-action-btn">Edit</button>
+              <button class="rule-action-btn">Remove</button>
+            </div>
+          </div>
+          <div class="rule-body">
+            <div class="rule-description">
+              Default method for parent document delivery when not specified.
+            </div>
+            <div class="config-grid">
+              <div class="config-item">
+                <label class="config-label">Default Method</label>
+                <select class="config-input" disabled>
+                  <option value="SEND_HOME" selected>Send Home with Student</option>
+                  <option value="US_MAIL">US Mail</option>
+                  <option value="PICK_UP">Parent Pick-Up</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 24px; text-align: center;">
+          <button class="btn btn-primary" style="padding: 12px 32px;">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

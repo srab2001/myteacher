@@ -1,0 +1,541 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.backLink {
+  display: inline-block;
+  color: var(--primary);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.error {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.accessDenied {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.accessDenied h2 {
+  margin-bottom: 0.5rem;
+}
+
+.accessDenied p {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+/* Choose Step */
+.chooseStep {
+  text-align: center;
+}
+
+.chooseStep h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.choiceCard {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.choiceCard:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.choiceIcon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.choiceCard h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.choiceCard p {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.choiceExample {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--primary);
+  font-style: italic;
+}
+
+.existingCounts {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* Form Steps */
+.formStep {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.stepHeader {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.stepHeader h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.stepHeader p {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.formGroup label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="date"],
+.formGroup input[type="number"],
+.formGroup select,
+.formGroup textarea {
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  background: white;
+  transition: border-color 0.15s ease;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.checkboxLabel input {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+/* Config Preview */
+.configPreview {
+  background: var(--background);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.configPreview h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.configField {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.configField:last-child {
+  margin-bottom: 0;
+}
+
+.configField label {
+  font-size: 0.8125rem;
+  min-width: 180px;
+}
+
+.configField input[type="number"] {
+  width: 80px;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.configField input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+.configField select {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Scope Info */
+.scopeInfo {
+  background: #eff6ff;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+
+.scopeInfo h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+}
+
+.scopeInfo p {
+  margin-bottom: 0.5rem;
+  color: #1e40af;
+}
+
+.scopeInfo ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+  color: #1e40af;
+}
+
+.scopeInfo li {
+  margin-bottom: 0.25rem;
+}
+
+/* Form Actions */
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.primaryBtn:hover {
+  background: var(--primary-dark, #4f46e5);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  padding: 0.625rem 1.25rem;
+  background: white;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.secondaryBtn:hover {
+  background: var(--background);
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Rules Configuration */
+.rulesConfig {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.emptyMessage {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem;
+}
+
+.rulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.ruleConfigCard {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.15s ease;
+}
+
+.ruleConfigCard.enabled {
+  background: white;
+  border-color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ruleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.ruleToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.ruleToggle input {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.ruleName {
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+.ruleKey {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: monospace;
+  background: var(--background);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+}
+
+.ruleDescription {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.ruleConfigSection {
+  background: var(--background);
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.ruleConfigSection h5 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.configInput {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.configInput:last-child {
+  margin-bottom: 0;
+}
+
+.configInput label {
+  font-size: 0.8125rem;
+  min-width: 120px;
+}
+
+.configInput input[type="text"],
+.configInput input[type="number"] {
+  width: 100px;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+.configInput input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+.selectedSummary {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--muted);
+  padding: 0.75rem;
+  background: var(--background);
+  border-radius: 0.375rem;
+}
+
+/* Complete Step */
+.completeStep {
+  text-align: center;
+  padding: 2rem;
+}
+
+.successIcon {
+  width: 64px;
+  height: 64px;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 1.5rem;
+}
+
+.completeStep h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.createdItem {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.createdItem h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--primary);
+}
+
+.createdItem p {
+  font-size: 0.875rem;
+  margin-bottom: 0.375rem;
+}
+
+.createdItem p:last-child {
+  margin-bottom: 0;
+}
+
+.completeActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
