@@ -134,8 +134,8 @@ export function GoalWizardPanel({
 
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  const startWizardSession = async (): Promise<boolean> => {
-    if (!selectedArea) return false;
+  const startWizardSession = async (): Promise<string | null> => {
+    if (!selectedArea) return null;
     setLoadingChat(true);
     setSessionError(null);
     try {
@@ -147,13 +147,13 @@ export function GoalWizardPanel({
         initialMessage += `\n\nBased on the present levels analysis:\n- Current Performance: ${presentLevels.currentPerformance}\n- Key Challenges: ${presentLevels.challengesNoted.join(', ')}`;
       }
       setChatMessages([{ role: 'assistant', content: initialMessage }]);
-      return true;
+      return result.sessionId; // Return the sessionId directly
     } catch (error) {
       console.error('Failed to start wizard session:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to start wizard session';
       setSessionError(errorMessage);
       setChatMessages([{ role: 'assistant', content: `Error starting session: ${errorMessage}. Please try again.` }]);
-      return false;
+      return null;
     } finally {
       setLoadingChat(false);
     }
@@ -162,20 +162,20 @@ export function GoalWizardPanel({
   const sendMessage = async () => {
     if (!chatInput.trim()) return;
 
-    // If session not started yet, start it first
-    if (!sessionId) {
-      const started = await startWizardSession();
-      if (!started) return;
+    // If session not started yet, start it first and get the sessionId directly
+    let currentSessionId = sessionId;
+    if (!currentSessionId) {
+      currentSessionId = await startWizardSession();
+      if (!currentSessionId) return;
     }
 
-    if (!sessionId) return; // Double check after starting
     const message = chatInput.trim();
     setChatInput('');
     setChatMessages((prev) => [...prev, { role: 'user', content: message }]);
     setLoadingChat(true);
 
     try {
-      const result = await api.sendWizardMessage(sessionId, message);
+      const result = await api.sendWizardMessage(currentSessionId, message);
       setChatMessages((prev) => [...prev, { role: 'assistant', content: result.response }]);
       if (result.currentDraft) {
         setCurrentDraft(result.currentDraft);
