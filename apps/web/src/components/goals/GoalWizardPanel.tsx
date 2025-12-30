@@ -472,6 +472,103 @@ export function GoalWizardPanel({
                   <div className={styles.generatedContent}>
                     <h4>Current Performance</h4>
                     <p>{presentLevels.currentPerformance}</p>
+
+                    {presentLevels.gradeStandardsComparison && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <h5 style={{ color: '#1e40af', marginBottom: '0.5rem' }}>Grade Standards Comparison</h5>
+                        <p style={{ fontSize: '0.9rem' }}>{presentLevels.gradeStandardsComparison}</p>
+                      </div>
+                    )}
+
+                    {presentLevels.standardsReferenced && presentLevels.standardsReferenced.length > 0 && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <h5 style={{ color: '#1e40af', marginBottom: '0.5rem' }}>Standards Referenced</h5>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {presentLevels.standardsReferenced.map((std, i) => (
+                            <div key={i} style={{ backgroundColor: '#f0f9ff', padding: '0.75rem', borderRadius: '0.375rem', borderLeft: '3px solid #3b82f6' }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{std.code}: {std.standard}</div>
+                              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}><strong>Performance:</strong> {std.studentPerformance}</div>
+                              <div style={{ fontSize: '0.85rem', color: '#dc2626' }}><strong>Gap:</strong> {std.gapAnalysis}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                      <div>
+                        <h5 style={{ color: '#16a34a', marginBottom: '0.5rem' }}>Strengths</h5>
+                        <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.9rem' }}>
+                          {presentLevels.strengthsNoted.map((s, i) => <li key={i}>{s}</li>)}
+                        </ul>
+                      </div>
+                      <div>
+                        <h5 style={{ color: '#dc2626', marginBottom: '0.5rem' }}>Challenges</h5>
+                        <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.9rem' }}>
+                          {presentLevels.challengesNoted.map((c, i) => <li key={i}>{c}</li>)}
+                        </ul>
+                      </div>
+                    </div>
+
+                    {presentLevels.baselineData && presentLevels.baselineData.length > 0 && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <h5 style={{ color: '#7c3aed', marginBottom: '0.5rem' }}>Baseline Data for Goal Development</h5>
+                        <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f3f4f6' }}>
+                              <th style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>Metric</th>
+                              <th style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>Current</th>
+                              <th style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>Expected</th>
+                              <th style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>Measurement</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {presentLevels.baselineData.map((bd, i) => (
+                              <tr key={i}>
+                                <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{bd.metric}</td>
+                                <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb', color: '#dc2626' }}>{bd.currentLevel}</td>
+                                <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb', color: '#16a34a' }}>{bd.expectedLevel}</td>
+                                <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{bd.measurementMethod}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {presentLevels.impactOnGeneralEducation && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <h5 style={{ color: '#ea580c', marginBottom: '0.5rem' }}>Impact on General Education</h5>
+                        <p style={{ fontSize: '0.9rem' }}>{presentLevels.impactOnGeneralEducation}</p>
+                      </div>
+                    )}
+
+                    {presentLevels.accommodationsNeeded && presentLevels.accommodationsNeeded.length > 0 && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <h5 style={{ marginBottom: '0.5rem' }}>Recommended Accommodations</h5>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          {presentLevels.accommodationsNeeded.map((acc, i) => (
+                            <span key={i} style={{ backgroundColor: '#dbeafe', color: '#1e40af', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem' }}>{acc}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {presentLevels.functionalImplications && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <h5 style={{ marginBottom: '0.5rem' }}>Functional Implications</h5>
+                        <p style={{ fontSize: '0.9rem' }}>{presentLevels.functionalImplications}</p>
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#fefce8', borderRadius: '0.375rem' }}>
+                      <h5 style={{ marginBottom: '0.5rem' }}>Recent Progress</h5>
+                      <p style={{ fontSize: '0.9rem', margin: 0 }}>{presentLevels.recentProgress}</p>
+                    </div>
+
+                    <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#6b7280' }}>
+                      <strong>Data Sources:</strong> {presentLevels.dataSourceSummary}
+                    </div>
                   </div>
                 )}
               </>

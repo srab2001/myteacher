@@ -1889,6 +1889,30 @@ export interface PresentLevelData {
   recentProgress: string;
   dataSourceSummary: string;
   suggestedGoalAreas?: string[];
+  // Enhanced fields with standards references
+  gradeStandardsComparison?: string;
+  standardsReferenced?: Array<{
+    standard: string;
+    code: string;
+    studentPerformance: string;
+    gapAnalysis: string;
+  }>;
+  impactOnGeneralEducation?: string;
+  accommodationsNeeded?: string[];
+  assessmentResults?: Array<{
+    assessmentName: string;
+    date: string;
+    score: string;
+    interpretation: string;
+  }>;
+  parentConcerns?: string;
+  functionalImplications?: string;
+  baselineData?: Array<{
+    metric: string;
+    currentLevel: string;
+    expectedLevel: string;
+    measurementMethod: string;
+  }>;
 }
 
 export interface PresentLevelsHelpers {
