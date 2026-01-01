@@ -21,13 +21,12 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
   try {
     const data = createGoalSchema.parse(req.body);
 
-    // Verify plan belongs to teacher
+    // Verify plan access - admins can access all plans, teachers only their own students
+    const isAdmin = req.user!.role === 'ADMIN';
     const plan = await prisma.planInstance.findFirst({
       where: {
         id: req.params.planId,
-        student: {
-          teacherId: req.user!.id,
-        },
+        ...(isAdmin ? {} : { student: { teacherId: req.user!.id } }),
       },
     });
 
@@ -65,14 +64,12 @@ router.post('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, r
 // Get all goals for a plan
 router.get('/plans/:planId/goals', requireAuth, requireOnboarded, async (req, res) => {
   try {
+    // Admins can access all plans, teachers only their own students
+    const isAdmin = req.user!.role === 'ADMIN';
     const goals = await prisma.goal.findMany({
       where: {
         planInstanceId: req.params.planId,
-        planInstance: {
-          student: {
-            teacherId: req.user!.id,
-          },
-        },
+        ...(isAdmin ? {} : { planInstance: { student: { teacherId: req.user!.id } } }),
       },
       include: {
         progressRecords: {

@@ -2333,4 +2333,136 @@ router.patch('/schools/:schoolId', requireAdmin, async (req, res) => {
   }
 });
 
+// ============================================
+// ADMIN DASHBOARD: VERSION & SIGNATURE STATS
+// ============================================
+
+/**
+ * GET /api/admin/stats/versions
+ * Get version and signature statistics for admin dashboard
+ */
+router.get('/stats/versions', requireAdmin, async (_req, res) => {
+  try {
+    // Get versions missing case manager signature
+    const versionsMissingCmSignature = await prisma.planVersion.findMany({
+      where: {
+        status: 'FINAL',
+        signaturePacket: {
+          signatures: {
+            none: {
+              role: 'CASE_MANAGER',
+              status: 'SIGNED',
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        versionNumber: true,
+        finalizedAt: true,
+        planInstance: {
+          select: {
+            id: true,
+            student: { select: { id: true, firstName: true, lastName: true } },
+            planType: { select: { name: true } },
+          },
+        },
+      },
+      take: 50,
+      orderBy: { finalizedAt: 'desc' },
+    });
+
+    // Get versions not distributed (FINAL status, no distribution)
+    const versionsNotDistributed = await prisma.planVersion.findMany({
+      where: {
+        status: 'FINAL',
+        distributedAt: null,
+      },
+      select: {
+        id: true,
+        versionNumber: true,
+        finalizedAt: true,
+        planInstance: {
+          select: {
+            id: true,
+            student: { select: { id: true, firstName: true, lastName: true } },
+            planType: { select: { name: true } },
+          },
+        },
+        signaturePacket: {
+          select: {
+            status: true,
+            signatures: {
+              select: { role: true, status: true },
+            },
+          },
+        },
+      },
+      take: 50,
+      orderBy: { finalizedAt: 'desc' },
+    });
+
+    // Get decisions voided in last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const decisionsVoidedRecently = await prisma.decisionLedgerEntry.findMany({
+      where: {
+        status: 'VOID',
+        voidedAt: { gte: thirtyDaysAgo },
+      },
+      select: {
+        id: true,
+        decisionType: true,
+        summary: true,
+        voidedAt: true,
+        voidReason: true,
+        planInstance: {
+          select: {
+            id: true,
+            student: { select: { id: true, firstName: true, lastName: true } },
+          },
+        },
+        voidedBy: { select: { displayName: true } },
+      },
+      take: 50,
+      orderBy: { voidedAt: 'desc' },
+    });
+
+    // Get summary counts
+    const [
+      totalVersions,
+      finalVersions,
+      distributedVersions,
+      totalDecisions,
+      voidedDecisions,
+      pendingSignatures,
+    ] = await Promise.all([
+      prisma.planVersion.count(),
+      prisma.planVersion.count({ where: { status: 'FINAL' } }),
+      prisma.planVersion.count({ where: { status: 'DISTRIBUTED' } }),
+      prisma.decisionLedgerEntry.count(),
+      prisma.decisionLedgerEntry.count({ where: { status: 'VOID' } }),
+      prisma.signatureRecord.count({ where: { status: 'PENDING' } }),
+    ]);
+
+    res.json({
+      summary: {
+        totalVersions,
+        finalVersions,
+        distributedVersions,
+        totalDecisions,
+        voidedDecisions,
+        pendingSignatures,
+      },
+      versionsMissingCmSignature,
+      versionsNotDistributed,
+      decisionsVoidedRecently,
+    });
+  } catch (error) {
+    console.error('Error fetching version stats:', error);
+    res.status(500).json({ error: 'Failed to fetch version statistics' });
+  }
+});
+
 export default router;

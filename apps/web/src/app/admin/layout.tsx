@@ -78,6 +78,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/admin/students" className={styles.navLink}>
               Student Management
             </Link>
+            <Link href="/admin/versions" className={styles.navLink}>
+              Version & Signature Dashboard
+            </Link>
+            <Link href="/admin/audit" className={styles.navLink}>
+              Audit Log
+            </Link>
             <div className={styles.divider} />
             <Link href="/dashboard" className={styles.navLink}>
               Back to Dashboard

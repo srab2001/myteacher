@@ -1,4 +1,4 @@
-import { PrismaClient, PlanTypeCode, UserRole, GoalArea, ProgressLevel, ServiceType, ServiceSetting, FormType, ControlType, OptionsEditableBy, RuleScopeType, RulePlanType, MeetingTypeCode } from '@prisma/client';
+import { PrismaClient, PlanTypeCode, UserRole, GoalArea, ProgressLevel, ServiceType, ServiceSetting, FormType, ControlType, OptionsEditableBy, RuleScopeType, RulePlanType, MeetingTypeCode, EvaluationCaseStatus, EvaluationCaseType, AssessmentStatus, AssessmentType, ParticipantRole, DeterminationOutcome, IDEADisabilityCategory, ReferralStatus, ReferralType, ReferralSource } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as bcrypt from 'bcryptjs';
@@ -1424,6 +1424,400 @@ async function seedComplianceRules() {
 
   console.log('✅ Created evidence requirements for rule packs');
   console.log('🎉 Compliance rules seeding complete!');
+
+  // Seed Referrals and Evaluation Cases
+  await seedReferralsAndEvaluationCases();
+}
+
+/**
+ * Seeds referrals and evaluation cases for testing the eligibility module
+ */
+async function seedReferralsAndEvaluationCases() {
+  console.log('📋 Seeding referrals and evaluation cases...');
+
+  // Get required references
+  const adminUser = await prisma.appUser.findFirst({
+    where: { role: UserRole.ADMIN },
+  });
+
+  const firstStudent = await prisma.student.findFirst({
+    where: { recordId: 'HCPSS-000001' },
+  });
+
+  const secondStudent = await prisma.student.findFirst({
+    where: { recordId: 'HCPSS-000002' },
+  });
+
+  if (!adminUser || !firstStudent) {
+    console.log('⚠️ Required data not found for referral/evaluation case seeding, skipping...');
+    return;
+  }
+
+  // Create a sample referral for the first student (closed/completed)
+  const referral1 = await prisma.referral.upsert({
+    where: { id: 'sample-referral-1' },
+    update: {},
+    create: {
+      id: 'sample-referral-1',
+      studentId: firstStudent.id,
+      referralType: ReferralType.IDEA_EVALUATION,
+      source: ReferralSource.TEACHER,
+      reasonForReferral: 'Student is struggling with reading comprehension and decoding. Despite classroom interventions over the past 6 months, progress has been minimal. Student reads significantly below grade level and shows signs of frustration during reading activities.',
+      interventionsTried: '1. Small group reading instruction 3x/week\n2. Phonics-based intervention program\n3. Extended time for reading assignments\n4. Audio support for content area texts',
+      supportingData: 'Current reading level: Early 2nd grade (student is in 4th grade)\nBenchmark assessments: Below basic in all reading measures\nClassroom observations documented over 8 weeks',
+      parentContactEmail: 'parent@example.com',
+      parentContactPhone: '555-123-4567',
+      status: ReferralStatus.CONSENT_RECEIVED,
+      consentStatus: 'RECEIVED',
+      consentRequestedAt: new Date('2024-01-10'),
+      consentReceivedAt: new Date('2024-01-15'),
+      createdByUserId: adminUser.id,
+      caseManagerId: adminUser.id,
+    },
+  });
+
+  console.log('✅ Created sample referral for', firstStudent.firstName);
+
+  // Add timeline events for the referral
+  await prisma.referralTimelineEvent.createMany({
+    data: [
+      {
+        referralId: referral1.id,
+        eventType: 'CREATED',
+        description: 'Referral created by classroom teacher',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-01-05'),
+      },
+      {
+        referralId: referral1.id,
+        eventType: 'SUBMITTED',
+        description: 'Referral submitted for review',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-01-06'),
+      },
+      {
+        referralId: referral1.id,
+        eventType: 'CONSENT_REQUESTED',
+        description: 'Parent consent for evaluation requested via email and letter home',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-01-10'),
+      },
+      {
+        referralId: referral1.id,
+        eventType: 'CONSENT_RECEIVED',
+        description: 'Parent consent for evaluation received',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-01-15'),
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // Create an evaluation case linked to the referral
+  const evaluationCase1 = await prisma.evaluationCase.upsert({
+    where: { id: 'sample-eval-case-1' },
+    update: {},
+    create: {
+      id: 'sample-eval-case-1',
+      studentId: firstStudent.id,
+      referralId: referral1.id,
+      caseType: EvaluationCaseType.IDEA,
+      status: EvaluationCaseStatus.DETERMINATION_COMPLETE,
+      meetingScheduledAt: new Date('2024-03-10T14:00:00Z'),
+      meetingLink: 'https://teams.microsoft.com/l/meetup-join/sample-meeting-1',
+      createdByUserId: adminUser.id,
+      caseManagerId: adminUser.id,
+    },
+  });
+
+  console.log('✅ Created evaluation case 1 for', firstStudent.firstName);
+
+  // Add assessments to the evaluation case
+  // Using AssessmentType enum from schema
+  await prisma.evaluationAssessment.create({
+    data: {
+      evaluationCaseId: evaluationCase1.id,
+      assessmentType: AssessmentType.PSYCHOLOGICAL,
+      assessmentName: 'WISC-V Cognitive Assessment',
+      assessorName: 'Dr. Williams',
+      assessorTitle: 'School Psychologist',
+      status: AssessmentStatus.COMPLETED,
+      scheduledAt: new Date('2024-02-01'),
+      completedAt: new Date('2024-02-01'),
+      resultsJson: {
+        fullScaleIQ: 98,
+        verbalComprehension: 105,
+        visualSpatial: 100,
+        fluidReasoning: 95,
+        workingMemory: 88,
+        processingSpeed: 92,
+      },
+      resultsSummary: 'Average overall cognitive ability with a relative weakness in working memory.',
+      notes: 'Student was cooperative and engaged.',
+      createdByUserId: adminUser.id,
+    },
+  });
+
+  await prisma.evaluationAssessment.create({
+    data: {
+      evaluationCaseId: evaluationCase1.id,
+      assessmentType: AssessmentType.EDUCATIONAL,
+      assessmentName: 'WIAT-4 Academic Achievement',
+      assessorName: 'Dr. Williams',
+      assessorTitle: 'School Psychologist',
+      status: AssessmentStatus.COMPLETED,
+      scheduledAt: new Date('2024-02-05'),
+      completedAt: new Date('2024-02-05'),
+      resultsJson: {
+        wordReading: 78,
+        pseudowordDecoding: 75,
+        readingComprehension: 82,
+        spellingAccuracy: 80,
+        mathProblemSolving: 95,
+        numericalOperations: 98,
+      },
+      resultsSummary: 'Significant discrepancy between reading and math performance.',
+      notes: 'Reading scores fall in the below average range while math scores are average.',
+      createdByUserId: adminUser.id,
+    },
+  });
+
+  await prisma.evaluationAssessment.create({
+    data: {
+      evaluationCaseId: evaluationCase1.id,
+      assessmentType: AssessmentType.OTHER,
+      assessmentName: 'Classroom Observation',
+      assessorName: 'Mrs. Smith',
+      assessorTitle: 'General Education Teacher',
+      status: AssessmentStatus.COMPLETED,
+      scheduledAt: new Date('2024-02-10'),
+      completedAt: new Date('2024-02-10'),
+      resultsJson: {
+        onTaskBehavior: '75%',
+        peerInteractions: 'Appropriate',
+        teacherInteractions: 'Seeks help appropriately',
+        workCompletion: '60% during reading tasks, 90% during math tasks',
+      },
+      resultsSummary: 'Student demonstrates avoidance behaviors during reading activities.',
+      notes: 'More engaged during math instruction.',
+      createdByUserId: adminUser.id,
+    },
+  });
+
+  console.log('✅ Created assessments for evaluation case 1');
+
+  // Add participants to the evaluation case
+  const participants = [
+    { evaluationCaseId: evaluationCase1.id, role: ParticipantRole.PARENT, name: 'Parent/Guardian', email: 'parent@example.com', attendedMeeting: true },
+    { evaluationCaseId: evaluationCase1.id, role: ParticipantRole.GENERAL_ED_TEACHER, name: 'Mrs. Smith', email: 'smith@school.edu', attendedMeeting: true },
+    { evaluationCaseId: evaluationCase1.id, role: ParticipantRole.SPECIAL_ED_TEACHER, name: 'Mr. Jones', email: 'jones@school.edu', attendedMeeting: true },
+    { evaluationCaseId: evaluationCase1.id, role: ParticipantRole.SCHOOL_PSYCHOLOGIST, name: 'Dr. Williams', email: 'williams@school.edu', attendedMeeting: true },
+    { evaluationCaseId: evaluationCase1.id, role: ParticipantRole.ADMINISTRATOR, name: 'Principal Brown', email: 'brown@school.edu', attendedMeeting: true },
+  ];
+
+  for (const participant of participants) {
+    await prisma.evaluationParticipant.create({
+      data: participant,
+    });
+  }
+
+  console.log('✅ Created participants for evaluation case 1');
+
+  // Create eligibility determination
+  await prisma.eligibilityDetermination.create({
+    data: {
+      evaluationCaseId: evaluationCase1.id,
+      isEligible: true,
+      determinationDate: new Date('2024-03-10'),
+      primaryDisabilityCategory: IDEADisabilityCategory.SPECIFIC_LEARNING_DISABILITY,
+      eligibilityCriteriaMet: {
+        discrepancyCriteria: true,
+        exclusionaryCriteria: true,
+        educationalNeed: true,
+        adverseEffect: true,
+      },
+      rationale: 'Based on comprehensive evaluation data, the team determined that Alex meets the criteria for Specific Learning Disability in the area of Basic Reading Skills. There is a significant discrepancy between cognitive ability and reading achievement. The disability adversely affects educational performance and the student requires specially designed instruction.',
+      createdByUserId: adminUser.id,
+    },
+  });
+
+  console.log('✅ Created eligibility determination for evaluation case 1');
+
+  // Add timeline events for evaluation case 1
+  await prisma.evaluationCaseTimelineEvent.createMany({
+    data: [
+      {
+        evaluationCaseId: evaluationCase1.id,
+        eventType: 'CASE_OPENED',
+        description: 'Evaluation case opened following parent consent',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-01-15'),
+      },
+      {
+        evaluationCaseId: evaluationCase1.id,
+        eventType: 'ASSESSMENT_SCHEDULED',
+        description: 'Cognitive assessment scheduled with school psychologist',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-01-20'),
+      },
+      {
+        evaluationCaseId: evaluationCase1.id,
+        eventType: 'ASSESSMENT_COMPLETED',
+        description: 'WISC-V cognitive assessment completed',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-02-01'),
+      },
+      {
+        evaluationCaseId: evaluationCase1.id,
+        eventType: 'ASSESSMENT_COMPLETED',
+        description: 'WIAT-4 academic achievement assessment completed',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-02-05'),
+      },
+      {
+        evaluationCaseId: evaluationCase1.id,
+        eventType: 'MEETING_SCHEDULED',
+        description: 'Eligibility determination meeting scheduled for March 10',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-02-20'),
+      },
+      {
+        evaluationCaseId: evaluationCase1.id,
+        eventType: 'DETERMINATION_MADE',
+        description: 'Team determined student eligible for special education services under SLD',
+        performedByUserId: adminUser.id,
+        createdAt: new Date('2024-03-10'),
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // Create a second evaluation case (in progress) for the second student if exists
+  if (secondStudent) {
+    const referral2 = await prisma.referral.upsert({
+      where: { id: 'sample-referral-2' },
+      update: {},
+      create: {
+        id: 'sample-referral-2',
+        studentId: secondStudent.id,
+        referralType: ReferralType.SECTION_504_EVALUATION,
+        source: ReferralSource.PARENT,
+        reasonForReferral: 'Student has been diagnosed with ADHD by her pediatrician. Parent is requesting a 504 evaluation to determine eligibility for classroom accommodations.',
+        interventionsTried: '1. Preferential seating\n2. Movement breaks\n3. Check-ins for task completion',
+        supportingData: 'Medical documentation from Dr. Smith dated 2024-01-20 confirming ADHD diagnosis.',
+        parentContactEmail: 'garcia.parent@example.com',
+        parentContactPhone: '555-234-5678',
+        status: ReferralStatus.CONSENT_RECEIVED,
+        consentStatus: 'RECEIVED',
+        consentRequestedAt: new Date('2024-02-01'),
+        consentReceivedAt: new Date('2024-02-05'),
+        createdByUserId: adminUser.id,
+        caseManagerId: adminUser.id,
+      },
+    });
+
+    console.log('✅ Created sample referral for', secondStudent.firstName);
+
+    const evaluationCase2 = await prisma.evaluationCase.upsert({
+      where: { id: 'sample-eval-case-2' },
+      update: {},
+      create: {
+        id: 'sample-eval-case-2',
+        studentId: secondStudent.id,
+        referralId: referral2.id,
+        caseType: EvaluationCaseType.SECTION_504,
+        status: EvaluationCaseStatus.ASSESSMENTS_IN_PROGRESS,
+        createdByUserId: adminUser.id,
+        caseManagerId: adminUser.id,
+      },
+    });
+
+    console.log('✅ Created evaluation case 2 (in progress) for', secondStudent.firstName);
+
+    // Add in-progress assessments
+    await prisma.evaluationAssessment.create({
+      data: {
+        evaluationCaseId: evaluationCase2.id,
+        assessmentType: AssessmentType.OTHER,
+        assessmentName: 'Teacher Behavior Rating Scales',
+        assessorName: 'Ms. Thompson',
+        assessorTitle: 'Classroom Teacher',
+        status: AssessmentStatus.COMPLETED,
+        scheduledAt: new Date('2024-02-15'),
+        completedAt: new Date('2024-02-15'),
+        resultsJson: {
+          inattention: 'Clinically Significant',
+          hyperactivity: 'At-Risk',
+          executiveFunction: 'Clinically Significant',
+        },
+        resultsSummary: 'Significant concerns with attention and executive functioning.',
+        notes: 'Rating scales completed by classroom teacher and parent.',
+        createdByUserId: adminUser.id,
+      },
+    });
+
+    await prisma.evaluationAssessment.create({
+      data: {
+        evaluationCaseId: evaluationCase2.id,
+        assessmentType: AssessmentType.OTHER,
+        assessmentName: 'Classroom Observation',
+        assessorName: 'Mrs. Davis',
+        assessorTitle: 'School Counselor',
+        status: AssessmentStatus.IN_PROGRESS,
+        scheduledAt: new Date('2024-02-25'),
+        notes: 'Observation scheduled for February 25.',
+        createdByUserId: adminUser.id,
+      },
+    });
+
+    // Add participants
+    await prisma.evaluationParticipant.createMany({
+      data: [
+        { evaluationCaseId: evaluationCase2.id, role: ParticipantRole.PARENT, name: 'Mrs. Garcia', email: 'garcia.parent@example.com' },
+        { evaluationCaseId: evaluationCase2.id, role: ParticipantRole.GENERAL_ED_TEACHER, name: 'Ms. Thompson', email: 'thompson@school.edu' },
+        { evaluationCaseId: evaluationCase2.id, role: ParticipantRole.SCHOOL_COUNSELOR, name: 'Mrs. Davis', email: 'davis@school.edu' },
+      ],
+    });
+
+    // Add timeline events
+    await prisma.evaluationCaseTimelineEvent.createMany({
+      data: [
+        {
+          evaluationCaseId: evaluationCase2.id,
+          eventType: 'CASE_OPENED',
+          description: '504 evaluation case opened following parent consent',
+          performedByUserId: adminUser.id,
+          createdAt: new Date('2024-02-05'),
+        },
+        {
+          evaluationCaseId: evaluationCase2.id,
+          eventType: 'ASSESSMENT_SCHEDULED',
+          description: 'Behavior rating scales sent to teachers and parent',
+          performedByUserId: adminUser.id,
+          createdAt: new Date('2024-02-10'),
+        },
+        {
+          evaluationCaseId: evaluationCase2.id,
+          eventType: 'ASSESSMENT_COMPLETED',
+          description: 'Teacher behavior rating scales completed and reviewed',
+          performedByUserId: adminUser.id,
+          createdAt: new Date('2024-02-15'),
+        },
+        {
+          evaluationCaseId: evaluationCase2.id,
+          eventType: 'NOTE_ADDED',
+          description: 'Medical documentation from pediatrician reviewed and added to file',
+          performedByUserId: adminUser.id,
+          createdAt: new Date('2024-02-16'),
+        },
+      ],
+      skipDuplicates: true,
+    });
+
+    console.log('✅ Created assessments and timeline for evaluation case 2');
+  }
+
+  console.log('🎉 Referrals and evaluation cases seeding complete!');
 }
 
 main()

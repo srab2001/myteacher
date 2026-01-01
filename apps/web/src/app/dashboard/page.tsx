@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, StudentStatusSummary, BestPracticeDocument, FormTemplate } from '@/lib/api';
 import { StatusBadge } from '@/components/StatusBadge';
+import { ComplianceDashboardCards } from '@/components/compliance/ComplianceDashboardCards';
+import { AlertsBell } from '@/components/alerts/AlertsBell';
 import styles from './page.module.css';
 
 type TabType = 'students' | 'best-practice' | 'templates';
@@ -34,6 +36,7 @@ export default function DashboardPage() {
   });
 
   const isAdmin = user?.role === 'ADMIN';
+  const canManageCompliance = user?.role === 'ADMIN' || user?.role === 'CASE_MANAGER';
 
   useEffect(() => {
     if (!loading) {
@@ -126,6 +129,7 @@ export default function DashboardPage() {
         <div className={styles.headerContent}>
           <h1 className={styles.logo}>MyTeacher</h1>
           <nav className={styles.nav}>
+            <AlertsBell />
             <span className={styles.userName}>{user.displayName}</span>
             <button className="btn btn-outline" onClick={handleLogout}>
               Logout
@@ -139,6 +143,11 @@ export default function DashboardPage() {
           <h2>Dashboard</h2>
           <p>Welcome back, {user.displayName}</p>
         </div>
+
+        {/* Compliance Dashboard Cards - ADMIN and CASE_MANAGER */}
+        {canManageCompliance && (
+          <ComplianceDashboardCards />
+        )}
 
         {/* Admin Banner */}
         {isAdmin && (

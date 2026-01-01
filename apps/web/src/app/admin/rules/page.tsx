@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -37,6 +38,7 @@ export default function AdminRulesPage() {
   // Data state
   const [rulePacks, setRulePacks] = useState<RulePack[]>([]);
   const [ruleDefinitions, setRuleDefinitions] = useState<RuleDefinition[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [evidenceTypes, setEvidenceTypes] = useState<RuleEvidenceType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -258,10 +260,17 @@ export default function AdminRulesPage() {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
-        <h2>Compliance Rules</h2>
-        <p className={styles.description}>
-          Manage rule packs for meeting compliance across states, districts, and schools.
-        </p>
+        <div className={styles.headerRow}>
+          <div>
+            <h2>Compliance Rules</h2>
+            <p className={styles.description}>
+              Manage rule packs for meeting compliance across states, districts, and schools.
+            </p>
+          </div>
+          <Link href="/admin/rules/wizard" className={styles.wizardBtn}>
+            Setup Wizard
+          </Link>
+        </div>
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}

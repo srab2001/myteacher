@@ -222,11 +222,12 @@ router.post('/goal-wizard/session/start', requireAuth, requireOnboarded, async (
   try {
     const data = startWizardSessionSchema.parse(req.body);
 
-    // Verify plan access
+    // Verify plan access - admins can access all plans, teachers only their own students
+    const isAdmin = req.user!.role === 'ADMIN';
     const plan = await prisma.planInstance.findFirst({
       where: {
         id: data.planId,
-        student: { teacherId: req.user!.id },
+        ...(isAdmin ? {} : { student: { teacherId: req.user!.id } }),
       },
     });
 
