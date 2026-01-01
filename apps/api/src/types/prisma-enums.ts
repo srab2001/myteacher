@@ -5,6 +5,8 @@ export const UserRole = {
   TEACHER: 'TEACHER',
   CASE_MANAGER: 'CASE_MANAGER',
   ADMIN: 'ADMIN',
+  RELATED_SERVICE_PROVIDER: 'RELATED_SERVICE_PROVIDER',
+  READ_ONLY: 'READ_ONLY',
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
