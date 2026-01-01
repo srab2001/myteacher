@@ -75,6 +75,7 @@ export function GoalWizardPanel({
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [fixingWithAI, setFixingWithAI] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -132,6 +133,7 @@ export function GoalWizardPanel({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   const startWizardSession = async (): Promise<string | null> => {
@@ -258,6 +260,7 @@ export function GoalWizardPanel({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const fixWithAI = async () => {
     if (!currentDraft || !selectedArea) return;
     setFixingWithAI(true);

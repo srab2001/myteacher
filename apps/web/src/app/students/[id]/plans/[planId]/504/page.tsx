@@ -9,7 +9,11 @@ import { DictationTextArea } from '@/components/forms/DictationTextArea';
 import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWizard';
 import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
 import { DynamicFormField } from '@/components/forms/DynamicFormField';
+import { PlanVersionsTab } from '@/components/iep/PlanVersionsTab';
+import { DecisionsTab } from '@/components/iep/DecisionsTab';
 import styles from '../iep/page.module.css';
+
+type MainTab = 'editor' | 'versions' | 'decisions';
 
 export default function FiveOhFourInterviewPage() {
   const { user, loading } = useAuth();
@@ -19,6 +23,7 @@ export default function FiveOhFourInterviewPage() {
   const studentId = params.id as string;
 
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [mainTab, setMainTab] = useState<MainTab>('editor');
   const [priorPlans, setPriorPlans] = useState<PriorPlanDocument[]>([]);
   const [showStartStep, setShowStartStep] = useState(true);
   const [currentSection, setCurrentSection] = useState(0);
@@ -205,7 +210,7 @@ export default function FiveOhFourInterviewPage() {
 
     try {
       await handleSave();
-      await api.finalizePlan(plan.id);
+      await api.finalizePlan(plan.id, {});
       router.push(`/students/${studentId}`);
     } catch {
       setError('Failed to finalize');
@@ -321,8 +326,46 @@ export default function FiveOhFourInterviewPage() {
             Artifact Compare
           </button>
         </div>
+        <nav className={styles.mainTabs}>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'editor' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('editor')}
+          >
+            Editor
+          </button>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'versions' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('versions')}
+          >
+            Versions
+          </button>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'decisions' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('decisions')}
+          >
+            Decisions
+          </button>
+        </nav>
       </header>
 
+      {/* Tab Content */}
+      {mainTab === 'versions' && (
+        <div className={styles.tabContent}>
+          <PlanVersionsTab
+            planId={planId}
+            planStatus={plan.status}
+            onPlanUpdated={loadPlan}
+          />
+        </div>
+      )}
+
+      {mainTab === 'decisions' && (
+        <div className={styles.tabContent}>
+          <DecisionsTab planId={planId} studentId={studentId} />
+        </div>
+      )}
+
+      {mainTab === 'editor' && (
       <div className={styles.layout}>
         {/* Section Navigation */}
         <nav className={styles.sidebar}>
@@ -502,6 +545,7 @@ export default function FiveOhFourInterviewPage() {
           </div>
         </main>
       </div>
+      )}
 
       {/* Print View Link and PDF Download */}
       <div className={styles.printLink}>

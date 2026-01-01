@@ -40,6 +40,17 @@ import rulePacksRoutes from './routes/rulePacks.js';
 import adminRulePacksRoutes from './routes/adminRulePacks.js';
 import meetingsRoutes from './routes/meetings.js';
 import rulesRoutes from './routes/rules.js';
+import referralsRoutes from './routes/referrals.js';
+import evaluationCasesRoutes from './routes/evaluationCases.js';
+import planVersionsRoutes from './routes/planVersions.js';
+import decisionsRoutes from './routes/decisions.js';
+import signaturesRoutes from './routes/signatures.js';
+import scheduledServicesRoutes from './routes/scheduledServices.js';
+import reviewSchedulesRoutes from './routes/reviewSchedules.js';
+import complianceTasksRoutes from './routes/complianceTasks.js';
+import disputesRoutes from './routes/disputes.js';
+import alertsRoutes from './routes/alerts.js';
+import auditRoutes from './routes/audit.js';
 
 export function createApp(): Express {
   const app = express();
@@ -127,6 +138,17 @@ export function createApp(): Express {
   app.use('/api/admin/rule-packs', adminRulePacksRoutes); // Admin rule pack management
   app.use('/api/meetings', meetingsRoutes); // Meeting workflow and enforcement
   app.use('/api/rules', rulesRoutes); // Rules context and resolver
+  app.use('/api', referralsRoutes); // Referral routes (/api/students/:studentId/referrals, /api/referrals/:referralId)
+  app.use('/api', evaluationCasesRoutes); // Evaluation case routes (/api/students/:studentId/evaluation-cases, /api/evaluation-cases/:id)
+  app.use('/api', planVersionsRoutes); // Plan versioning routes (/api/plans/:planId/finalize, /api/plans/:planId/versions, etc.)
+  app.use('/api', decisionsRoutes); // Decision ledger routes (/api/plans/:planId/decisions, /api/decisions/:id)
+  app.use('/api', signaturesRoutes); // Signature routes (/api/plan-versions/:versionId/signatures, /api/signature-packets/:id/sign)
+  app.use('/api', scheduledServicesRoutes); // Scheduled services routes (/api/plans/:planId/scheduled-services, /api/plans/:planId/service-variance)
+  app.use('/api', reviewSchedulesRoutes); // Review schedules routes (/api/plans/:planId/review-schedules, /api/review-schedules/:id)
+  app.use('/api', complianceTasksRoutes); // Compliance tasks routes (/api/compliance-tasks)
+  app.use('/api', disputesRoutes); // Dispute cases routes (/api/students/:studentId/disputes, /api/disputes/:id)
+  app.use('/api', alertsRoutes); // In-app alerts routes (/api/alerts)
+  app.use('/api/admin', auditRoutes); // Audit log routes (/api/admin/audit)
 
   // 404 handler
   app.use((_req, res) => {

@@ -199,6 +199,124 @@ export const ParentDeliveryMethod = {
 } as const;
 export type ParentDeliveryMethod = (typeof ParentDeliveryMethod)[keyof typeof ParentDeliveryMethod];
 
+export const ScheduledServiceStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+} as const;
+export type ScheduledServiceStatus = (typeof ScheduledServiceStatus)[keyof typeof ScheduledServiceStatus];
+
+// ============================================
+// REVIEW SCHEDULE ENUMS
+// ============================================
+
+export const ScheduleType = {
+  IEP_ANNUAL_REVIEW: 'IEP_ANNUAL_REVIEW',
+  IEP_REEVALUATION: 'IEP_REEVALUATION',
+  PLAN_AMENDMENT_REVIEW: 'PLAN_AMENDMENT_REVIEW',
+  SECTION504_PERIODIC_REVIEW: 'SECTION504_PERIODIC_REVIEW',
+  BIP_REVIEW: 'BIP_REVIEW',
+} as const;
+export type ScheduleType = (typeof ScheduleType)[keyof typeof ScheduleType];
+
+export const ReviewScheduleStatus = {
+  OPEN: 'OPEN',
+  COMPLETE: 'COMPLETE',
+  OVERDUE: 'OVERDUE',
+} as const;
+export type ReviewScheduleStatus = (typeof ReviewScheduleStatus)[keyof typeof ReviewScheduleStatus];
+
+export const ComplianceTaskType = {
+  REVIEW_DUE_SOON: 'REVIEW_DUE_SOON',
+  REVIEW_OVERDUE: 'REVIEW_OVERDUE',
+  DOCUMENT_REQUIRED: 'DOCUMENT_REQUIRED',
+  SIGNATURE_NEEDED: 'SIGNATURE_NEEDED',
+  MEETING_REQUIRED: 'MEETING_REQUIRED',
+} as const;
+export type ComplianceTaskType = (typeof ComplianceTaskType)[keyof typeof ComplianceTaskType];
+
+export const ComplianceTaskStatus = {
+  OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETE: 'COMPLETE',
+  DISMISSED: 'DISMISSED',
+} as const;
+export type ComplianceTaskStatus = (typeof ComplianceTaskStatus)[keyof typeof ComplianceTaskStatus];
+
+export const AlertType = {
+  REVIEW_DUE_SOON: 'REVIEW_DUE_SOON',
+  REVIEW_OVERDUE: 'REVIEW_OVERDUE',
+  COMPLIANCE_TASK: 'COMPLIANCE_TASK',
+  SIGNATURE_REQUESTED: 'SIGNATURE_REQUESTED',
+  MEETING_SCHEDULED: 'MEETING_SCHEDULED',
+  DOCUMENT_UPLOADED: 'DOCUMENT_UPLOADED',
+  GENERAL: 'GENERAL',
+} as const;
+export type AlertType = (typeof AlertType)[keyof typeof AlertType];
+
+// ============================================
+// DISPUTE CASE ENUMS
+// ============================================
+
+export const DisputeCaseType = {
+  SECTION504_COMPLAINT: 'SECTION504_COMPLAINT',
+  IEP_DISPUTE: 'IEP_DISPUTE',
+  RECORDS_REQUEST: 'RECORDS_REQUEST',
+  OTHER: 'OTHER',
+} as const;
+export type DisputeCaseType = (typeof DisputeCaseType)[keyof typeof DisputeCaseType];
+
+export const DisputeCaseStatus = {
+  OPEN: 'OPEN',
+  IN_REVIEW: 'IN_REVIEW',
+  RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED',
+} as const;
+export type DisputeCaseStatus = (typeof DisputeCaseStatus)[keyof typeof DisputeCaseStatus];
+
+export const DisputeEventType = {
+  INTAKE: 'INTAKE',
+  MEETING: 'MEETING',
+  RESPONSE_SENT: 'RESPONSE_SENT',
+  DOCUMENT_RECEIVED: 'DOCUMENT_RECEIVED',
+  RESOLUTION: 'RESOLUTION',
+  STATUS_CHANGE: 'STATUS_CHANGE',
+  NOTE: 'NOTE',
+} as const;
+export type DisputeEventType = (typeof DisputeEventType)[keyof typeof DisputeEventType];
+
+// ============================================
+// AUDIT LOG ENUMS
+// ============================================
+
+export const AuditActionType = {
+  PLAN_VIEWED: 'PLAN_VIEWED',
+  PLAN_UPDATED: 'PLAN_UPDATED',
+  PLAN_FINALIZED: 'PLAN_FINALIZED',
+  PDF_EXPORTED: 'PDF_EXPORTED',
+  PDF_DOWNLOADED: 'PDF_DOWNLOADED',
+  SIGNATURE_ADDED: 'SIGNATURE_ADDED',
+  REVIEW_SCHEDULE_CREATED: 'REVIEW_SCHEDULE_CREATED',
+  CASE_VIEWED: 'CASE_VIEWED',
+  CASE_EXPORTED: 'CASE_EXPORTED',
+  PERMISSION_DENIED: 'PERMISSION_DENIED',
+} as const;
+export type AuditActionType = (typeof AuditActionType)[keyof typeof AuditActionType];
+
+export const AuditEntityType = {
+  PLAN: 'PLAN',
+  PLAN_VERSION: 'PLAN_VERSION',
+  PLAN_EXPORT: 'PLAN_EXPORT',
+  STUDENT: 'STUDENT',
+  GOAL: 'GOAL',
+  SERVICE: 'SERVICE',
+  REVIEW_SCHEDULE: 'REVIEW_SCHEDULE',
+  COMPLIANCE_TASK: 'COMPLIANCE_TASK',
+  DISPUTE_CASE: 'DISPUTE_CASE',
+  SIGNATURE_PACKET: 'SIGNATURE_PACKET',
+  MEETING: 'MEETING',
+} as const;
+export type AuditEntityType = (typeof AuditEntityType)[keyof typeof AuditEntityType];
+
 // Prisma namespace mock for InputJsonValue
 export namespace Prisma {
   export type InputJsonValue = string | number | boolean | null | { [key: string]: InputJsonValue } | InputJsonValue[];

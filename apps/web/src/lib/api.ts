@@ -571,12 +571,6 @@ class ApiClient {
     });
   }
 
-  async finalizePlan(planId: string): Promise<{ plan: { id: string; status: string } }> {
-    return this.fetch(`/api/plans/${planId}/finalize`, {
-      method: 'POST',
-    });
-  }
-
   // Phase 2: Goal API
   async getPlanGoals(planId: string): Promise<{ goals: Goal[] }> {
     return this.fetch(`/api/plans/${planId}/goals`);
@@ -1731,6 +1725,669 @@ class ApiClient {
   async getAdminMeetingTypes(): Promise<{ meetingTypes: MeetingType[] }> {
     return this.fetch('/api/admin/rule-packs/meeting-types');
   }
+
+  async getAdminVersionStats(): Promise<VersionStatsResponse> {
+    return this.fetch('/api/admin/stats/versions');
+  }
+
+  // ============================================
+  // Referral API
+  // ============================================
+
+  async getStudentReferrals(studentId: string, filters?: { status?: ReferralStatus; type?: ReferralType }): Promise<{ referrals: Referral[] }> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.type) params.append('type', filters.type);
+    const queryString = params.toString();
+    return this.fetch(`/api/students/${studentId}/referrals${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getReferral(referralId: string): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/referrals/${referralId}`);
+  }
+
+  async createReferral(studentId: string, data: CreateReferralData): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/students/${studentId}/referrals`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateReferral(referralId: string, data: UpdateReferralData): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/referrals/${referralId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async submitReferral(referralId: string): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/referrals/${referralId}/submit`, {
+      method: 'POST',
+    });
+  }
+
+  async requestReferralConsent(referralId: string): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/referrals/${referralId}/request-consent`, {
+      method: 'POST',
+    });
+  }
+
+  async recordReferralConsent(referralId: string, received: boolean, declineReason?: string): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/referrals/${referralId}/record-consent`, {
+      method: 'POST',
+      body: JSON.stringify({ received, declineReason }),
+    });
+  }
+
+  async closeReferral(referralId: string, reason?: string): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/referrals/${referralId}/close`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async assignReferralCaseManager(referralId: string, caseManagerId: string | null): Promise<{ referral: Referral }> {
+    return this.fetch(`/api/referrals/${referralId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ caseManagerId }),
+    });
+  }
+
+  async deleteReferral(referralId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/referrals/${referralId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getReferralTimeline(referralId: string): Promise<{ events: ReferralTimelineEvent[] }> {
+    return this.fetch(`/api/referrals/${referralId}/timeline`);
+  }
+
+  async addReferralTimelineEvent(referralId: string, data: { eventType: string; description: string; eventData?: Record<string, unknown> }): Promise<{ event: ReferralTimelineEvent }> {
+    return this.fetch(`/api/referrals/${referralId}/timeline`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============================================
+  // Evaluation Case API
+  // ============================================
+
+  async getStudentEvaluationCases(studentId: string, filters?: { status?: EvaluationCaseStatus; type?: EvaluationCaseType }): Promise<{ evaluationCases: EvaluationCase[] }> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.type) params.append('type', filters.type);
+    const queryString = params.toString();
+    return this.fetch(`/api/students/${studentId}/evaluation-cases${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getEvaluationCase(caseId: string): Promise<{ evaluationCase: EvaluationCase }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}`);
+  }
+
+  async createEvaluationCase(studentId: string, data: CreateEvaluationCaseData): Promise<{ evaluationCase: EvaluationCase }> {
+    return this.fetch(`/api/students/${studentId}/evaluation-cases`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEvaluationCase(caseId: string, data: UpdateEvaluationCaseData): Promise<{ evaluationCase: EvaluationCase }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEvaluationCase(caseId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async scheduleMeeting(caseId: string, data: { meetingScheduledAt: string; meetingLocation?: string; meetingLink?: string }): Promise<{ evaluationCase: EvaluationCase }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/schedule-meeting`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async closeEvaluationCase(caseId: string, reason?: string): Promise<{ evaluationCase: EvaluationCase }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/close`, {
+      method: 'POST',
+      body: JSON.stringify({ closedReason: reason }),
+    });
+  }
+
+  async assignEvaluationCaseManager(caseId: string, caseManagerId: string | null): Promise<{ evaluationCase: EvaluationCase }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ caseManagerId }),
+    });
+  }
+
+  // Assessment methods
+  async addAssessment(caseId: string, data: CreateAssessmentData): Promise<{ assessment: EvaluationAssessment }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/assessments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAssessment(caseId: string, assessmentId: string, data: UpdateAssessmentData): Promise<{ assessment: EvaluationAssessment }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/assessments/${assessmentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAssessment(caseId: string, assessmentId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/assessments/${assessmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Participant methods
+  async addParticipant(caseId: string, data: CreateParticipantData): Promise<{ participant: EvaluationParticipant }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/participants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateParticipant(caseId: string, participantId: string, data: UpdateParticipantData): Promise<{ participant: EvaluationParticipant }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/participants/${participantId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeParticipant(caseId: string, participantId: string): Promise<{ message: string }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/participants/${participantId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Determination methods
+  async createDetermination(caseId: string, data: CreateDeterminationData): Promise<{ determination: EligibilityDetermination }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/determination`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Timeline event methods
+  async addEvaluationCaseTimelineEvent(caseId: string, data: { eventType: string; description: string; eventData?: Record<string, unknown> }): Promise<{ event: EvaluationCaseTimelineEvent }> {
+    return this.fetch(`/api/evaluation-cases/${caseId}/timeline`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============================================
+  // PLAN VERSIONING METHODS
+  // ============================================
+
+  async finalizePlan(planId: string, data: FinalizePlanData): Promise<FinalizePlanResponse> {
+    return this.fetch(`/api/plans/${planId}/finalize`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPlanVersions(planId: string): Promise<{ versions: PlanVersion[] }> {
+    return this.fetch(`/api/plans/${planId}/versions`);
+  }
+
+  async getPlanVersion(versionId: string): Promise<{ version: PlanVersion }> {
+    return this.fetch(`/api/plan-versions/${versionId}`);
+  }
+
+  async downloadExport(exportId: string): Promise<Blob> {
+    const response = await fetch(`${API_BASE}/api/plan-exports/${exportId}/download`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download export');
+    }
+    return response.blob();
+  }
+
+  async distributePlanVersion(versionId: string): Promise<{ version: PlanVersion }> {
+    return this.fetch(`/api/plan-versions/${versionId}/distribute`, {
+      method: 'POST',
+    });
+  }
+
+  // ============================================
+  // DECISION LEDGER METHODS
+  // ============================================
+
+  async createDecision(planId: string, data: CreateDecisionData): Promise<{ decision: DecisionLedgerEntry }> {
+    return this.fetch(`/api/plans/${planId}/decisions`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDecisions(planId: string, params?: { type?: DecisionType; status?: DecisionStatus; section?: string }): Promise<{ decisions: DecisionLedgerEntry[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.section) searchParams.set('section', params.section);
+    const query = searchParams.toString();
+    return this.fetch(`/api/plans/${planId}/decisions${query ? `?${query}` : ''}`);
+  }
+
+  async getDecision(decisionId: string): Promise<{ decision: DecisionLedgerEntry }> {
+    return this.fetch(`/api/decisions/${decisionId}`);
+  }
+
+  async voidDecision(decisionId: string, data: VoidDecisionData): Promise<{ decision: DecisionLedgerEntry }> {
+    return this.fetch(`/api/decisions/${decisionId}/void`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDecisionTypes(): Promise<{ decisionTypes: DecisionTypeInfo[] }> {
+    return this.fetch('/api/decision-types');
+  }
+
+  // ============================================
+  // MEETING METHODS (for Decision linking)
+  // ============================================
+
+  async getMeetings(studentId: string, params?: { planType?: string; status?: MeetingStatus }): Promise<{ meetings: PlanMeeting[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.planType) searchParams.set('planType', params.planType);
+    if (params?.status) searchParams.set('status', params.status);
+    const query = searchParams.toString();
+    return this.fetch(`/api/meetings/student/${studentId}${query ? `?${query}` : ''}`);
+  }
+
+  // ============================================
+  // SIGNATURE METHODS
+  // ============================================
+
+  async createSignaturePacket(versionId: string, data: CreateSignaturePacketData): Promise<{ packet: SignaturePacket }> {
+    return this.fetch(`/api/plan-versions/${versionId}/signature-packets`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSignatures(versionId: string): Promise<{ packet: SignaturePacket }> {
+    return this.fetch(`/api/plan-versions/${versionId}/signatures`);
+  }
+
+  async signDocument(packetId: string, data: SignDocumentData): Promise<{ signature: SignatureRecord; packetComplete: boolean }> {
+    return this.fetch(`/api/signature-packets/${packetId}/sign`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async declineSignature(packetId: string, data: DeclineSignatureData): Promise<{ signature: SignatureRecord }> {
+    return this.fetch(`/api/signature-packets/${packetId}/decline`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async addSignatureRecord(packetId: string, data: AddSignatureRecordData): Promise<{ signature: SignatureRecord }> {
+    return this.fetch(`/api/signature-packets/${packetId}/records`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSignatureRoles(): Promise<{ roles: SignatureRoleInfo[]; attestationText: string }> {
+    return this.fetch('/api/signature-roles');
+  }
+
+  // ============================================
+  // SCHEDULED SERVICES METHODS
+  // ============================================
+
+  async getScheduledServices(planId: string): Promise<{ scheduledPlan: ScheduledServicePlan | null }> {
+    return this.fetch(`/api/plans/${planId}/scheduled-services`);
+  }
+
+  async createScheduledServices(planId: string, data: CreateScheduledServicePlanData): Promise<{ scheduledPlan: ScheduledServicePlan }> {
+    return this.fetch(`/api/plans/${planId}/scheduled-services`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateScheduledServices(scheduledPlanId: string, data: UpdateScheduledServicePlanData): Promise<{ scheduledPlan: ScheduledServicePlan }> {
+    return this.fetch(`/api/scheduled-services/${scheduledPlanId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getServiceVariance(planId: string, startDate: string, endDate: string): Promise<ServiceVarianceReport> {
+    return this.fetch(`/api/plans/${planId}/service-variance?start=${startDate}&end=${endDate}`);
+  }
+
+  // ============================================
+  // REVIEW SCHEDULE METHODS
+  // ============================================
+
+  async getReviewSchedules(planId: string, params?: { status?: ReviewScheduleStatus; type?: ScheduleType }): Promise<{ reviewSchedules: ReviewSchedule[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.type) searchParams.append('type', params.type);
+    const query = searchParams.toString();
+    return this.fetch(`/api/plans/${planId}/review-schedules${query ? `?${query}` : ''}`);
+  }
+
+  async getReviewSchedule(scheduleId: string): Promise<{ reviewSchedule: ReviewSchedule }> {
+    return this.fetch(`/api/review-schedules/${scheduleId}`);
+  }
+
+  async createReviewSchedule(planId: string, data: CreateReviewScheduleData): Promise<{ reviewSchedule: ReviewSchedule }> {
+    return this.fetch(`/api/plans/${planId}/review-schedules`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateReviewSchedule(scheduleId: string, data: UpdateReviewScheduleData): Promise<{ reviewSchedule: ReviewSchedule }> {
+    return this.fetch(`/api/review-schedules/${scheduleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async completeReviewSchedule(scheduleId: string, notes?: string): Promise<{ reviewSchedule: ReviewSchedule }> {
+    return this.fetch(`/api/review-schedules/${scheduleId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    });
+  }
+
+  async deleteReviewSchedule(scheduleId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/review-schedules/${scheduleId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getReviewDashboard(days?: number): Promise<ReviewDashboard> {
+    return this.fetch(`/api/review-schedules/dashboard${days ? `?days=${days}` : ''}`);
+  }
+
+  async getScheduleTypes(): Promise<{ scheduleTypes: ScheduleTypeInfo[] }> {
+    return this.fetch('/api/schedule-types');
+  }
+
+  // ============================================
+  // COMPLIANCE TASK METHODS
+  // ============================================
+
+  async getComplianceTasks(params?: {
+    status?: ComplianceTaskStatus;
+    type?: ComplianceTaskType;
+    assignedTo?: string;
+    studentId?: string;
+    planId?: string;
+    overdue?: boolean;
+  }): Promise<{ tasks: ComplianceTask[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.type) searchParams.append('type', params.type);
+    if (params?.assignedTo) searchParams.append('assignedTo', params.assignedTo);
+    if (params?.studentId) searchParams.append('studentId', params.studentId);
+    if (params?.planId) searchParams.append('planId', params.planId);
+    if (params?.overdue) searchParams.append('overdue', 'true');
+    const query = searchParams.toString();
+    return this.fetch(`/api/compliance-tasks${query ? `?${query}` : ''}`);
+  }
+
+  async getMyComplianceTasks(status?: ComplianceTaskStatus): Promise<{ tasks: ComplianceTask[] }> {
+    return this.fetch(`/api/compliance-tasks/my-tasks${status ? `?status=${status}` : ''}`);
+  }
+
+  async getComplianceTask(taskId: string): Promise<{ task: ComplianceTask }> {
+    return this.fetch(`/api/compliance-tasks/${taskId}`);
+  }
+
+  async createComplianceTask(data: CreateComplianceTaskData): Promise<{ task: ComplianceTask }> {
+    return this.fetch('/api/compliance-tasks', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateComplianceTask(taskId: string, data: UpdateComplianceTaskData): Promise<{ task: ComplianceTask }> {
+    return this.fetch(`/api/compliance-tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async completeComplianceTask(taskId: string, notes?: string): Promise<{ task: ComplianceTask }> {
+    return this.fetch(`/api/compliance-tasks/${taskId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    });
+  }
+
+  async dismissComplianceTask(taskId: string, reason: string): Promise<{ task: ComplianceTask }> {
+    return this.fetch(`/api/compliance-tasks/${taskId}/dismiss`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async getComplianceDashboard(): Promise<ComplianceDashboard> {
+    return this.fetch('/api/compliance-tasks/dashboard');
+  }
+
+  async getTaskTypes(): Promise<{ taskTypes: TaskTypeInfo[] }> {
+    return this.fetch('/api/task-types');
+  }
+
+  // ============================================
+  // DISPUTE CASE METHODS
+  // ============================================
+
+  async getStudentDisputes(studentId: string, params?: { status?: DisputeCaseStatus; type?: DisputeCaseType }): Promise<{ disputeCases: DisputeCase[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.type) searchParams.append('type', params.type);
+    const query = searchParams.toString();
+    return this.fetch(`/api/students/${studentId}/disputes${query ? `?${query}` : ''}`);
+  }
+
+  async getAllDisputes(params?: { status?: DisputeCaseStatus; type?: DisputeCaseType; assignedTo?: string }): Promise<{ disputeCases: DisputeCase[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.type) searchParams.append('type', params.type);
+    if (params?.assignedTo) searchParams.append('assignedTo', params.assignedTo);
+    const query = searchParams.toString();
+    return this.fetch(`/api/disputes${query ? `?${query}` : ''}`);
+  }
+
+  async getDispute(caseId: string): Promise<{ disputeCase: DisputeCase }> {
+    return this.fetch(`/api/disputes/${caseId}`);
+  }
+
+  async createDispute(studentId: string, data: CreateDisputeData): Promise<{ disputeCase: DisputeCase }> {
+    return this.fetch(`/api/students/${studentId}/disputes`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateDispute(caseId: string, data: UpdateDisputeData): Promise<{ disputeCase: DisputeCase }> {
+    return this.fetch(`/api/disputes/${caseId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDisputeEvents(caseId: string): Promise<{ events: DisputeEvent[] }> {
+    return this.fetch(`/api/disputes/${caseId}/events`);
+  }
+
+  async createDisputeEvent(caseId: string, data: CreateDisputeEventData): Promise<{ event: DisputeEvent }> {
+    return this.fetch(`/api/disputes/${caseId}/events`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDisputeAttachments(caseId: string): Promise<{ attachments: DisputeAttachment[] }> {
+    return this.fetch(`/api/disputes/${caseId}/attachments`);
+  }
+
+  async createDisputeAttachment(caseId: string, data: CreateDisputeAttachmentData): Promise<{ attachment: DisputeAttachment }> {
+    return this.fetch(`/api/disputes/${caseId}/attachments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteDisputeAttachment(attachmentId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/disputes/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async exportDisputePdf(caseId: string): Promise<{ exportData: { case: DisputeCase; exportedAt: string; exportedBy: string }; message: string }> {
+    return this.fetch(`/api/disputes/${caseId}/export-pdf`);
+  }
+
+  async getDisputeDashboard(): Promise<DisputeDashboard> {
+    return this.fetch('/api/disputes/dashboard');
+  }
+
+  async getDisputeCaseTypes(): Promise<{ caseTypes: DisputeCaseTypeInfo[] }> {
+    return this.fetch('/api/case-types');
+  }
+
+  async getDisputeEventTypes(): Promise<{ eventTypes: DisputeEventTypeInfo[] }> {
+    return this.fetch('/api/event-types');
+  }
+
+  // ============================================
+  // IN-APP ALERT METHODS
+  // ============================================
+
+  async getAlerts(unreadOnly?: boolean, limit?: number): Promise<{ alerts: InAppAlert[]; unreadCount: number }> {
+    const searchParams = new URLSearchParams();
+    if (unreadOnly) searchParams.append('unreadOnly', 'true');
+    if (limit) searchParams.append('limit', limit.toString());
+    const query = searchParams.toString();
+    return this.fetch(`/api/alerts${query ? `?${query}` : ''}`);
+  }
+
+  async getUnreadAlertCount(): Promise<{ unreadCount: number }> {
+    return this.fetch('/api/alerts/unread-count');
+  }
+
+  async markAlertRead(alertId: string): Promise<{ alert: InAppAlert }> {
+    return this.fetch(`/api/alerts/${alertId}/read`, {
+      method: 'POST',
+    });
+  }
+
+  async markAllAlertsRead(): Promise<{ success: boolean }> {
+    return this.fetch('/api/alerts/mark-all-read', {
+      method: 'POST',
+    });
+  }
+
+  async deleteAlert(alertId: string): Promise<{ success: boolean }> {
+    return this.fetch(`/api/alerts/${alertId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearReadAlerts(): Promise<{ success: boolean }> {
+    return this.fetch('/api/alerts/clear-read', {
+      method: 'DELETE',
+    });
+  }
+
+  async createAlert(data: CreateAlertData): Promise<{ alert: InAppAlert }> {
+    return this.fetch('/api/alerts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async bulkCreateAlerts(data: BulkCreateAlertData): Promise<{ created: number }> {
+    return this.fetch('/api/alerts/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAlertTypes(): Promise<{ alertTypes: AlertTypeInfo[] }> {
+    return this.fetch('/api/alert-types');
+  }
+
+  // ============================================
+  // AUDIT LOG API METHODS
+  // ============================================
+
+  async getAuditLogs(
+    filters?: AuditLogFilters,
+    page = 1,
+    limit = 50
+  ): Promise<{
+    auditLogs: AuditLog[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const searchParams = new URLSearchParams();
+    searchParams.append('page', page.toString());
+    searchParams.append('limit', limit.toString());
+    if (filters?.dateFrom) searchParams.append('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) searchParams.append('dateTo', filters.dateTo);
+    if (filters?.userId) searchParams.append('userId', filters.userId);
+    if (filters?.studentId) searchParams.append('studentId', filters.studentId);
+    if (filters?.actionType) searchParams.append('actionType', filters.actionType);
+    if (filters?.entityType) searchParams.append('entityType', filters.entityType);
+    return this.fetch(`/api/admin/audit?${searchParams.toString()}`);
+  }
+
+  async getAuditLog(id: string): Promise<{ auditLog: AuditLog }> {
+    return this.fetch(`/api/admin/audit/${id}`);
+  }
+
+  async exportAuditLogs(filters?: AuditLogFilters): Promise<Blob> {
+    const searchParams = new URLSearchParams();
+    if (filters?.dateFrom) searchParams.append('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) searchParams.append('dateTo', filters.dateTo);
+    if (filters?.userId) searchParams.append('userId', filters.userId);
+    if (filters?.studentId) searchParams.append('studentId', filters.studentId);
+    if (filters?.actionType) searchParams.append('actionType', filters.actionType);
+    if (filters?.entityType) searchParams.append('entityType', filters.entityType);
+    const response = await fetch(`${API_BASE}/api/admin/audit/export?${searchParams.toString()}`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to export audit logs');
+    }
+    return response.blob();
+  }
+
+  async getAuditActionTypes(): Promise<{ actionTypes: AuditActionTypeInfo[] }> {
+    return this.fetch('/api/admin/audit/action-types');
+  }
+
+  async getAuditEntityTypes(): Promise<{ entityTypes: AuditEntityTypeInfo[] }> {
+    return this.fetch('/api/admin/audit/entity-types');
+  }
+
+  async getAuditUsers(): Promise<{ users: AuditUser[] }> {
+    return this.fetch('/api/admin/audit/users');
+  }
 }
 
 // ============================================
@@ -2232,6 +2889,1146 @@ export interface BulkEvidenceUpdate {
     evidenceTypeId: string;
     isRequired: boolean;
   }>;
+}
+
+// ============================================
+// Referral Types
+// ============================================
+
+export type ReferralStatus = 'DRAFT' | 'SUBMITTED' | 'IN_REVIEW' | 'CONSENT_REQUESTED' | 'CONSENT_RECEIVED' | 'CONSENT_DECLINED' | 'CLOSED';
+export type ReferralType = 'IDEA_EVALUATION' | 'SECTION_504_EVALUATION' | 'BEHAVIOR_SUPPORT';
+export type ReferralSource = 'TEACHER' | 'PARENT' | 'ADMINISTRATOR' | 'STUDENT_SUPPORT_TEAM' | 'OTHER';
+
+export interface ReferralTimelineEvent {
+  id: string;
+  referralId: string;
+  eventType: string;
+  eventData: Record<string, unknown> | null;
+  description: string;
+  performedByUserId: string;
+  createdAt: string;
+  performedBy?: {
+    id: string;
+    displayName: string;
+  };
+}
+
+export interface ReferralAttachment {
+  id: string;
+  referralId: string;
+  fileUploadId: string;
+  title: string | null;
+  description: string | null;
+  attachmentType: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  fileUpload?: {
+    id: string;
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    storageKey: string;
+  };
+  createdBy?: {
+    id: string;
+    displayName: string;
+  };
+}
+
+export interface Referral {
+  id: string;
+  studentId: string;
+  referralType: ReferralType;
+  status: ReferralStatus;
+  source: ReferralSource;
+  sourceOther: string | null;
+  referredByUserId: string | null;
+  referredByName: string | null;
+  referredByEmail: string | null;
+  reasonForReferral: string;
+  areasOfConcern: string[] | null;
+  interventionsTried: string | null;
+  supportingData: string | null;
+  caseManagerId: string | null;
+  consentStatus: string | null;
+  consentRequestedAt: string | null;
+  consentReceivedAt: string | null;
+  consentDeclinedAt: string | null;
+  consentDeclineReason: string | null;
+  parentContactEmail: string | null;
+  parentContactPhone: string | null;
+  evaluationDueDate: string | null;
+  consentDueDate: string | null;
+  internalNotes: string | null;
+  submittedAt: string | null;
+  closedAt: string | null;
+  closedByUserId: string | null;
+  closedReason: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  student?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    grade?: string;
+    schoolName?: string;
+    dateOfBirth?: string;
+  };
+  caseManager?: {
+    id: string;
+    displayName: string;
+    email: string;
+  } | null;
+  referredBy?: {
+    id: string;
+    displayName: string;
+    email?: string;
+  } | null;
+  closedBy?: {
+    id: string;
+    displayName: string;
+  } | null;
+  createdBy?: {
+    id: string;
+    displayName: string;
+  };
+  attachments?: ReferralAttachment[];
+  timelineEvents?: ReferralTimelineEvent[];
+  _count?: {
+    attachments: number;
+    timelineEvents: number;
+  };
+}
+
+export interface CreateReferralData {
+  referralType: ReferralType;
+  source: ReferralSource;
+  sourceOther?: string;
+  referredByName?: string;
+  referredByEmail?: string;
+  reasonForReferral: string;
+  areasOfConcern?: string[];
+  interventionsTried?: string;
+  supportingData?: string;
+  parentContactEmail?: string;
+  parentContactPhone?: string;
+  evaluationDueDate?: string;
+  consentDueDate?: string;
+  internalNotes?: string;
+}
+
+export interface UpdateReferralData extends Partial<CreateReferralData> {
+  status?: ReferralStatus;
+  caseManagerId?: string | null;
+  closedReason?: string;
+}
+
+// ============================================
+// Evaluation Case Types
+// ============================================
+
+export type EvaluationCaseStatus = 'OPEN' | 'ASSESSMENTS_IN_PROGRESS' | 'MEETING_SCHEDULED' | 'DETERMINATION_COMPLETE' | 'CLOSED';
+export type EvaluationCaseType = 'IDEA' | 'SECTION_504';
+export type DeterminationOutcome = 'ELIGIBLE' | 'NOT_ELIGIBLE' | 'PENDING_ADDITIONAL_DATA';
+export type IDEADisabilityCategory =
+  | 'AUTISM' | 'DEAF_BLINDNESS' | 'DEAFNESS' | 'DEVELOPMENTAL_DELAY' | 'EMOTIONAL_DISTURBANCE'
+  | 'HEARING_IMPAIRMENT' | 'INTELLECTUAL_DISABILITY' | 'MULTIPLE_DISABILITIES' | 'ORTHOPEDIC_IMPAIRMENT'
+  | 'OTHER_HEALTH_IMPAIRMENT' | 'SPECIFIC_LEARNING_DISABILITY' | 'SPEECH_LANGUAGE_IMPAIRMENT'
+  | 'TRAUMATIC_BRAIN_INJURY' | 'VISUAL_IMPAIRMENT';
+export type AssessmentStatusType = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type ParticipantRole =
+  | 'PARENT' | 'GENERAL_ED_TEACHER' | 'SPECIAL_ED_TEACHER' | 'SCHOOL_PSYCHOLOGIST' | 'ADMINISTRATOR'
+  | 'SPEECH_LANGUAGE_PATHOLOGIST' | 'OCCUPATIONAL_THERAPIST' | 'PHYSICAL_THERAPIST' | 'SCHOOL_COUNSELOR'
+  | 'BEHAVIOR_SPECIALIST' | 'STUDENT' | 'OTHER';
+
+export interface EvaluationCaseTimelineEvent {
+  id: string;
+  evaluationCaseId: string;
+  eventType: string;
+  eventData: Record<string, unknown> | null;
+  description: string;
+  performedByUserId: string;
+  createdAt: string;
+  performedBy?: {
+    id: string;
+    displayName: string;
+  };
+}
+
+export interface EvaluationAssessment {
+  id: string;
+  evaluationCaseId: string;
+  assessmentType: AssessmentType;
+  assessmentName: string;
+  assessorName: string | null;
+  assessorTitle: string | null;
+  status: AssessmentStatusType;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  resultsJson: Record<string, unknown> | null;
+  resultsSummary: string | null;
+  reportFileUploadId: string | null;
+  notes: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    displayName: string;
+  };
+}
+
+export interface EvaluationParticipant {
+  id: string;
+  evaluationCaseId: string;
+  role: ParticipantRole;
+  roleOther: string | null;
+  name: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  isRequired: boolean;
+  invitedAt: string | null;
+  confirmedAt: string | null;
+  attended: boolean | null;
+  attendanceNotes: string | null;
+  userId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    displayName: string;
+    email: string;
+  } | null;
+}
+
+export interface EligibilityDetermination {
+  id: string;
+  evaluationCaseId: string;
+  isEligible: boolean;
+  determinationDate: string;
+  primaryDisabilityCategory: IDEADisabilityCategory | null;
+  secondaryDisabilities: IDEADisabilityCategory[] | null;
+  eligibilityCriteriaMet: Record<string, unknown> | null;
+  nonEligibilityReason: string | null;
+  alternativeRecommendations: string | null;
+  rationale: string;
+  parentNotifiedAt: string | null;
+  parentAgreement: 'AGREE' | 'DISAGREE' | 'PENDING' | null;
+  parentDisagreementReason: string | null;
+  resultingPlanInstanceId: string | null;
+  signatureRequestId: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    displayName: string;
+  };
+}
+
+export interface EvaluationCase {
+  id: string;
+  studentId: string;
+  referralId: string | null;
+  caseType: EvaluationCaseType;
+  status: EvaluationCaseStatus;
+  caseManagerId: string | null;
+  meetingScheduledAt: string | null;
+  meetingLocation: string | null;
+  meetingLink: string | null;
+  meetingHeldAt: string | null;
+  determinationOutcome: DeterminationOutcome | null;
+  determinationDate: string | null;
+  determinationRationale: string | null;
+  primaryDisabilityCategory: IDEADisabilityCategory | null;
+  secondaryDisabilities: IDEADisabilityCategory[] | null;
+  qualifyingImpairment: string | null;
+  nonEligibilityReason: string | null;
+  alternativeRecommendations: string | null;
+  parentNotifiedAt: string | null;
+  parentAgreement: 'AGREE' | 'DISAGREE' | 'PENDING' | null;
+  parentDisagreementReason: string | null;
+  internalNotes: string | null;
+  createdByUserId: string;
+  closedAt: string | null;
+  closedByUserId: string | null;
+  closedReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  student?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    grade?: string;
+    schoolName?: string;
+  };
+  caseManager?: {
+    id: string;
+    displayName: string;
+    email: string;
+  } | null;
+  referral?: {
+    id: string;
+    referralType: ReferralType;
+    status: ReferralStatus;
+    reasonForReferral?: string;
+  } | null;
+  createdBy?: {
+    id: string;
+    displayName: string;
+  };
+  closedBy?: {
+    id: string;
+    displayName: string;
+  } | null;
+  assessments?: EvaluationAssessment[];
+  participants?: EvaluationParticipant[];
+  determination?: EligibilityDetermination | null;
+  timelineEvents?: EvaluationCaseTimelineEvent[];
+  _count?: {
+    assessments: number;
+    participants: number;
+    timelineEvents: number;
+  };
+}
+
+export interface CreateEvaluationCaseData {
+  caseType: EvaluationCaseType;
+  referralId?: string | null;
+  caseManagerId?: string | null;
+  meetingScheduledAt?: string;
+  meetingLocation?: string;
+  meetingLink?: string;
+  internalNotes?: string;
+}
+
+export interface UpdateEvaluationCaseData extends Partial<CreateEvaluationCaseData> {
+  status?: EvaluationCaseStatus;
+  meetingHeldAt?: string;
+  determinationOutcome?: DeterminationOutcome | null;
+  determinationDate?: string;
+  determinationRationale?: string;
+  primaryDisabilityCategory?: IDEADisabilityCategory | null;
+  secondaryDisabilities?: IDEADisabilityCategory[];
+  qualifyingImpairment?: string;
+  nonEligibilityReason?: string;
+  alternativeRecommendations?: string;
+  parentNotifiedAt?: string;
+  parentAgreement?: 'AGREE' | 'DISAGREE' | 'PENDING';
+  parentDisagreementReason?: string;
+  closedReason?: string;
+}
+
+export interface CreateAssessmentData {
+  assessmentType: AssessmentType;
+  assessmentName: string;
+  assessorName?: string;
+  assessorTitle?: string;
+  scheduledAt?: string;
+  notes?: string;
+}
+
+export interface UpdateAssessmentData extends Partial<CreateAssessmentData> {
+  status?: AssessmentStatusType;
+  completedAt?: string;
+  resultsJson?: Record<string, unknown>;
+  resultsSummary?: string;
+}
+
+export interface CreateParticipantData {
+  role: ParticipantRole;
+  roleOther?: string;
+  name: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  isRequired?: boolean;
+  userId?: string | null;
+}
+
+export interface UpdateParticipantData extends Partial<CreateParticipantData> {
+  invitedAt?: string;
+  confirmedAt?: string;
+  attended?: boolean | null;
+  attendanceNotes?: string;
+}
+
+export interface CreateDeterminationData {
+  isEligible: boolean;
+  determinationDate: string;
+  rationale: string;
+  primaryDisabilityCategory?: IDEADisabilityCategory | null;
+  secondaryDisabilities?: IDEADisabilityCategory[];
+  eligibilityCriteriaMet?: Record<string, unknown>;
+  nonEligibilityReason?: string;
+  alternativeRecommendations?: string;
+}
+
+// ============================================
+// PLAN VERSIONING TYPES
+// ============================================
+
+export type PlanVersionStatus = 'FINAL' | 'DISTRIBUTED' | 'SUPERSEDED';
+
+export interface PlanVersion {
+  id: string;
+  planInstanceId: string;
+  versionNumber: number;
+  status: PlanVersionStatus;
+  snapshotJson: Record<string, unknown>;
+  finalizedAt: string;
+  finalizedByUserId: string;
+  distributedAt?: string | null;
+  distributedByUserId?: string | null;
+  versionNotes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  finalizedBy?: { id: string; displayName: string };
+  distributedBy?: { id: string; displayName: string } | null;
+  exports?: PlanExport[];
+  signaturePacket?: SignaturePacket | null;
+  decisions?: DecisionLedgerEntry[];
+  planInstance?: {
+    id: string;
+    student: { id: string; firstName: string; lastName: string };
+    planType: { code: string; name: string };
+  };
+}
+
+export interface PlanExport {
+  id: string;
+  planVersionId: string;
+  format: string;
+  fileName: string;
+  storageKey: string;
+  mimeType: string;
+  fileSizeBytes?: number | null;
+  exportedAt: string;
+  exportedByUserId: string;
+  exportedBy?: { id: string; displayName: string };
+}
+
+export interface FinalizePlanData {
+  versionNotes?: string;
+  decisions?: {
+    decisionType: DecisionType;
+    summary: string;
+    rationale: string;
+    optionsConsidered?: string;
+    participants?: string;
+  }[];
+  createSignaturePacket?: boolean;
+  requiredSignatureRoles?: SignatureRole[];
+}
+
+export interface FinalizePlanResponse {
+  version: PlanVersion;
+  signaturePacket: SignaturePacket | null;
+  message: string;
+}
+
+// ============================================
+// DECISION LEDGER TYPES
+// ============================================
+
+export type DecisionType =
+  | 'ELIGIBILITY_CATEGORY'
+  | 'PLACEMENT_LRE'
+  | 'SERVICES_CHANGE'
+  | 'GOALS_CHANGE'
+  | 'ACCOMMODATIONS_CHANGE'
+  | 'ESY_DECISION'
+  | 'ASSESSMENT_PARTICIPATION'
+  | 'BEHAVIOR_SUPPORTS'
+  | 'TRANSITION_SERVICES'
+  | 'OTHER';
+
+export type DecisionStatus = 'ACTIVE' | 'VOID';
+
+export interface DecisionLedgerEntry {
+  id: string;
+  planInstanceId: string;
+  planVersionId?: string | null;
+  meetingId?: string | null;
+  decisionType: DecisionType;
+  sectionKey?: string | null;
+  summary: string;
+  rationale: string;
+  optionsConsidered?: string | null;
+  participants?: string | null;
+  decidedAt: string;
+  decidedByUserId: string;
+  status: DecisionStatus;
+  voidedAt?: string | null;
+  voidedByUserId?: string | null;
+  voidReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  decidedBy?: { id: string; displayName: string };
+  voidedBy?: { id: string; displayName: string } | null;
+  planVersion?: { id: string; versionNumber: number; finalizedAt?: string } | null;
+  meeting?: {
+    id: string;
+    scheduledAt: string;
+    heldAt?: string | null;
+    meetingType?: { name: string };
+  } | null;
+  planInstance?: {
+    id: string;
+    student: { id: string; firstName: string; lastName: string };
+    planType: { code: string; name: string };
+  };
+}
+
+export interface DecisionTypeInfo {
+  value: DecisionType;
+  label: string;
+  description: string;
+}
+
+export interface CreateDecisionData {
+  decisionType: DecisionType;
+  sectionKey?: string;
+  summary: string;
+  rationale: string;
+  optionsConsidered?: string;
+  participants?: string;
+  meetingId?: string;
+  planVersionId?: string;
+  decidedAt?: string;
+}
+
+export interface VoidDecisionData {
+  voidReason: string;
+}
+
+// ============================================
+// SIGNATURE TYPES
+// ============================================
+
+export type SignaturePacketStatus = 'OPEN' | 'COMPLETE' | 'EXPIRED';
+
+export type SignatureRole =
+  | 'PARENT_GUARDIAN'
+  | 'CASE_MANAGER'
+  | 'SPECIAL_ED_TEACHER'
+  | 'GENERAL_ED_TEACHER'
+  | 'RELATED_SERVICE_PROVIDER'
+  | 'ADMINISTRATOR'
+  | 'STUDENT'
+  | 'OTHER';
+
+export type SignatureMethod = 'ELECTRONIC' | 'IN_PERSON' | 'PAPER_RETURNED';
+
+export type SignatureStatus = 'PENDING' | 'SIGNED' | 'DECLINED';
+
+export interface SignaturePacket {
+  id: string;
+  planVersionId: string;
+  status: SignaturePacketStatus;
+  requiredRoles: SignatureRole[];
+  expiresAt?: string | null;
+  completedAt?: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  signatures?: SignatureRecord[];
+  createdBy?: { id: string; displayName: string };
+  planVersion?: {
+    id: string;
+    versionNumber: number;
+    planInstance?: {
+      student: { firstName: string; lastName: string };
+      planType: { name: string };
+    };
+  };
+}
+
+export interface SignatureRecord {
+  id: string;
+  packetId: string;
+  role: SignatureRole;
+  signerUserId?: string | null;
+  signerName: string;
+  signerEmail?: string | null;
+  signerTitle?: string | null;
+  method?: SignatureMethod | null;
+  status: SignatureStatus;
+  signedAt?: string | null;
+  attestationText?: string | null;
+  ipAddress?: string | null;
+  declinedAt?: string | null;
+  declineReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  signerUser?: { id: string; displayName: string } | null;
+}
+
+export interface SignatureRoleInfo {
+  value: SignatureRole;
+  label: string;
+}
+
+export interface CreateSignaturePacketData {
+  requiredRoles: SignatureRole[];
+  expiresAt?: string;
+  signers?: {
+    role: SignatureRole;
+    signerName: string;
+    signerEmail?: string;
+    signerTitle?: string;
+    signerUserId?: string;
+  }[];
+}
+
+export interface SignDocumentData {
+  signatureRecordId: string;
+  method: SignatureMethod;
+  signerName: string;
+  attestation?: boolean;
+}
+
+export interface DeclineSignatureData {
+  signatureRecordId: string;
+  declineReason: string;
+}
+
+export interface AddSignatureRecordData {
+  role: SignatureRole;
+  signerName: string;
+  signerEmail?: string;
+  signerTitle?: string;
+  signerUserId?: string;
+}
+
+// ============================================
+// MEETING TYPES (for Decision linking)
+// ============================================
+
+export type MeetingStatus = 'SCHEDULED' | 'HELD' | 'CLOSED' | 'CANCELLED';
+
+export interface PlanMeeting {
+  id: string;
+  studentId: string;
+  planType: string;
+  planInstanceId?: string | null;
+  meetingTypeId: string;
+  status: MeetingStatus;
+  scheduledAt: string;
+  heldAt?: string | null;
+  closedAt?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  location?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  meetingType?: MeetingType;
+  planInstance?: {
+    id: string;
+    planType?: { code: string; name: string };
+  };
+}
+
+// ============================================
+// SCHEDULED SERVICES TYPES
+// ============================================
+
+export type ScheduledServiceStatus = 'ACTIVE' | 'INACTIVE';
+
+export interface ScheduledServiceItem {
+  id: string;
+  serviceType: ServiceType;
+  expectedMinutesPerWeek: number;
+  startDate: string;
+  endDate?: string | null;
+  providerRole?: string | null;
+  location?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduledServicePlan {
+  id: string;
+  status: ScheduledServiceStatus;
+  planInstanceId: string;
+  createdAt: string;
+  updatedAt: string;
+  items: ScheduledServiceItem[];
+  createdBy?: { id: string; displayName: string };
+  updatedBy?: { id: string; displayName: string } | null;
+}
+
+export interface CreateScheduledServiceItem {
+  serviceType: ServiceType;
+  expectedMinutesPerWeek: number;
+  startDate: string;
+  endDate?: string | null;
+  providerRole?: string | null;
+  location?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateScheduledServicePlanData {
+  items: CreateScheduledServiceItem[];
+}
+
+export interface UpdateScheduledServicePlanData {
+  status?: ScheduledServiceStatus;
+  items?: CreateScheduledServiceItem[];
+}
+
+export interface ServiceVarianceByType {
+  serviceType: ServiceType;
+  expectedMinutes: number;
+  deliveredMinutes: number;
+  varianceMinutes: number;
+  missedSessions: number;
+}
+
+export interface ServiceVarianceWeek {
+  weekOf: string;
+  weekEnd: string;
+  byServiceType: ServiceVarianceByType[];
+  totalExpected: number;
+  totalDelivered: number;
+  totalVariance: number;
+}
+
+export interface ServiceVarianceReport {
+  variance: ServiceVarianceWeek[];
+  summary: {
+    totalExpected: number;
+    totalDelivered: number;
+    totalVariance: number;
+  };
+}
+
+// ============================================
+// ADMIN DASHBOARD STATS TYPES
+// ============================================
+
+export interface VersionStatsVersionItem {
+  id: string;
+  versionNumber: number;
+  finalizedAt: string;
+  planInstance: {
+    id: string;
+    student: { id: string; firstName: string; lastName: string };
+    planType: { name: string };
+  };
+  signaturePacket?: {
+    status: string;
+    signatures: Array<{ role: string; status: string }>;
+  };
+}
+
+export interface VoidedDecisionItem {
+  id: string;
+  decisionType: DecisionType;
+  summary: string;
+  voidedAt: string;
+  voidReason: string;
+  planInstance: {
+    id: string;
+    student: { id: string; firstName: string; lastName: string };
+  };
+  voidedBy: { displayName: string };
+}
+
+export interface VersionStatsResponse {
+  summary: {
+    totalVersions: number;
+    finalVersions: number;
+    distributedVersions: number;
+    totalDecisions: number;
+    voidedDecisions: number;
+    pendingSignatures: number;
+  };
+  versionsMissingCmSignature: VersionStatsVersionItem[];
+  versionsNotDistributed: VersionStatsVersionItem[];
+  decisionsVoidedRecently: VoidedDecisionItem[];
+}
+
+// ============================================
+// REVIEW SCHEDULE TYPES
+// ============================================
+
+export type ScheduleType = 'IEP_ANNUAL_REVIEW' | 'IEP_REEVALUATION' | 'PLAN_AMENDMENT_REVIEW' | 'SECTION504_PERIODIC_REVIEW' | 'BIP_REVIEW';
+export type ReviewScheduleStatus = 'OPEN' | 'COMPLETE' | 'OVERDUE';
+
+export interface ReviewSchedule {
+  id: string;
+  planInstanceId: string;
+  scheduleType: ScheduleType;
+  dueDate: string;
+  leadDays: number;
+  status: ReviewScheduleStatus;
+  notes?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: { id: string; displayName: string; email?: string } | null;
+  createdBy?: { id: string; displayName: string };
+  completedBy?: { id: string; displayName: string } | null;
+  planInstance?: {
+    id: string;
+    student: { id: string; firstName: string; lastName: string };
+    planType: { code: string; name: string };
+  };
+  complianceTasks?: ComplianceTask[];
+}
+
+export interface CreateReviewScheduleData {
+  scheduleType: ScheduleType;
+  dueDate: string;
+  leadDays?: number;
+  notes?: string;
+  assignedToUserId?: string;
+}
+
+export interface UpdateReviewScheduleData {
+  dueDate?: string;
+  leadDays?: number;
+  notes?: string;
+  assignedToUserId?: string | null;
+}
+
+export interface ScheduleTypeInfo {
+  value: ScheduleType;
+  label: string;
+  description: string;
+}
+
+// ============================================
+// COMPLIANCE TASK TYPES
+// ============================================
+
+export type ComplianceTaskType = 'REVIEW_DUE_SOON' | 'REVIEW_OVERDUE' | 'DOCUMENT_REQUIRED' | 'SIGNATURE_NEEDED' | 'MEETING_REQUIRED';
+export type ComplianceTaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETE' | 'DISMISSED';
+
+export interface ComplianceTask {
+  id: string;
+  taskType: ComplianceTaskType;
+  status: ComplianceTaskStatus;
+  title: string;
+  description?: string | null;
+  dueDate?: string | null;
+  priority: number;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: { id: string; displayName: string; email?: string } | null;
+  createdBy?: { id: string; displayName: string };
+  completedBy?: { id: string; displayName: string } | null;
+  student?: { id: string; firstName: string; lastName: string } | null;
+  planInstance?: {
+    id: string;
+    planType: { code: string; name: string };
+  } | null;
+  reviewSchedule?: {
+    id: string;
+    scheduleType: ScheduleType;
+    dueDate: string;
+    status?: ReviewScheduleStatus;
+  } | null;
+}
+
+export interface CreateComplianceTaskData {
+  taskType: ComplianceTaskType;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  priority?: number;
+  assignedToUserId?: string;
+  reviewScheduleId?: string;
+  planInstanceId?: string;
+  studentId?: string;
+}
+
+export interface UpdateComplianceTaskData {
+  title?: string;
+  description?: string;
+  dueDate?: string | null;
+  priority?: number;
+  status?: ComplianceTaskStatus;
+  assignedToUserId?: string | null;
+}
+
+export interface TaskTypeInfo {
+  value: ComplianceTaskType;
+  label: string;
+  description: string;
+}
+
+export interface ComplianceDashboard {
+  summary: {
+    open: number;
+    inProgress: number;
+    overdue: number;
+    dueIn30Days: number;
+  };
+  recentTasks: ComplianceTask[];
+}
+
+export interface ReviewDashboard {
+  overdue: ReviewSchedule[];
+  upcoming: ReviewSchedule[];
+  summary: {
+    overdueCount: number;
+    upcomingCount: number;
+    totalDueWithin30Days: number;
+  };
+}
+
+// ============================================
+// DISPUTE CASE TYPES
+// ============================================
+
+export type DisputeCaseType = 'SECTION504_COMPLAINT' | 'IEP_DISPUTE' | 'RECORDS_REQUEST' | 'OTHER';
+export type DisputeCaseStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'CLOSED';
+export type DisputeEventType = 'INTAKE' | 'MEETING' | 'RESPONSE_SENT' | 'DOCUMENT_RECEIVED' | 'RESOLUTION' | 'STATUS_CHANGE' | 'NOTE';
+
+export interface DisputeCase {
+  id: string;
+  caseNumber: string;
+  studentId: string;
+  planInstanceId?: string | null;
+  caseType: DisputeCaseType;
+  status: DisputeCaseStatus;
+  summary: string;
+  filedDate: string;
+  externalReference?: string | null;
+  resolutionSummary?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  student?: { id: string; firstName: string; lastName: string; stateStudentId?: string };
+  planInstance?: {
+    id: string;
+    planType: { code: string; name: string };
+    startDate?: string;
+    endDate?: string | null;
+  } | null;
+  assignedTo?: { id: string; displayName: string; email?: string } | null;
+  createdBy?: { id: string; displayName: string };
+  resolvedBy?: { id: string; displayName: string } | null;
+  events?: DisputeEvent[];
+  attachments?: DisputeAttachment[];
+  _count?: { events: number; attachments: number };
+}
+
+export interface DisputeEvent {
+  id: string;
+  disputeCaseId: string;
+  eventType: DisputeEventType;
+  eventDate: string;
+  summary: string;
+  details?: string | null;
+  createdAt: string;
+  createdBy?: { id: string; displayName: string };
+}
+
+export interface DisputeAttachment {
+  id: string;
+  disputeCaseId: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  description?: string | null;
+  uploadedAt: string;
+  uploadedBy?: { id: string; displayName: string };
+}
+
+export interface CreateDisputeData {
+  caseType: DisputeCaseType;
+  planInstanceId?: string;
+  summary: string;
+  filedDate?: string;
+  externalReference?: string;
+  assignedToUserId?: string;
+}
+
+export interface UpdateDisputeData {
+  summary?: string;
+  status?: DisputeCaseStatus;
+  externalReference?: string;
+  assignedToUserId?: string | null;
+  resolutionSummary?: string;
+}
+
+export interface CreateDisputeEventData {
+  eventType: DisputeEventType;
+  eventDate?: string;
+  summary: string;
+  details?: string;
+}
+
+export interface CreateDisputeAttachmentData {
+  fileName: string;
+  fileUrl: string;
+  mimeType?: string;
+  fileSize?: number;
+  description?: string;
+}
+
+export interface DisputeCaseTypeInfo {
+  value: DisputeCaseType;
+  label: string;
+  description: string;
+}
+
+export interface DisputeEventTypeInfo {
+  value: DisputeEventType;
+  label: string;
+  description: string;
+}
+
+export interface DisputeDashboard {
+  summary: {
+    open: number;
+    inReview: number;
+    resolved: number;
+    closed: number;
+    active: number;
+  };
+  recentCases: DisputeCase[];
+}
+
+// ============================================
+// IN-APP ALERT TYPES
+// ============================================
+
+export type AlertType = 'REVIEW_DUE_SOON' | 'REVIEW_OVERDUE' | 'COMPLIANCE_TASK' | 'SIGNATURE_REQUESTED' | 'MEETING_SCHEDULED' | 'DOCUMENT_UPLOADED' | 'GENERAL';
+
+export interface InAppAlert {
+  id: string;
+  userId: string;
+  alertType: AlertType;
+  title: string;
+  message: string;
+  linkUrl?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  relatedEntityType?: string | null;
+  relatedEntityId?: string | null;
+  createdAt: string;
+}
+
+export interface CreateAlertData {
+  userId: string;
+  alertType: AlertType;
+  title: string;
+  message: string;
+  linkUrl?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+}
+
+export interface BulkCreateAlertData {
+  userIds: string[];
+  alertType: AlertType;
+  title: string;
+  message: string;
+  linkUrl?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+}
+
+export interface AlertTypeInfo {
+  value: AlertType;
+  label: string;
+  description: string;
+}
+
+// ============================================
+// AUDIT LOG TYPES
+// ============================================
+
+export type AuditActionType =
+  | 'PLAN_VIEWED'
+  | 'PLAN_UPDATED'
+  | 'PLAN_FINALIZED'
+  | 'PDF_EXPORTED'
+  | 'PDF_DOWNLOADED'
+  | 'SIGNATURE_ADDED'
+  | 'REVIEW_SCHEDULE_CREATED'
+  | 'CASE_VIEWED'
+  | 'CASE_EXPORTED'
+  | 'PERMISSION_DENIED';
+
+export type AuditEntityType =
+  | 'PLAN'
+  | 'PLAN_VERSION'
+  | 'PLAN_EXPORT'
+  | 'STUDENT'
+  | 'GOAL'
+  | 'SERVICE'
+  | 'REVIEW_SCHEDULE'
+  | 'COMPLIANCE_TASK'
+  | 'DISPUTE_CASE'
+  | 'SIGNATURE_PACKET'
+  | 'MEETING';
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  actionType: AuditActionType;
+  entityType: AuditEntityType;
+  entityId: string;
+  studentId?: string | null;
+  planId?: string | null;
+  planVersionId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  actor: {
+    id: string;
+    displayName: string;
+    email: string;
+    role?: string;
+  };
+  student?: {
+    id: string;
+    recordId: string;
+    name: string;
+  } | null;
+  plan?: {
+    id: string;
+    planTypeCode: string;
+    planTypeName: string;
+    status: string;
+  } | null;
+}
+
+export interface AuditLogFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  userId?: string;
+  studentId?: string;
+  actionType?: AuditActionType;
+  entityType?: AuditEntityType;
+}
+
+export interface AuditActionTypeInfo {
+  value: AuditActionType;
+  label: string;
+}
+
+export interface AuditEntityTypeInfo {
+  value: AuditEntityType;
+  label: string;
+}
+
+export interface AuditUser {
+  id: string;
+  displayName: string;
+  email: string;
 }
 
 export const api = new ApiClient();

@@ -142,6 +142,28 @@ const resource = await prisma.resource.findFirst({
 | BehaviorEvent | Behavior occurrence tracking |
 | ArtifactComparison | AI-powered document comparison |
 
+### Review & Compliance Models
+
+| Model | Description |
+|-------|-------------|
+| ReviewSchedule | Plan review scheduling and notifications |
+| ComplianceTask | Compliance action items with assignments |
+| InAppAlert | In-app alert notifications |
+
+### Dispute Case Models
+
+| Model | Description |
+|-------|-------------|
+| DisputeCase | Dispute/complaint case tracking |
+| DisputeEvent | Case timeline events |
+| DisputeAttachment | Case document attachments |
+
+### Audit Models
+
+| Model | Description |
+|-------|-------------|
+| AuditLog | Immutable audit trail for sensitive actions |
+
 ---
 
 ## API Routes
@@ -243,6 +265,58 @@ const resource = await prisma.resource.findFirst({
 | PATCH | /api/admin/schemas/:id | Update schema |
 | POST | /api/admin/schemas/:id/fields | Add field to schema |
 
+### Dispute Cases (`/api/disputes`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/students/:studentId/disputes | List disputes for student |
+| POST | /api/students/:studentId/disputes | Create new dispute case |
+| GET | /api/disputes/:caseId | Get dispute case details |
+| PATCH | /api/disputes/:caseId | Update dispute case |
+| GET | /api/disputes/:caseId/events | List case events |
+| POST | /api/disputes/:caseId/events | Add event to case timeline |
+| GET | /api/disputes/:caseId/attachments | List attachments |
+| POST | /api/disputes/:caseId/attachments | Add attachment |
+| GET | /api/case-types | List case types |
+| GET | /api/event-types | List event types |
+
+### Audit Log (`/api/admin/audit`) - ADMIN Only
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/admin/audit | List audit logs (paginated) |
+| GET | /api/admin/audit/:id | Get single audit log with details |
+| GET | /api/admin/audit/export | Export CSV (max 10,000 records) |
+| GET | /api/admin/audit/action-types | List action types for filter |
+| GET | /api/admin/audit/entity-types | List entity types for filter |
+| GET | /api/admin/audit/users | List users with audit entries |
+
+### Review Schedules (`/api/review-schedules`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/plans/:planId/review-schedules | List schedules for plan |
+| POST | /api/plans/:planId/review-schedules | Create review schedule |
+| PATCH | /api/review-schedules/:id | Update schedule |
+| DELETE | /api/review-schedules/:id | Delete schedule |
+
+### Compliance Tasks (`/api/compliance-tasks`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/compliance-tasks | List tasks (optionally by user) |
+| POST | /api/compliance-tasks | Create task |
+| PATCH | /api/compliance-tasks/:id | Update task |
+| DELETE | /api/compliance-tasks/:id | Delete task |
+
+### In-App Alerts (`/api/alerts`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/alerts | Get user's alerts (unread or all) |
+| PATCH | /api/alerts/:id/read | Mark alert as read |
+| PATCH | /api/alerts/read-all | Mark all alerts as read |
+
 ### Services (`/api/services`)
 
 | Method | Endpoint | Description |
@@ -312,6 +386,17 @@ const resource = await prisma.resource.findFirst({
 | `/admin/rules/wizard` | Rule setup wizard |
 | `/admin/documents/best-practice` | Best practice documents |
 | `/admin/documents/templates` | Form templates |
+| `/admin/audit` | Audit log viewer |
+| `/admin/versions` | Version & Signature Dashboard |
+
+### Case Manager/Admin Pages
+
+| Path | Description |
+|------|-------------|
+| `/students/[id]/cases` | Dispute cases list |
+| `/students/[id]/cases/[caseId]` | Case detail with timeline |
+| `/students/[id]/referrals` | Student referrals |
+| `/students/[id]/evaluation-cases` | Evaluation cases |
 
 ---
 
@@ -395,6 +480,86 @@ SQL queries for compliance reporting:
 - Progress entry trends
 - Students requiring immediate attention
 - Goal area compliance breakdown
+
+### 9. Dispute Case Management
+
+Track and manage disputes, complaints, and resolution processes:
+
+**Case Types:**
+- SECTION504_COMPLAINT - 504 Plan related complaints
+- IEP_DISPUTE - IEP-related disputes
+- RECORDS_REQUEST - Educational records requests
+- OTHER - Other case types
+
+**Case Statuses:**
+- OPEN - Newly created and active
+- IN_REVIEW - Under review
+- RESOLVED - Resolution reached
+- CLOSED - Case closed
+
+**Timeline Events:**
+- INTAKE - Initial intake
+- MEETING - Meeting held
+- RESPONSE_SENT - Response to parent/guardian
+- DOCUMENT_RECEIVED - Document received
+- RESOLUTION - Resolution reached
+- STATUS_CHANGE - Status changed
+- NOTE - General note
+
+**Access Control:** ADMIN and CASE_MANAGER roles only.
+
+### 10. Audit Log System
+
+Immutable audit trail for sensitive actions:
+
+**Audited Actions:**
+| Action Type | Description |
+|-------------|-------------|
+| PLAN_VIEWED | User viewed a plan (session-deduplicated) |
+| PLAN_UPDATED | User updated plan data |
+| PLAN_FINALIZED | Plan version was finalized |
+| PDF_EXPORTED | PDF export generated |
+| PDF_DOWNLOADED | PDF export downloaded |
+| SIGNATURE_ADDED | Signature added to document |
+| REVIEW_SCHEDULE_CREATED | Review schedule created |
+| CASE_VIEWED | Dispute case viewed |
+| CASE_EXPORTED | Dispute case exported |
+| PERMISSION_DENIED | Access denied |
+
+**Entity Types:** PLAN, PLAN_VERSION, PLAN_EXPORT, STUDENT, GOAL, SERVICE, REVIEW_SCHEDULE, COMPLIANCE_TASK, DISPUTE_CASE, SIGNATURE_PACKET, MEETING
+
+**Features:**
+- Filter by date range, user, student, action type, entity type
+- CSV export (max 10,000 records)
+- Detail drawer with metadata, IP address, user agent
+- Session-based deduplication for PLAN_VIEWED
+
+**Access Control:** ADMIN only.
+
+### 11. Review Scheduling
+
+Schedule and track plan reviews:
+- Create review schedules with specific dates
+- Track review completion
+- Automated notifications via alerts
+- Link to compliance tasks
+
+### 12. Compliance Tasks
+
+Track compliance action items:
+- Create tasks with due dates
+- Assign to users
+- Track status (pending, in_progress, completed)
+- Link to students and plans
+- Priority levels
+
+### 13. In-App Alerts
+
+Notification system for important events:
+- Unread alert count (bell icon)
+- Mark as read/unread
+- Alert types: REVIEW_DUE, COMPLIANCE_OVERDUE, CASE_UPDATE, MEETING_REMINDER
+- User-specific targeting
 
 ---
 
@@ -612,3 +777,5 @@ return [{
 | 1.0 | 2024-12 | Initial release |
 | 1.1 | 2024-12 | Rules engine, Goal wizard |
 | 1.2 | 2024-12 | Rules setup wizard, Looker integration |
+| 1.3 | 2024-12 | Review scheduling, Compliance tasks, In-app alerts |
+| 1.4 | 2024-12 | Dispute cases, Audit log system |

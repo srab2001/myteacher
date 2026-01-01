@@ -38,6 +38,7 @@ export default function AdminRulesPage() {
   // Data state
   const [rulePacks, setRulePacks] = useState<RulePack[]>([]);
   const [ruleDefinitions, setRuleDefinitions] = useState<RuleDefinition[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [evidenceTypes, setEvidenceTypes] = useState<RuleEvidenceType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
