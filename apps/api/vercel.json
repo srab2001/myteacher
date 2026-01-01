@@ -5,14 +5,7 @@
   "builds": [
     {
       "src": "api/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "prisma/generated/**",
-          "prisma/schema.prisma",
-          "prisma/migrations/**"
-        ]
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [

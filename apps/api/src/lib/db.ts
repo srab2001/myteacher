@@ -1,5 +1,5 @@
-// Import from local generated folder for reliable serverless bundling
-import { PrismaClient, Prisma } from '../../prisma/generated/client/index.js';
+// Import from @prisma/client (standard Vercel-compatible approach)
+import { PrismaClient, Prisma } from '@prisma/client';
 
 // Global prisma client for serverless
 const globalForPrisma = globalThis as unknown as {
