@@ -1,6 +1,6 @@
 // Vercel Serverless Function Entry Point
 // @ts-nocheck - Skip type checking for this entry point
-// Force rebuild: 2025-12-29
+// Force rebuild: 2026-01-01 - Fixed Prisma client import
 import { createApp } from '../src/app.js';
 
 const app = createApp();
