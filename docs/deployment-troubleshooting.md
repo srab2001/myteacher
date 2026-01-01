@@ -1,0 +1,357 @@
+# Deployment Troubleshooting Guide
+
+This document covers common deployment issues, their root causes, and solutions based on real problems encountered.
+
+## Table of Contents
+
+- [Database Schema Issues](#database-schema-issues)
+- [Vercel Deployment Issues](#vercel-deployment-issues)
+- [Prisma Migration Issues](#prisma-migration-issues)
+- [API Errors](#api-errors)
+- [Lessons Learned](#lessons-learned)
+
+---
+
+## Database Schema Issues
+
+### Error: "The column X does not exist in the current database"
+
+**Symptom:**
+```
+PrismaClientKnownRequestError: The column `Goal.templateSourceId` does not exist in the current database.
+```
+
+**Cause:**
+Migration was marked as applied (in `_prisma_migrations` table) but the actual SQL didn't execute. This happens when using `prisma migrate resolve --applied` to baseline migrations.
+
+**Solution:**
+1. Check if column exists:
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'Goal' AND column_name = 'templateSourceId';
+```
+
+2. Manually add the missing column:
+```sql
+ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "templateSourceId" TEXT;
+```
+
+3. Or run via Prisma:
+```typescript
+await prisma.$executeRaw`ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "templateSourceId" TEXT`;
+```
+
+**Prevention:**
+- Avoid using `prisma migrate resolve --applied` unless you're certain the migration SQL has already been run
+- Use `prisma migrate deploy` for production deployments
+- Test migrations locally before deploying
+
+---
+
+### Error: "Cannot execute ALTER TABLE on table with data"
+
+**Symptom:**
+```
+Error: Changed the type of `valueEditableBy` on the `FormFieldDefinition` table.
+No cast exists, the column would be dropped and recreated.
+```
+
+**Cause:**
+`prisma db push` tries to modify columns with existing data in ways that require dropping and recreating them.
+
+**Solution:**
+1. Use migrations instead of `db push`:
+```json
+// vercel.json - WRONG
+"installCommand": "... prisma db push --accept-data-loss ..."
+
+// vercel.json - CORRECT
+"installCommand": "... prisma migrate deploy ..."
+```
+
+2. Create explicit migrations for schema changes
+
+**Prevention:**
+- Always use `prisma migrate deploy` in production
+- Never use `db push` in production environments
+
+---
+
+## Vercel Deployment Issues
+
+### Build Cache Causing Stale Prisma Client
+
+**Symptom:**
+- API returns 500 errors
+- Prisma client references fields that don't exist or are outdated
+- Works locally but fails on Vercel
+
+**Solution:**
+1. Redeploy without cache:
+   - Go to Vercel Dashboard → Deployments
+   - Click latest deployment → "..." menu → Redeploy
+   - **Uncheck** "Use existing Build Cache"
+   - Click Redeploy
+
+2. Force rebuild by changing a file:
+```typescript
+// api/index.ts
+// Force rebuild: YYYY-MM-DD
+```
+
+---
+
+### Missing Files in Serverless Function
+
+**Symptom:**
+- `prisma migrate deploy` fails with "No migrations found"
+- Schema file not found errors
+
+**Cause:**
+Vercel's serverless bundler doesn't include all necessary files.
+
+**Solution:**
+Add files to `includeFiles` in vercel.json:
+```json
+{
+  "builds": [{
+    "src": "api/index.ts",
+    "use": "@vercel/node",
+    "config": {
+      "includeFiles": [
+        "prisma/generated/**",
+        "prisma/schema.prisma",
+        "prisma/migrations/**"
+      ]
+    }
+  }]
+}
+```
+
+---
+
+### Root Directory Configuration
+
+**Symptom:**
+- Build can't find files
+- Wrong package.json being used
+
+**Solution:**
+1. Set correct root directory in Vercel project settings:
+   - API project: `apps/api`
+   - Web project: `apps/web`
+
+2. Enable "Include source files outside of the Root Directory" if using monorepo with shared packages
+
+---
+
+## Prisma Migration Issues
+
+### Migrations Out of Sync Between Directories
+
+**Symptom:**
+- `packages/db/prisma/migrations/` has different migrations than `apps/api/prisma/migrations/`
+- Deploy fails because migrations don't match database state
+
+**Solution:**
+1. Sync migrations:
+```bash
+rm -rf apps/api/prisma/migrations
+cp -r packages/db/prisma/migrations apps/api/prisma/
+```
+
+2. Commit and push:
+```bash
+git add apps/api/prisma/migrations/
+git commit -m "Sync migrations from packages/db"
+```
+
+**Prevention:**
+- Keep migrations in one canonical location (packages/db)
+- Use a script to sync migrations before deployment
+- Or configure apps/api to reference packages/db migrations
+
+---
+
+### Migration Marked Applied But Not Executed
+
+**Symptom:**
+- `prisma migrate status` shows "Database schema is up to date"
+- But queries fail with "column does not exist"
+
+**Cause:**
+Used `prisma migrate resolve --applied <migration_name>` to mark migration as complete without actually running the SQL.
+
+**Solution:**
+1. Identify missing changes by reading the migration SQL file
+2. Manually execute the missing SQL statements
+3. Verify columns/tables exist:
+```sql
+SELECT column_name FROM information_schema.columns WHERE table_name = 'YourTable';
+```
+
+---
+
+## API Errors
+
+### 500 Error: "Plan not found" (Actually Schema Mismatch)
+
+**Symptom:**
+- Frontend shows "Plan not found"
+- Console shows 500 error (not 404)
+- Vercel logs show Prisma error about missing column
+
+**Cause:**
+The error message "Failed to fetch plan" is generic - the actual cause is a Prisma schema mismatch.
+
+**Diagnosis:**
+1. Check Vercel Function Logs (Deployments → click deployment → Functions tab)
+2. Look for actual Prisma error in logs
+3. Common causes:
+   - Missing database column
+   - Schema not regenerated after changes
+   - Cached Prisma client
+
+**Solution:**
+1. Fix database schema (add missing columns)
+2. Regenerate Prisma client
+3. Redeploy without cache
+
+---
+
+### 404 Error: "Student not found"
+
+**Symptom:**
+- API returns 404 for student endpoints
+- Student exists in database
+
+**Possible Causes:**
+1. Wrong student ID (check full UUID)
+2. User doesn't have access to student (permission issue)
+3. Student's jurisdiction doesn't match user's jurisdiction
+
+**Diagnosis:**
+```typescript
+// Check student exists
+const student = await prisma.student.findUnique({ where: { id: studentId } });
+
+// Check user has access
+const hasAccess = await canAccessStudent(userId, studentId);
+```
+
+---
+
+### Seed Script Failures
+
+**Symptom:**
+```
+TypeError: Cannot read properties of undefined (reading 'count')
+```
+
+**Cause:**
+Seed script references models that don't exist in current schema.
+
+**Solution:**
+Update seed script to match current schema:
+```typescript
+// OLD - references non-existent State model
+const stateCount = await prisma.state.count();
+
+// NEW - use models that exist
+const jurisdictionCount = await prisma.jurisdiction.count();
+```
+
+---
+
+## Lessons Learned
+
+### 1. Never Use `db push` in Production
+
+**Problem:** `prisma db push` was used in vercel.json, causing schema sync issues with existing data.
+
+**Solution:** Always use `prisma migrate deploy` for production.
+
+```json
+// WRONG
+"installCommand": "... prisma db push --accept-data-loss ..."
+
+// CORRECT
+"installCommand": "... prisma migrate deploy ..."
+```
+
+### 2. Keep Migrations Synchronized
+
+**Problem:** `apps/api/prisma/migrations/` had different migrations than `packages/db/prisma/migrations/`.
+
+**Solution:**
+- Copy migrations: `cp -r packages/db/prisma/migrations apps/api/prisma/`
+- Commit both directories
+- Consider having a single source of truth
+
+### 3. Check Actual Error in Vercel Logs
+
+**Problem:** Frontend showed generic "Plan not found" but actual error was database schema mismatch.
+
+**Solution:** Always check Vercel Function Logs for the real error message, not just the HTTP status code.
+
+### 4. Vercel Build Cache Can Cause Issues
+
+**Problem:** Stale Prisma client cached from previous build.
+
+**Solution:** Redeploy without build cache when debugging Prisma issues.
+
+### 5. Migration Resolve Doesn't Execute SQL
+
+**Problem:** Using `prisma migrate resolve --applied` marks migration as done but doesn't run the SQL.
+
+**Solution:**
+- Only use `resolve` when you've manually run the SQL
+- For fresh deployments, use `migrate deploy`
+- If columns are missing, add them manually
+
+### 6. Include Migrations in Vercel Build
+
+**Problem:** Migrations folder wasn't included in serverless function bundle.
+
+**Solution:**
+```json
+"includeFiles": [
+  "prisma/generated/**",
+  "prisma/schema.prisma",
+  "prisma/migrations/**"
+]
+```
+
+### 7. Test Database Connectivity Before Assuming Code Issues
+
+**Problem:** Assumed code bug when actual issue was database schema state.
+
+**Solution:**
+```bash
+# Check migration status
+prisma migrate status
+
+# Check actual columns
+SELECT column_name FROM information_schema.columns WHERE table_name = 'TableName';
+```
+
+### 8. Seed Scripts Must Match Schema
+
+**Problem:** Seed script referenced `State` and `District` models that were removed from schema.
+
+**Solution:** Update seed scripts whenever schema changes significantly.
+
+---
+
+## Quick Diagnosis Checklist
+
+When deployment fails with Prisma/database errors:
+
+- [ ] Check Vercel Function Logs for actual error
+- [ ] Run `prisma migrate status` to check migration state
+- [ ] Query `_prisma_migrations` table to see what's recorded
+- [ ] Check if columns/tables actually exist in database
+- [ ] Verify migrations are synced between directories
+- [ ] Clear Vercel build cache and redeploy
+- [ ] Check vercel.json uses `migrate deploy` not `db push`
+- [ ] Verify `includeFiles` has migrations folder

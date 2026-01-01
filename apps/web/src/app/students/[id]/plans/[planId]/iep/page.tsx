@@ -11,7 +11,13 @@ import { ArtifactCompareWizard } from '@/components/artifact/ArtifactCompareWiza
 import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
 import { GoalWizardPanel } from '@/components/goals/GoalWizardPanel';
 import { DynamicFormField } from '@/components/forms/DynamicFormField';
+import { PlanVersionsTab } from '@/components/iep/PlanVersionsTab';
+import { DecisionsTab } from '@/components/iep/DecisionsTab';
+import { ServiceDeliveryTab } from '@/components/iep/ServiceDeliveryTab';
+import { ReviewSchedulesTab } from '@/components/iep/ReviewSchedulesTab';
 import styles from './page.module.css';
+
+type MainTab = 'editor' | 'versions' | 'decisions' | 'service-delivery' | 'reviews';
 
 export default function IEPInterviewPage() {
   const { user, loading } = useAuth();
@@ -21,6 +27,7 @@ export default function IEPInterviewPage() {
   const studentId = params.id as string;
 
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [mainTab, setMainTab] = useState<MainTab>('editor');
   const [currentSection, setCurrentSection] = useState(0);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
@@ -209,7 +216,7 @@ export default function IEPInterviewPage() {
 
     try {
       await handleSave();
-      await api.finalizePlan(plan.id);
+      await api.finalizePlan(plan.id, {});
       router.push(`/students/${studentId}/plans/${planId}`);
     } catch {
       setError('Failed to finalize');
@@ -253,8 +260,70 @@ export default function IEPInterviewPage() {
             Artifact Compare
           </button>
         </div>
+        <nav className={styles.mainTabs}>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'editor' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('editor')}
+          >
+            Editor
+          </button>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'versions' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('versions')}
+          >
+            Versions
+          </button>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'decisions' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('decisions')}
+          >
+            Decisions
+          </button>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'service-delivery' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('service-delivery')}
+          >
+            Service Delivery
+          </button>
+          <button
+            className={`${styles.mainTab} ${mainTab === 'reviews' ? styles.mainTabActive : ''}`}
+            onClick={() => setMainTab('reviews')}
+          >
+            Reviews
+          </button>
+        </nav>
       </header>
 
+      {/* Tab Content */}
+      {mainTab === 'versions' && (
+        <div className={styles.tabContent}>
+          <PlanVersionsTab
+            planId={planId}
+            planStatus={plan.status}
+            onPlanUpdated={loadPlan}
+          />
+        </div>
+      )}
+
+      {mainTab === 'decisions' && (
+        <div className={styles.tabContent}>
+          <DecisionsTab planId={planId} studentId={studentId} />
+        </div>
+      )}
+
+      {mainTab === 'service-delivery' && (
+        <div className={styles.tabContent}>
+          <ServiceDeliveryTab planId={planId} userRole={user?.role} />
+        </div>
+      )}
+
+      {mainTab === 'reviews' && (
+        <div className={styles.tabContent}>
+          <ReviewSchedulesTab planId={planId} />
+        </div>
+      )}
+
+      {mainTab === 'editor' && (
       <div className={styles.layout}>
         {/* Section Navigation */}
         <nav className={styles.sidebar}>
@@ -489,6 +558,7 @@ export default function IEPInterviewPage() {
           </div>
         </main>
       </div>
+      )}
 
       {/* Print View Link and PDF Download */}
       <div className={styles.printLink}>

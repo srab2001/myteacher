@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Pack Editor - Evidence Tab | MyTeacher Admin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #1a1a2e; }
+
+    .header { background: #2563eb; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header .breadcrumb { font-size: 14px; opacity: 0.8; }
+
+    .container { display: flex; height: calc(100vh - 60px); }
+
+    .left-panel { width: 280px; background: white; border-right: 1px solid #e5e7eb; padding: 16px; }
+    .back-link { display: flex; align-items: center; gap: 8px; color: #6b7280; font-size: 14px; text-decoration: none; margin-bottom: 16px; }
+    .pack-summary { padding: 16px; background: #f9fafb; border-radius: 8px; }
+    .pack-summary-name { font-weight: 600; font-size: 16px; margin-bottom: 8px; }
+    .pack-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-right: 4px; }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-iep { background: #dbeafe; color: #1e40af; }
+
+    .right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .pack-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; background: white; }
+    .tabs { display: flex; gap: 4px; }
+    .tab { padding: 8px 16px; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+    .content-area { flex: 1; overflow-y: auto; padding: 24px; background: #f9fafb; }
+
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .section-title { font-size: 18px; font-weight: 600; }
+
+    .info-box { display: flex; gap: 12px; padding: 16px; background: #fef3c7; border-radius: 8px; margin-bottom: 24px; }
+    .info-icon { width: 24px; height: 24px; background: #f59e0b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; }
+    .info-content { font-size: 14px; color: #92400e; }
+
+    .btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+    .btn-secondary { background: white; border: 1px solid #d1d5db; color: #374151; }
+
+    /* Evidence Grid */
+    .evidence-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+
+    .evidence-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+    .evidence-card.disabled { opacity: 0.6; }
+
+    .evidence-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f3f4f6; }
+    .evidence-info { flex: 1; }
+    .evidence-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .evidence-key { font-size: 12px; color: #6b7280; font-family: monospace; }
+
+    .evidence-toggle { width: 44px; height: 24px; background: #d1d5db; border-radius: 12px; position: relative; cursor: pointer; flex-shrink: 0; }
+    .evidence-toggle.active { background: #2563eb; }
+    .evidence-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; }
+    .evidence-toggle.active::after { transform: translateX(20px); }
+
+    .evidence-body { padding: 16px; }
+    .evidence-desc { font-size: 14px; color: #6b7280; margin-bottom: 12px; }
+
+    .config-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .config-label { font-size: 13px; color: #374151; flex: 1; }
+    .config-value { font-size: 13px; font-weight: 500; color: #1f2937; }
+
+    .rule-link { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #2563eb; text-decoration: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+    .rule-link:hover { text-decoration: underline; }
+
+    /* Tags */
+    .evidence-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .evidence-tag { padding: 2px 8px; background: #f3f4f6; border-radius: 4px; font-size: 11px; color: #6b7280; }
+
+    /* Meeting Type Matrix */
+    .matrix-section { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-top: 24px; }
+    .matrix-header { padding: 16px 20px; border-bottom: 1px solid #e5e7eb; }
+    .matrix-title { font-size: 16px; font-weight: 600; }
+    .matrix-subtitle { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+    .matrix-table { width: 100%; border-collapse: collapse; }
+    .matrix-table th, .matrix-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f3f4f6; }
+    .matrix-table th { background: #f9fafb; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+    .matrix-table td { font-size: 14px; }
+    .matrix-table tr:last-child td { border-bottom: none; }
+
+    .check-icon { width: 20px; height: 20px; background: #dcfce7; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .check-icon.optional { background: #fef3c7; color: #f59e0b; }
+    .check-icon.none { background: #f3f4f6; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>MyTeacher Admin</h1>
+    <span class="breadcrumb">/ Compliance Rules / Rule Packs / Maryland State IEP Rules / Evidence Requirements</span>
+  </div>
+
+  <div class="container">
+    <div class="left-panel">
+      <a href="rules_index.html" class="back-link">
+        <span>&larr;</span> Back to Rule Packs
+      </a>
+      <div class="pack-summary">
+        <div class="pack-summary-name">Maryland State IEP Rules</div>
+        <div>
+          <span class="pack-badge badge-active">Active</span>
+          <span class="pack-badge badge-iep">IEP</span>
+          <span style="font-size: 13px; color: #6b7280;">Version 3</span>
+        </div>
+        <div style="margin-top: 12px; font-size: 13px; color: #6b7280;">
+          <strong>Evidence Types:</strong> 5 enabled / 7 total
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="pack-header">
+        <div class="tabs">
+          <div class="tab">Overview</div>
+          <div class="tab">Rules</div>
+          <div class="tab active">Evidence</div>
+          <div class="tab">Preview</div>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <div class="info-box">
+          <div class="info-icon">!</div>
+          <div class="info-content">
+            Evidence types are global definitions. Enable/disable them here to require specific evidence for meetings governed by this rule pack.
+            Evidence requirements are enforced when closing meetings or implementing plans.
+          </div>
+        </div>
+
+        <div class="section-header">
+          <div class="section-title">Evidence Types</div>
+        </div>
+
+        <div class="evidence-grid">
+          <!-- Pre-Meeting Docs -->
+          <div class="evidence-card">
+            <div class="evidence-header">
+              <div class="evidence-info">
+                <div class="evidence-name">Pre-Meeting Documents Sent</div>
+                <div class="evidence-key">PARENT_DOCS_SENT</div>
+              </div>
+              <div class="evidence-toggle active"></div>
+            </div>
+            <div class="evidence-body">
+              <div class="evidence-desc">
+                Confirmation that pre-meeting draft documents were delivered to parents.
+              </div>
+              <div class="config-row">
+                <span class="config-label">Required for meeting close:</span>
+                <span class="config-value">Yes</span>
+              </div>
+              <div class="evidence-tags">
+                <span class="evidence-tag">Document Delivery</span>
+                <span class="evidence-tag">Pre-Meeting</span>
+              </div>
+              <a href="#" class="rule-link">
+                <span>&rarr;</span> Linked to: PRE_MEETING_DOCS_DAYS
+              </a>
+            </div>
+          </div>
+
+          <!-- Post-Meeting Docs -->
+          <div class="evidence-card">
+            <div class="evidence-header">
+              <div class="evidence-info">
+                <div class="evidence-name">Final Document Sent</div>
+                <div class="evidence-key">FINAL_DOC_SENT</div>
+              </div>
+              <div class="evidence-toggle active"></div>
+            </div>
+            <div class="evidence-body">
+              <div class="evidence-desc">
+                Confirmation that final documents were delivered after the meeting.
+              </div>
+              <div class="config-row">
+                <span class="config-label">Required for meeting close:</span>
+                <span class="config-value">Yes</span>
+              </div>
+              <div class="evidence-tags">
+                <span class="evidence-tag">Document Delivery</span>
+                <span class="evidence-tag">Post-Meeting</span>
+              </div>
+              <a href="#" class="rule-link">
+                <span>&rarr;</span> Linked to: POST_MEETING_DOCS_DAYS
+              </a>
+            </div>
+          </div>
+
+          <!-- Conference Notes -->
+          <div class="evidence-card">
+            <div class="evidence-header">
+              <div class="evidence-info">
+                <div class="evidence-name">Conference Notes</div>
+                <div class="evidence-key">CONFERENCE_NOTES</div>
+              </div>
+              <div class="evidence-toggle active"></div>
+            </div>
+            <div class="evidence-body">
+              <div class="evidence-desc">
+                Written notes from the IEP meeting documenting discussion and decisions.
+              </div>
+              <div class="config-row">
+                <span class="config-label">Required for meeting close:</span>
+                <span class="config-value">Yes</span>
+              </div>
+              <div class="evidence-tags">
+                <span class="evidence-tag">Meeting Documentation</span>
+              </div>
+              <a href="#" class="rule-link">
+                <span>&rarr;</span> Linked to: CONFERENCE_NOTES_REQUIRED
+              </a>
+            </div>
+          </div>
+
+          <!-- Consent Form -->
+          <div class="evidence-card">
+            <div class="evidence-header">
+              <div class="evidence-info">
+                <div class="evidence-name">Parent Consent Form</div>
+                <div class="evidence-key">CONSENT_FORM</div>
+              </div>
+              <div class="evidence-toggle active"></div>
+            </div>
+            <div class="evidence-body">
+              <div class="evidence-desc">
+                Signed parental consent for initial IEP implementation. Required before services can begin.
+              </div>
+              <div class="config-row">
+                <span class="config-label">Blocks plan implementation:</span>
+                <span class="config-value">Yes (Initial IEP only)</span>
+              </div>
+              <div class="evidence-tags">
+                <span class="evidence-tag">Consent</span>
+                <span class="evidence-tag">Initial IEP</span>
+              </div>
+              <a href="#" class="rule-link">
+                <span>&rarr;</span> Linked to: INITIAL_IEP_CONSENT_GATE
+              </a>
+            </div>
+          </div>
+
+          <!-- Notice Waiver -->
+          <div class="evidence-card">
+            <div class="evidence-header">
+              <div class="evidence-info">
+                <div class="evidence-name">Notice Waiver</div>
+                <div class="evidence-key">NOTICE_WAIVER</div>
+              </div>
+              <div class="evidence-toggle active"></div>
+            </div>
+            <div class="evidence-body">
+              <div class="evidence-desc">
+                Waiver when continued meeting is scheduled with less than required notice days.
+              </div>
+              <div class="config-row">
+                <span class="config-label">Required for meeting close:</span>
+                <span class="config-value">Conditional (< 10 days notice)</span>
+              </div>
+              <div class="evidence-tags">
+                <span class="evidence-tag">Waiver</span>
+                <span class="evidence-tag">Continued Meeting</span>
+              </div>
+              <a href="#" class="rule-link">
+                <span>&rarr;</span> Linked to: CONTINUED_MEETING_NOTICE_DAYS
+              </a>
+            </div>
+          </div>
+
+          <!-- Recording Acknowledgment -->
+          <div class="evidence-card disabled">
+            <div class="evidence-header">
+              <div class="evidence-info">
+                <div class="evidence-name">Recording Acknowledgment</div>
+                <div class="evidence-key">RECORDING_ACK</div>
+              </div>
+              <div class="evidence-toggle"></div>
+            </div>
+            <div class="evidence-body">
+              <div class="evidence-desc">
+                Acknowledgment that recording occurred and is not an official record.
+              </div>
+              <div class="config-row">
+                <span class="config-label">Required for meeting close:</span>
+                <span class="config-value">No (disabled)</span>
+              </div>
+              <div class="evidence-tags">
+                <span class="evidence-tag">Recording</span>
+              </div>
+              <a href="#" class="rule-link">
+                <span>&rarr;</span> Linked to: AUDIO_RECORDING_RULE
+              </a>
+            </div>
+          </div>
+
+          <!-- Delivery Confirmation -->
+          <div class="evidence-card disabled">
+            <div class="evidence-header">
+              <div class="evidence-info">
+                <div class="evidence-name">Delivery Confirmation</div>
+                <div class="evidence-key">DELIVERY_CONFIRMATION</div>
+              </div>
+              <div class="evidence-toggle"></div>
+            </div>
+            <div class="evidence-body">
+              <div class="evidence-desc">
+                Confirmation of document delivery method (mail receipt, signature, etc.)
+              </div>
+              <div class="config-row">
+                <span class="config-label">Required for meeting close:</span>
+                <span class="config-value">No (disabled)</span>
+              </div>
+              <div class="evidence-tags">
+                <span class="evidence-tag">Document Delivery</span>
+                <span class="evidence-tag">Optional</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meeting Type Matrix -->
+        <div class="matrix-section">
+          <div class="matrix-header">
+            <div class="matrix-title">Evidence Requirements by Meeting Type</div>
+            <div class="matrix-subtitle">
+              Shows which evidence types are required for each meeting type in this rule pack.
+            </div>
+          </div>
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th>Evidence Type</th>
+                <th>Initial</th>
+                <th>Annual</th>
+                <th>Review</th>
+                <th>Amendment</th>
+                <th>Continued</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Pre-Meeting Docs</td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon optional">~</div></td>
+                <td><div class="check-icon none">-</div></td>
+              </tr>
+              <tr>
+                <td>Final Document</td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+              </tr>
+              <tr>
+                <td>Conference Notes</td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon none">-</div></td>
+              </tr>
+              <tr>
+                <td>Parent Consent</td>
+                <td><div class="check-icon">&#10003;</div></td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon none">-</div></td>
+              </tr>
+              <tr>
+                <td>Notice Waiver</td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon none">-</div></td>
+                <td><div class="check-icon optional">~</div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="padding: 12px 16px; font-size: 12px; color: #6b7280; background: #f9fafb;">
+            <strong>Legend:</strong>
+            <span class="check-icon" style="display: inline-flex; width: 16px; height: 16px; font-size: 10px; margin: 0 4px;">&#10003;</span> Required
+            <span class="check-icon optional" style="display: inline-flex; width: 16px; height: 16px; font-size: 10px; margin: 0 4px;">~</span> Conditional
+            <span class="check-icon none" style="display: inline-flex; width: 16px; height: 16px; font-size: 10px; margin: 0 4px;">-</span> Not Required
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

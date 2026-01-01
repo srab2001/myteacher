@@ -1,0 +1,205 @@
+=== WEB MATCHES ===
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:770:    return this.fetch('/api/admin/best-practice-docs');
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:791:    const response = await fetch(`${API_BASE}/api/admin/best-practice-docs`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:809:    return this.fetch(`/api/admin/best-practice-docs/${docId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:816:    return `${API_BASE}/api/admin/best-practice-docs/${docId}/download`;
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:820:    return this.fetch(`/api/admin/best-practice-docs/${docId}/reingest`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:826:    return this.fetch(`/api/admin/best-practice-docs/${docId}/chunks`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:852:    return this.fetch('/api/admin/form-templates');
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:873:    const response = await fetch(`${API_BASE}/api/admin/form-templates`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:891:    return this.fetch(`/api/admin/form-templates/${templateId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:898:    return `${API_BASE}/api/admin/form-templates/${templateId}/download`;
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:903:    return this.fetch('/api/admin/jurisdictions');
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1015:    return this.fetch(`/api/admin/schemas${queryString ? `?${queryString}` : ''}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1019:    return this.fetch(`/api/admin/schemas/${schemaId}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1032:    return this.fetch(`/api/admin/schemas/${schemaId}/plans${queryString ? `?${queryString}` : ''}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1036:    return this.fetch(`/api/admin/schemas/${schemaId}/fields`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1040:    return this.fetch(`/api/admin/schemas/${schemaId}/fields`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1054:    return this.fetch(`/api/admin/schemas/${schemaId}/fields`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1078:    return this.fetch(`/api/admin/users${queryString ? `?${queryString}` : ''}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1082:    return this.fetch(`/api/admin/users/${userId}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1092:    return this.fetch('/api/admin/users', {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1104:    return this.fetch(`/api/admin/users/${userId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1111:    return this.fetch(`/api/admin/users/${userId}/permissions`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1119:    return this.fetch(`/api/admin/users/${userId}/students`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1123:    return this.fetch(`/api/admin/users/${userId}/students`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1130:    return this.fetch(`/api/admin/users/${userId}/students/${accessId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1137:    return this.fetch(`/api/admin/users/${userId}/students/${accessId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1153:    return this.fetch(`/api/admin/students${queryString.toString() ? `?${queryString}` : ''}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1165:    return this.fetch('/api/admin/students', {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1533:    return this.fetch('/api/admin/forms/fields', {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1540:    return this.fetch(`/api/admin/forms/fields/${fieldId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1547:    return this.fetch(`/api/admin/forms/fields/${fieldId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1553:    return this.fetch(`/api/admin/forms/fields/${fieldId}/options`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1560:    return this.fetch(`/api/admin/forms/options/${optionId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1567:    return this.fetch(`/api/admin/forms/options/${optionId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1574:    return this.fetch('/api/admin/schools');
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1578:    return this.fetch('/api/admin/schools', {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1585:    return this.fetch(`/api/admin/schools/${schoolId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1592:    return this.fetch(`/api/admin/schools/${schoolId}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1613:    return this.fetch(`/api/admin/rule-packs${queryString ? `?${queryString}` : ''}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1617:    return this.fetch(`/api/admin/rule-packs/${id}`);
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1629:    return this.fetch('/api/admin/rule-packs', {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1641:    return this.fetch(`/api/admin/rule-packs/${id}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1648:    await this.fetch(`/api/admin/rule-packs/${id}`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1654:    return this.fetch(`/api/admin/rule-packs/${id}/rules`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1661:    return this.fetch(`/api/admin/rule-packs/${id}/evidence`, {
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1668:    return this.fetch('/api/admin/rule-packs/definitions');
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1672:    return this.fetch('/api/admin/rule-packs/evidence-types');
+/Users/stuartrabinowitz/myteacher/apps/web/src/lib/api.ts:1676:    return this.fetch('/api/admin/rule-packs/meeting-types');
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:57:  // Load admin data when switching to admin tabs
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:153:                onClick={() => router.push('/admin/users')}
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:160:                onClick={() => router.push('/admin/students')}
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:167:                onClick={() => router.push('/admin/documents/best-practice')}
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:174:                onClick={() => router.push('/admin/documents/templates')}
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:181:                onClick={() => router.push('/admin/schemas')}
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:366:                  onClick={() => router.push('/admin/documents/best-practice')}
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/dashboard/page.tsx:405:                  onClick={() => router.push('/admin/documents/templates')}
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin-users.test.tsx:40:      id: 'admin-user',
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin-users.test.tsx:42:      email: 'admin@school.edu',
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin-users.test.tsx:74:      email: 'admin@school.edu',
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin-users.test.tsx:126:      users: mockUsers.filter(u => u.displayName.toLowerCase().includes('admin'))
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin-users.test.tsx:129:    const usersRes = await mockApi.getAdminUsers({ search: 'admin' });
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/page.tsx:10:    router.replace('/admin/documents/best-practice');
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/dashboard.test.tsx:413:    it('shows admin banner for admin users', async () => {
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/dashboard.test.tsx:427:    it('shows Plan Schemas button for admin users', async () => {
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/dashboard.test.tsx:456:      expect(mockRouter.push).toHaveBeenCalledWith('/admin/schemas');
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/users/[userId]/page.tsx:26:  ADMIN: styles.admin,
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/users/[userId]/page.tsx:144:        <Link href="/admin/users" className="btn btn-outline">
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/users/[userId]/page.tsx:153:      <Link href="/admin/users" className={styles.backLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:5:import BestPracticeDocsPage from '@/app/admin/documents/best-practice/page';
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:6:import FormTemplatesPage from '@/app/admin/documents/templates/page';
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:20:    getBestPracticeDocDownloadUrl: jest.fn((id: string) => `/api/admin/best-practice-docs/${id}/download`),
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:21:    getFormTemplateDownloadUrl: jest.fn((id: string) => `/api/admin/form-templates/${id}/download`),
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:30:  id: 'admin-user',
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:31:  email: 'admin@example.com',
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:122:  it('admin user can access admin pages', async () => {
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:138:  it('teacher user is redirected from admin pages', async () => {
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:141:    // Teacher would be redirected by the admin layout
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:333:    expect(downloadUrl).toBe('/api/admin/form-templates/template-123/download');
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:340:    expect(downloadUrl).toBe('/api/admin/best-practice-docs/bp-doc-123/download');
+/Users/stuartrabinowitz/myteacher/apps/web/src/__tests__/admin.test.tsx:343:  it('fetches jurisdictions for admin dropdowns', async () => {
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/users/[userId]/page.module.css:97:.roleBadge.admin {
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/users/page.tsx:18:  ADMIN: styles.admin,
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/users/page.tsx:177:                      <Link href={`/admin/users/${user.id}`} className={styles.actionLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/users/page.module.css:124:.roleBadge.admin {
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:55:            <Link href="/admin/users" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:59:            <Link href="/admin/documents/best-practice" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:62:            <Link href="/admin/documents/templates" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:65:            <Link href="/admin/schemas" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:68:            <Link href="/admin/rules" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:72:            <Link href="/admin/form-fields" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:75:            <Link href="/admin/schools" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/layout.tsx:78:            <Link href="/admin/students" className={styles.navLink}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/schemas/page.tsx:197:                      onClick={() => router.push(`/admin/schemas/${schema.id}`)}
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/schemas/[id]/page.tsx:242:          <button className="btn btn-primary" onClick={() => router.push('/admin/schemas')}>
+/Users/stuartrabinowitz/myteacher/apps/web/src/app/admin/schemas/[id]/page.tsx:259:        <button className={styles.backBtn} onClick={() => router.push('/admin/schemas')}>
+
+=== API MATCHES ===
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/generation.ts:124:// GET /generation/reference-preview - Preview reference chunks (for debugging/admin)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:376:// POST /admin/forms/seed - Seed field definitions from JSON (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:377:router.post('/admin/forms/seed', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:379:    // This endpoint allows admin to trigger a re-seed of field definitions
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:391:// POST /admin/forms/fields - Create a new field definition (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:407:router.post('/admin/forms/fields', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:452:// PATCH /admin/forms/fields/:id - Update a field definition (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:467:router.patch('/admin/forms/fields/:id', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:487:// DELETE /admin/forms/fields/:id - Soft delete a field definition (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:488:router.delete('/admin/forms/fields/:id', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:508:// POST /admin/forms/fields/:fieldId/options - Add option to a field (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:516:router.post('/admin/forms/fields/:fieldId/options', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:553:// PATCH /admin/forms/options/:id - Update an option (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:562:router.patch('/admin/forms/options/:id', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:582:// DELETE /admin/forms/options/:id - Soft delete an option (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:583:router.delete('/admin/forms/options/:id', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:603:// GET /admin/schools - Get all schools including inactive (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:604:router.get('/admin/schools', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:617:// POST /admin/schools - Create a new school (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:626:router.post('/admin/schools', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:650:// PATCH /admin/schools/:id - Update a school (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:660:router.patch('/admin/schools/:id', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:680:// DELETE /admin/schools/:id - Soft delete a school (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/formFields.ts:681:router.delete('/admin/schools/:id', requireAdmin, async (req, res) => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:50:// REFERENCE DATA (for admin UI dropdowns)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:54: * GET /api/admin/rule-packs/definitions
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:71: * GET /api/admin/rule-packs/evidence-types
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:88: * GET /api/admin/rule-packs/meeting-types
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:109: * GET /api/admin/rule-packs
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:162: * GET /api/admin/rule-packs/:id
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:198: * POST /api/admin/rule-packs
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:267: * PATCH /api/admin/rule-packs/:id
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:333: * DELETE /api/admin/rule-packs/:id
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:364: * PUT /api/admin/rule-packs/:id/rules
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:452: * PUT /api/admin/rule-packs/:id/evidence
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:544: * POST /api/admin/rule-packs/:id/rules
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:600: * PATCH /api/admin/rule-packs/:id/rules/:ruleId
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/adminRulePacks.ts:642: * DELETE /api/admin/rule-packs/:id/rules/:ruleId
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:76:// GET /admin/best-practice-docs - List all best practice documents
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:115:// POST /admin/best-practice-docs - Upload a best practice document
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:217:// PATCH /admin/best-practice-docs/:id - Update a best practice document
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:286:// POST /admin/best-practice-docs/:id/reingest - Re-run ingestion for a document
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:311:// GET /admin/best-practice-docs/:id/chunks - Get chunk statistics for a document
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:333:// GET /admin/best-practice-docs/:id/download - Download a best practice document
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:364:// GET /admin/form-templates - List all form templates
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:397:// POST /admin/form-templates - Upload a form template
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:503:// PATCH /admin/form-templates/:id - Update a form template
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:575:// GET /admin/form-templates/:id/download - Download a form template
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:602:// GET /admin/jurisdictions - List all jurisdictions (for dropdowns)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:627:// GET /admin/schemas - List all plan schemas
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:677:// GET /admin/schemas/:id - Get a specific schema with full field definitions
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:718:// GET /admin/schemas/:id/fields - Get schema fields with effective required flags
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:788:// PATCH /admin/schemas/:id/fields - Update field requirement overrides
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:843:// POST /admin/schemas/:id/fields - Add a new field to a schema section
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:947:// POST /admin/schemas - Create a new schema version
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1041:// PATCH /admin/schemas/:id - Update schema (only metadata, not fields for safety)
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1115:// GET /admin/schemas/:id/plans - Get plans using this schema
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1175:// GET /admin/users - List all users with permissions
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1233:// POST /admin/users - Create a new user
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1323:// GET /admin/users/:userId - Get user details
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1380:// PATCH /admin/users/:userId - Update user details
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1455:// PATCH /admin/users/:userId/permissions - Update user permissions
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1521:// GET /admin/students - List all students
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1573:// POST /admin/students - Create a new student
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1659:// GET /admin/users/:userId/students - Get user's student access list
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1724:// POST /admin/users/:userId/students - Add student access by recordId
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1810:// PATCH /admin/users/:userId/students/:accessId - Update student access
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1873:// DELETE /admin/users/:userId/students/:accessId - Remove student access
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1905:// GET /admin/states - List all states
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1932:// POST /admin/states - Create a new state
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:1969:// PATCH /admin/states/:stateId - Update a state
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:2011:// GET /admin/states/:stateId/districts - List all districts for a state
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:2042:// POST /admin/states/:stateId/districts - Create a new district
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:2091:// PATCH /admin/districts/:districtId - Update a district
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:2133:// GET /admin/districts/:districtId/schools - List all schools for a district
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:2165:// POST /admin/districts/:districtId/schools - Create a new school
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:2220:// POST /admin/schemas/migrate-goals-section - Add isGoalsSection flag to all IEP schemas
+/Users/stuartrabinowitz/myteacher/apps/api/src/routes/admin.ts:2294:// PATCH /admin/schools/:schoolId - Update a school
+/Users/stuartrabinowitz/myteacher/apps/api/src/middleware/permissions.ts:193: * Middleware: Require canManageDocs permission (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/middleware/permissions.ts:212: * Middleware: Require canManageUsers permission (admin only)
+/Users/stuartrabinowitz/myteacher/apps/api/src/app.ts:31:import adminRoutes from './routes/admin.js';
+/Users/stuartrabinowitz/myteacher/apps/api/src/app.ts:112:  app.use('/api/admin', adminRoutes); // Admin routes
+/Users/stuartrabinowitz/myteacher/apps/api/src/app.ts:124:  app.use('/api', formFieldsRoutes); // Form field definitions, values, and admin management
+/Users/stuartrabinowitz/myteacher/apps/api/src/app.ts:126:  app.use('/api/admin/rule-packs', adminRulePacksRoutes); // Admin rule pack management
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/adminRulePacks.test.ts:3: * Tests for admin-only CRUD operations on compliance rule packs
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/adminRulePacks.test.ts:100:      // In a real test with supertest, we would verify 403 responses for non-admin users
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/adminRulePacks.test.ts:340:    it('fetches all rule definitions for admin', async () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/adminRulePacks.test.ts:354:    it('fetches all evidence types for admin', async () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/adminRulePacks.test.ts:367:    it('fetches all meeting types for admin', async () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:57:  describe('GET /admin/users', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:81:          email: 'admin@school.edu',
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:164:  describe('POST /admin/users', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:230:  describe('GET /admin/users/:userId', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:298:  describe('PATCH /admin/users/:userId/permissions', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:345:  describe('GET /admin/users/:userId/students', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:441:  describe('POST /admin/users/:userId/students', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:521:  describe('PATCH /admin/users/:userId/students/:accessId', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/users.test.ts:563:  describe('DELETE /admin/users/:userId/students/:accessId', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/schemas.test.ts:39:  describe('GET /admin/schemas', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/schemas.test.ts:167:  describe('GET /admin/schemas/:id', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/schemas.test.ts:231:  describe('GET /admin/schemas/:id/plans', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/admin.test.ts:109:          uploadedById: 'admin-1',
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/admin.test.ts:197:          uploadedById: 'admin-1',
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/admin.test.ts:250:    it('admin can access admin routes while teacher cannot', () => {
+/Users/stuartrabinowitz/myteacher/apps/api/src/test/admin.test.ts:263:    it('fetches all jurisdictions for admin dropdown', async () => {
+/Users/stuartrabinowitz/myteacher/apps/api/prisma/schema.prisma:1221:// Only admin can create/update these records
+/Users/stuartrabinowitz/myteacher/apps/api/prisma/schema.prisma:1257:// Only admin can modify options where optionsEditableBy = ADMIN_ONLY

@@ -666,4 +666,250 @@ router.delete('/:id/rules/:ruleId', requireAdmin, async (req: Request, res: Resp
   }
 });
 
+// ============================================
+// RULE DEFINITION CRUD (Create new rule types)
+// ============================================
+
+const CreateRuleDefinitionSchema = z.object({
+  key: z.string().min(1).max(100).regex(/^[A-Z][A-Z0-9_]*$/, 'Key must be uppercase with underscores (e.g., MY_NEW_RULE)'),
+  name: z.string().min(1).max(255),
+  description: z.string().optional().nullable(),
+  defaultConfig: z.record(z.unknown()).optional().nullable(),
+});
+
+const UpdateRuleDefinitionSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().optional().nullable(),
+  defaultConfig: z.record(z.unknown()).optional().nullable(),
+});
+
+/**
+ * POST /api/admin/rule-packs/definitions
+ * Create a new rule definition
+ */
+router.post('/definitions', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const data = CreateRuleDefinitionSchema.parse(req.body);
+
+    // Check if key already exists
+    const existingDef = await prisma.ruleDefinition.findUnique({
+      where: { key: data.key },
+    });
+
+    if (existingDef) {
+      return res.status(409).json({ error: 'A rule definition with this key already exists' });
+    }
+
+    const definition = await prisma.ruleDefinition.create({
+      data: {
+        key: data.key,
+        name: data.name,
+        description: data.description,
+        defaultConfig: data.defaultConfig as JsonValue,
+      },
+    });
+
+    res.status(201).json({ definition });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
+    console.error('Error creating rule definition:', error);
+    res.status(500).json({ error: 'Failed to create rule definition' });
+  }
+});
+
+/**
+ * PATCH /api/admin/rule-packs/definitions/:id
+ * Update a rule definition
+ */
+router.patch('/definitions/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = UpdateRuleDefinitionSchema.parse(req.body);
+
+    const existingDef = await prisma.ruleDefinition.findUnique({
+      where: { id },
+    });
+
+    if (!existingDef) {
+      return res.status(404).json({ error: 'Rule definition not found' });
+    }
+
+    const definition = await prisma.ruleDefinition.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.defaultConfig !== undefined && { defaultConfig: data.defaultConfig as JsonValue }),
+      },
+    });
+
+    res.json({ definition });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
+    console.error('Error updating rule definition:', error);
+    res.status(500).json({ error: 'Failed to update rule definition' });
+  }
+});
+
+/**
+ * DELETE /api/admin/rule-packs/definitions/:id
+ * Delete a rule definition (only if not used in any rule pack)
+ */
+router.delete('/definitions/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const existingDef = await prisma.ruleDefinition.findUnique({
+      where: { id },
+      include: {
+        rulePackRules: { take: 1 },
+      },
+    });
+
+    if (!existingDef) {
+      return res.status(404).json({ error: 'Rule definition not found' });
+    }
+
+    if (existingDef.rulePackRules.length > 0) {
+      return res.status(409).json({
+        error: 'Cannot delete rule definition that is used in rule packs. Remove it from all packs first.',
+      });
+    }
+
+    await prisma.ruleDefinition.delete({
+      where: { id },
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting rule definition:', error);
+    res.status(500).json({ error: 'Failed to delete rule definition' });
+  }
+});
+
+// ============================================
+// EVIDENCE TYPE CRUD (Create new evidence types)
+// ============================================
+
+const CreateEvidenceTypeSchema = z.object({
+  key: z.string().min(1).max(100).regex(/^[A-Z][A-Z0-9_]*$/, 'Key must be uppercase with underscores (e.g., MY_EVIDENCE)'),
+  name: z.string().min(1).max(255),
+  planType: z.nativeEnum(RulePlanType),
+});
+
+const UpdateEvidenceTypeSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  planType: z.nativeEnum(RulePlanType).optional(),
+});
+
+/**
+ * POST /api/admin/rule-packs/evidence-types
+ * Create a new evidence type
+ */
+router.post('/evidence-types', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const data = CreateEvidenceTypeSchema.parse(req.body);
+
+    // Check if key already exists
+    const existingType = await prisma.ruleEvidenceType.findUnique({
+      where: { key: data.key },
+    });
+
+    if (existingType) {
+      return res.status(409).json({ error: 'An evidence type with this key already exists' });
+    }
+
+    const evidenceType = await prisma.ruleEvidenceType.create({
+      data: {
+        key: data.key,
+        name: data.name,
+        planType: data.planType,
+      },
+    });
+
+    res.status(201).json({ evidenceType });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
+    console.error('Error creating evidence type:', error);
+    res.status(500).json({ error: 'Failed to create evidence type' });
+  }
+});
+
+/**
+ * PATCH /api/admin/rule-packs/evidence-types/:id
+ * Update an evidence type
+ */
+router.patch('/evidence-types/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = UpdateEvidenceTypeSchema.parse(req.body);
+
+    const existingType = await prisma.ruleEvidenceType.findUnique({
+      where: { id },
+    });
+
+    if (!existingType) {
+      return res.status(404).json({ error: 'Evidence type not found' });
+    }
+
+    const evidenceType = await prisma.ruleEvidenceType.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.planType !== undefined && { planType: data.planType }),
+      },
+    });
+
+    res.json({ evidenceType });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    }
+    console.error('Error updating evidence type:', error);
+    res.status(500).json({ error: 'Failed to update evidence type' });
+  }
+});
+
+/**
+ * DELETE /api/admin/rule-packs/evidence-types/:id
+ * Delete an evidence type (only if not used in any rule pack)
+ */
+router.delete('/evidence-types/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const existingType = await prisma.ruleEvidenceType.findUnique({
+      where: { id },
+      include: {
+        evidenceRequirements: { take: 1 },
+      },
+    });
+
+    if (!existingType) {
+      return res.status(404).json({ error: 'Evidence type not found' });
+    }
+
+    if (existingType.evidenceRequirements.length > 0) {
+      return res.status(409).json({
+        error: 'Cannot delete evidence type that is used in rule packs. Remove it from all packs first.',
+      });
+    }
+
+    await prisma.ruleEvidenceType.delete({
+      where: { id },
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting evidence type:', error);
+    res.status(500).json({ error: 'Failed to delete evidence type' });
+  }
+});
+
 export default router;

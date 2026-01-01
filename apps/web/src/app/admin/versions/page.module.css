@@ -1,0 +1,221 @@
+.container {
+  padding: 2rem;
+}
+
+.container h1 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.error {
+  background: #fee;
+  border: 1px solid #f88;
+  color: #c00;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+/* Summary Cards */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summaryCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.summaryValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1976d2;
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryValue.warning {
+  color: #e65100;
+}
+
+.summaryLabel {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+/* Action Cards */
+.actionCards {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.actionCard {
+  flex: 1;
+  min-width: 200px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.actionCard:hover {
+  border-color: #1976d2;
+  background: #f5f9ff;
+}
+
+.actionCard.active {
+  border-color: #1976d2;
+  background: #e3f2fd;
+}
+
+.actionCardCount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1976d2;
+  font-variant-numeric: tabular-nums;
+}
+
+.actionCardLabel {
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+/* Detail Section */
+.detailSection {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.detailSection h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.table a {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.table a:hover {
+  text-decoration: underline;
+}
+
+.viewLink {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #1976d2;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.viewLink:hover {
+  background: #e3f2fd;
+  text-decoration: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badgeSuccess {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badgeWarning {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.typeLabel {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.summaryCell {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reasonCell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #c62828;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .actionCards {
+    flex-direction: column;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+}

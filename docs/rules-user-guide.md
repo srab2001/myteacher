@@ -2,7 +2,6 @@
 
 This guide walks through the complete workflow for creating, deploying, and verifying compliance rule packs in MyTeacher.
 
-## Table of Contents
 
 - [Overview](#overview)
 - [Data Flow Diagram](#data-flow-diagram)

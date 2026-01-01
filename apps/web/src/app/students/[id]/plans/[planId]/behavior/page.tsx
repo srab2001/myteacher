@@ -129,7 +129,7 @@ export default function BehaviorPlanInterviewPage() {
 
     try {
       await handleSave();
-      await api.finalizePlan(plan.id);
+      await api.finalizePlan(plan.id, {});
       router.push(`/students/${studentId}`);
     } catch {
       setError('Failed to finalize');

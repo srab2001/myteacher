@@ -75,6 +75,7 @@ export function GoalWizardPanel({
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [fixingWithAI, setFixingWithAI] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -132,14 +133,21 @@ export function GoalWizardPanel({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   const startWizardSession = async (): Promise<string | null> => {
-    if (!selectedArea) return null;
+    console.log('[GoalWizard] startWizardSession called, selectedArea:', selectedArea);
+    if (!selectedArea) {
+      console.log('[GoalWizard] No selectedArea, returning null');
+      return null;
+    }
     setLoadingChat(true);
     setSessionError(null);
     try {
+      console.log('[GoalWizard] Calling api.startWizardSession with planId:', planId);
       const result = await api.startWizardSession(planId, selectedArea, selectedArtifacts, presentLevels || undefined);
+      console.log('[GoalWizard] startWizardSession result:', result);
       setSessionId(result.sessionId);
 
       let initialMessage = result.message;
@@ -149,7 +157,7 @@ export function GoalWizardPanel({
       setChatMessages([{ role: 'assistant', content: initialMessage }]);
       return result.sessionId; // Return the sessionId directly
     } catch (error) {
-      console.error('Failed to start wizard session:', error);
+      console.error('[GoalWizard] Failed to start wizard session:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to start wizard session';
       setSessionError(errorMessage);
       setChatMessages([{ role: 'assistant', content: `Error starting session: ${errorMessage}. Please try again.` }]);
@@ -160,13 +168,23 @@ export function GoalWizardPanel({
   };
 
   const sendMessage = async () => {
-    if (!chatInput.trim()) return;
+    console.log('[GoalWizard] sendMessage called, chatInput:', chatInput);
+    if (!chatInput.trim()) {
+      console.log('[GoalWizard] chatInput is empty, returning');
+      return;
+    }
 
     // If session not started yet, start it first and get the sessionId directly
     let currentSessionId = sessionId;
+    console.log('[GoalWizard] Current sessionId:', currentSessionId);
     if (!currentSessionId) {
+      console.log('[GoalWizard] No session, starting wizard session...');
       currentSessionId = await startWizardSession();
-      if (!currentSessionId) return;
+      console.log('[GoalWizard] Got sessionId from startWizardSession:', currentSessionId);
+      if (!currentSessionId) {
+        console.log('[GoalWizard] Failed to get sessionId, returning');
+        return;
+      }
     }
 
     const message = chatInput.trim();
@@ -175,13 +193,15 @@ export function GoalWizardPanel({
     setLoadingChat(true);
 
     try {
+      console.log('[GoalWizard] Sending message to session:', currentSessionId);
       const result = await api.sendWizardMessage(currentSessionId, message);
+      console.log('[GoalWizard] Got response:', result);
       setChatMessages((prev) => [...prev, { role: 'assistant', content: result.response }]);
       if (result.currentDraft) {
         setCurrentDraft(result.currentDraft);
       }
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('[GoalWizard] Failed to send message:', error);
       setChatMessages((prev) => [
         ...prev,
         { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
@@ -240,6 +260,7 @@ export function GoalWizardPanel({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const fixWithAI = async () => {
     if (!currentDraft || !selectedArea) return;
     setFixingWithAI(true);

@@ -266,3 +266,242 @@ const isBehaviorSection =
   section.key === 'behavior_targets' ||
   section.fields?.some(f => f.type === 'behavior_targets');
 ```
+
+---
+
+### 7. Goal Wizard Send Button Not Working (404 Errors)
+
+**Error:**
+```
+POST /api/goal-wizard/session/start 404
+{error: 'Plan not found'}
+```
+
+Console showed the request was reaching the API but returning 404 "Plan not found".
+
+**Cause:** The `goalWizard.ts` route was checking `student: { teacherId: req.user!.id }` without an admin bypass. Admin users were blocked because they don't own students directly.
+
+**Resolution:**
+Added admin authorization bypass to the session start route:
+
+```typescript
+// Before (broken for admins)
+const plan = await prisma.planInstance.findFirst({
+  where: {
+    id: data.planId,
+    student: { teacherId: req.user!.id },
+  },
+});
+
+// After (works for admins)
+const isAdmin = req.user!.role === 'ADMIN';
+const plan = await prisma.planInstance.findFirst({
+  where: {
+    id: data.planId,
+    ...(isAdmin ? {} : { student: { teacherId: req.user!.id } }),
+  },
+});
+```
+
+- File: `apps/api/src/routes/goalWizard.ts` (session start route)
+
+---
+
+### 8. Goal Wizard Save Goal Fails (404 Errors)
+
+**Error:**
+```
+POST /api/plans/{planId}/goals 404
+{error: 'Plan not found'}
+```
+
+After fixing the session start, the Goal Wizard could chat but failed when trying to save goals.
+
+**Cause:** Same authorization issue in `goals.ts` - both POST (create goal) and GET (list goals) routes were checking teacher ownership without admin bypass.
+
+**Resolution:**
+Applied the same admin bypass pattern to goals routes:
+
+```typescript
+// POST /plans/:planId/goals
+const isAdmin = req.user!.role === 'ADMIN';
+const plan = await prisma.planInstance.findFirst({
+  where: {
+    id: req.params.planId,
+    ...(isAdmin ? {} : { student: { teacherId: req.user!.id } }),
+  },
+});
+
+// GET /plans/:planId/goals
+const isAdmin = req.user!.role === 'ADMIN';
+const goals = await prisma.goal.findMany({
+  where: {
+    planInstanceId: req.params.planId,
+    ...(isAdmin ? {} : { planInstance: { student: { teacherId: req.user!.id } } }),
+  },
+});
+```
+
+- File: `apps/api/src/routes/goals.ts` (lines 20-35, 64-73)
+
+---
+
+### 9. React Async State Timing Issue
+
+**Error:** Goal Wizard send button appeared to do nothing. The session started but the message was sent to `null` sessionId.
+
+**Cause:** React's `setState` is asynchronous. Code was calling `setSessionId(result.sessionId)` then immediately using `sessionId` state variable, which was still the old value.
+
+```typescript
+// Broken pattern
+const startSession = async () => {
+  const result = await api.startSession();
+  setSessionId(result.sessionId);
+  // sessionId is STILL null here!
+};
+
+const sendMessage = async () => {
+  if (!sessionId) await startSession();
+  // sessionId is STILL null here because setState is async!
+  await api.sendMessage(sessionId, message);
+};
+```
+
+**Resolution:** Return the value directly from the async function instead of relying on state:
+
+```typescript
+// Fixed pattern
+const startSession = async (): Promise<string | null> => {
+  const result = await api.startSession();
+  setSessionId(result.sessionId);
+  return result.sessionId; // Return the value directly
+};
+
+const sendMessage = async () => {
+  let currentSessionId = sessionId;
+  if (!currentSessionId) {
+    currentSessionId = await startSession(); // Get returned value
+    if (!currentSessionId) return;
+  }
+  await api.sendMessage(currentSessionId, message); // Use local variable
+};
+```
+
+- File: `apps/web/src/components/goals/GoalWizardPanel.tsx`
+
+---
+
+### 10. TypeScript Null Index Error
+
+**Error:**
+```
+Type 'null' cannot be used as an index type.
+```
+
+In the Rules Setup Wizard when displaying created evidence type's plan type.
+
+**Cause:** Code was using a potentially null value as an object key without null check:
+
+```typescript
+// Broken
+PLAN_TYPE_LABELS[createdEvidence.planType] // planType could be null
+```
+
+**Resolution:** Add null check with fallback:
+
+```typescript
+// Fixed
+createdEvidence.planType ? PLAN_TYPE_LABELS[createdEvidence.planType] : 'All'
+```
+
+- File: `apps/web/src/app/admin/rules/wizard/page.tsx`
+
+---
+
+### 11. Git Push Rejected - Large File
+
+**Error:**
+```
+remote: error: File wireframes/Screen Recording... is 101.85 MB; this exceeds GitHub's file size limit of 100.00 MB
+```
+
+**Cause:** Large video file was accidentally staged for commit.
+
+**Resolution:**
+1. Reset the commit: `git reset HEAD~1`
+2. Remove large files from staging
+3. Recommit only code changes
+4. Push successfully
+
+**Prevention:** Add large file patterns to `.gitignore`:
+```
+*.mov
+*.mp4
+*.avi
+```
+
+---
+
+## Quick Reference: Admin Authorization Pattern
+
+**CRITICAL:** Any route that checks `teacherId` for authorization must include admin bypass.
+
+```typescript
+// Standard pattern for all plan/student access routes
+const isAdmin = req.user!.role === 'ADMIN';
+const resource = await prisma.model.findFirst({
+  where: {
+    id: resourceId,
+    // Admin bypass: empty object for admins, teacher check for others
+    ...(isAdmin ? {} : { student: { teacherId: req.user!.id } }),
+  },
+});
+```
+
+**Routes that need this pattern:**
+- `goals.ts` - POST/GET `/plans/:planId/goals`
+- `goalWizard.ts` - POST `/goal-wizard/session/start`
+- `plans.ts` - GET/PATCH `/plans/:planId`
+- `services.ts` - GET/POST `/plans/:planId/services`
+- `behavior.ts` - GET/POST behavior-related routes
+- Any other route checking `teacherId`
+
+---
+
+## Quick Reference: Async State in React
+
+**Problem:** React `setState` is asynchronous - state doesn't update immediately.
+
+**Solution:** Return values directly from async functions instead of relying on state:
+
+```typescript
+// Return the value directly
+const startSession = async (): Promise<string | null> => {
+  const result = await api.startSession();
+  setSessionId(result.sessionId);
+  return result.sessionId; // <-- Return it
+};
+
+// Use local variable
+let currentId = existingId || await startSession();
+```
+
+---
+
+## Debugging Checklist
+
+When encountering 404 errors on routes that should work:
+
+1. [ ] Check Vercel Function Logs for actual error message
+2. [ ] Look for authorization checks using `teacherId`
+3. [ ] If user is admin, verify admin bypass pattern exists
+4. [ ] Check if route has conditional where clause
+5. [ ] Test with a teacher account to isolate admin-specific issue
+
+When encountering "nothing happens" on button clicks:
+
+1. [ ] Add console.log statements to trace execution
+2. [ ] Check browser console for errors
+3. [ ] Verify async/await is handled correctly
+4. [ ] Check if setState timing is affecting logic
+5. [ ] Use local variables for values needed immediately after async calls

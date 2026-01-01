@@ -9,6 +9,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { StatusModal } from '@/components/StatusModal';
 import { PriorPlanUploadModal } from '@/components/PriorPlanUploadModal';
 import { ArtifactComparesSection } from '@/components/artifact/ArtifactComparesSection';
+import { DisputeCasesSection } from '@/components/disputes/DisputeCasesSection';
+import { AlertsBell } from '@/components/alerts/AlertsBell';
 import styles from './page.module.css';
 
 const PLAN_TYPE_LABELS: Record<PlanTypeCode, string> = {
@@ -189,6 +191,9 @@ export default function StudentDetailPage() {
           <button className={styles.backBtn} onClick={() => router.push('/dashboard')}>
             ← Back to Dashboard
           </button>
+          <div className={styles.headerActions}>
+            <AlertsBell />
+          </div>
         </div>
       </header>
 
@@ -519,6 +524,15 @@ export default function StudentDetailPage() {
               onAlignToPlan={async (comparisonId, planId) => {
                 await api.alignArtifactCompare(studentId, comparisonId, planId);
               }}
+            />
+          </section>
+
+          {/* Dispute Cases Section - All authenticated users can view */}
+          <section className={styles.section}>
+            <DisputeCasesSection
+              studentId={studentId}
+              studentName={`${student.firstName} ${student.lastName}`}
+              readOnly={user?.role !== 'ADMIN' && user?.role !== 'CASE_MANAGER'}
             />
           </section>
         </div>
