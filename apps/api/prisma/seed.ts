@@ -1,4 +1,4 @@
-import { PrismaClient, SchoolType } from './generated/client';
+import { PrismaClient, SchoolType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

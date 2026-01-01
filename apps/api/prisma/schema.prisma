@@ -201,6 +201,28 @@ model AppUser {
   signaturePacketsCreatedBy SignaturePacket[] @relation("SignaturePacketCreatedBy")
   signatureRecordsSigner   SignatureRecord[] @relation("SignatureRecordSigner")
 
+  // Scheduled services
+  scheduledPlansCreatedBy  ScheduledServicePlan[] @relation("ScheduledPlanCreatedBy")
+  scheduledPlansUpdatedBy  ScheduledServicePlan[] @relation("ScheduledPlanUpdatedBy")
+
+  // Review schedules and compliance
+  reviewSchedulesCompleted  ReviewSchedule[] @relation("ReviewScheduleCompletedBy")
+  reviewSchedulesAssigned   ReviewSchedule[] @relation("ReviewScheduleAssignedTo")
+  reviewSchedulesCreated    ReviewSchedule[] @relation("ReviewScheduleCreatedBy")
+  complianceTasksAssigned   ComplianceTask[] @relation("ComplianceTaskAssignedTo")
+  complianceTasksCompleted  ComplianceTask[] @relation("ComplianceTaskCompletedBy")
+  complianceTasksDismissed  ComplianceTask[] @relation("ComplianceTaskDismissedBy")
+  inAppAlerts               InAppAlert[]
+
+  // Dispute cases
+  disputeCasesOwned         DisputeCase[] @relation("DisputeCaseOwner")
+  disputeCasesCreated       DisputeCase[] @relation("DisputeCaseCreatedBy")
+  disputeEventsPerformed    DisputeEvent[] @relation("DisputeEventPerformedBy")
+  disputeAttachmentsUploaded DisputeAttachment[] @relation("DisputeAttachmentUploadedBy")
+
+  // Audit logs
+  auditLogs                 AuditLog[] @relation("AuditLogActor")
+
   @@index([googleId])
   @@index([email])
   @@index([username])
@@ -273,6 +295,8 @@ model Student {
   planMeetings   PlanMeeting[]
   referrals      Referral[]
   evaluationCases EvaluationCase[]
+  complianceTasks ComplianceTask[]
+  disputeCases   DisputeCase[]
 
   @@index([recordId])
   @@index([externalId])
@@ -415,6 +439,14 @@ model PlanInstance {
   // Versioning and decisions
   planVersions             PlanVersion[]
   decisions                DecisionLedgerEntry[]
+
+  // Scheduled services
+  scheduledServicePlan     ScheduledServicePlan?
+
+  // Review schedules and compliance
+  reviewSchedules          ReviewSchedule[]
+  complianceTasks          ComplianceTask[]
+  disputeCases             DisputeCase[]
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -841,14 +873,16 @@ model WorkSample {
 // ============================================
 
 model ServiceLog {
-  id          String        @id @default(uuid())
-  date        DateTime
-  minutes     Int
-  serviceType ServiceType
-  setting     ServiceSetting
-  notes       String?       @db.Text
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String         @id @default(uuid())
+  date          DateTime
+  minutes       Int
+  serviceType   ServiceType
+  setting       ServiceSetting
+  notes         String?        @db.Text
+  missedReason  String?        @db.Text   // Reason if session was missed (minutes=0)
+  makeupPlanned Boolean        @default(false)  // Whether makeup session is planned
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   // Relations
   planInstanceId String
@@ -859,6 +893,54 @@ model ServiceLog {
   @@index([planInstanceId, date])
   @@index([planInstanceId, serviceType])
   @@index([providerId])
+}
+
+// ============================================
+// SCHEDULED SERVICE MODELS (Expected Service Delivery)
+// ============================================
+
+enum ScheduledServiceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model ScheduledServicePlan {
+  id             String                 @id @default(uuid())
+  status         ScheduledServiceStatus @default(ACTIVE)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  // Relations
+  planInstanceId String                @unique
+  planInstance   PlanInstance          @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      AppUser               @relation("ScheduledPlanCreatedBy", fields: [createdById], references: [id])
+  updatedById    String?
+  updatedBy      AppUser?              @relation("ScheduledPlanUpdatedBy", fields: [updatedById], references: [id])
+  items          ScheduledServiceItem[]
+
+  @@index([planInstanceId])
+  @@index([status])
+}
+
+model ScheduledServiceItem {
+  id                     String      @id @default(uuid())
+  serviceType            ServiceType
+  expectedMinutesPerWeek Int
+  startDate              DateTime
+  endDate                DateTime?
+  providerRole           String?     // e.g., "Speech Therapist", "OT"
+  location               String?     // e.g., "Resource Room", "Classroom"
+  notes                  String?     @db.Text
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  // Relations
+  scheduledPlanId String
+  scheduledPlan   ScheduledServicePlan @relation(fields: [scheduledPlanId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledPlanId])
+  @@index([serviceType])
 }
 
 // ============================================
@@ -2310,4 +2392,326 @@ model EvaluationCaseTimelineEvent {
   @@index([evaluationCaseId])
   @@index([eventType])
   @@index([createdAt])
+}
+
+// ============================================
+// REVIEW SCHEDULE ENUMS
+// ============================================
+
+enum ScheduleType {
+  IEP_ANNUAL_REVIEW
+  IEP_REEVALUATION
+  PLAN_AMENDMENT_REVIEW
+  SECTION504_PERIODIC_REVIEW
+  BIP_REVIEW
+}
+
+enum ReviewScheduleStatus {
+  OPEN
+  COMPLETE
+  OVERDUE
+}
+
+enum ComplianceTaskType {
+  REVIEW_DUE_SOON
+  REVIEW_OVERDUE
+  DOCUMENT_REQUIRED
+  SIGNATURE_NEEDED
+  MEETING_REQUIRED
+}
+
+enum ComplianceTaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETE
+  DISMISSED
+}
+
+enum AlertType {
+  REVIEW_DUE_SOON
+  REVIEW_OVERDUE
+  COMPLIANCE_TASK
+  SIGNATURE_REQUESTED
+  MEETING_SCHEDULED
+  DOCUMENT_UPLOADED
+  GENERAL
+}
+
+// ============================================
+// DISPUTE CASE ENUMS
+// ============================================
+
+enum DisputeCaseType {
+  SECTION504_COMPLAINT
+  IEP_DISPUTE
+  RECORDS_REQUEST
+  OTHER
+}
+
+enum DisputeCaseStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum DisputeEventType {
+  INTAKE
+  MEETING
+  RESPONSE_SENT
+  DOCUMENT_RECEIVED
+  RESOLUTION
+  STATUS_CHANGE
+  NOTE
+}
+
+// ============================================
+// REVIEW SCHEDULE MODEL
+// Tracks required review dates for plans
+// ============================================
+
+model ReviewSchedule {
+  id               String               @id @default(uuid())
+  planInstanceId   String
+  scheduleType     ScheduleType
+  dueDate          DateTime
+  leadDays         Int                  @default(30)
+  status           ReviewScheduleStatus @default(OPEN)
+  notes            String?              @db.Text
+  completedAt      DateTime?
+  completedByUserId String?
+  assignedToUserId String?
+  createdByUserId  String
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  // Relations
+  planInstance     PlanInstance         @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  completedBy      AppUser?             @relation("ReviewScheduleCompletedBy", fields: [completedByUserId], references: [id])
+  assignedTo       AppUser?             @relation("ReviewScheduleAssignedTo", fields: [assignedToUserId], references: [id])
+  createdBy        AppUser              @relation("ReviewScheduleCreatedBy", fields: [createdByUserId], references: [id])
+  complianceTasks  ComplianceTask[]
+
+  @@index([planInstanceId])
+  @@index([scheduleType])
+  @@index([status])
+  @@index([dueDate])
+  @@index([assignedToUserId])
+}
+
+// ============================================
+// COMPLIANCE TASK MODEL
+// Auto-generated tasks for compliance tracking
+// ============================================
+
+model ComplianceTask {
+  id                String               @id @default(uuid())
+  taskType          ComplianceTaskType
+  status            ComplianceTaskStatus @default(OPEN)
+  title             String
+  description       String?              @db.Text
+  dueDate           DateTime?
+  priority          Int                  @default(1)  // 1=low, 2=medium, 3=high
+  assignedToUserId  String?
+  reviewScheduleId  String?
+  planInstanceId    String?
+  studentId         String?
+  completedAt       DateTime?
+  completedByUserId String?
+  dismissedAt       DateTime?
+  dismissedByUserId String?
+  dismissReason     String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  // Relations
+  assignedTo        AppUser?             @relation("ComplianceTaskAssignedTo", fields: [assignedToUserId], references: [id])
+  reviewSchedule    ReviewSchedule?      @relation(fields: [reviewScheduleId], references: [id], onDelete: Cascade)
+  planInstance      PlanInstance?        @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  student           Student?             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  completedBy       AppUser?             @relation("ComplianceTaskCompletedBy", fields: [completedByUserId], references: [id])
+  dismissedBy       AppUser?             @relation("ComplianceTaskDismissedBy", fields: [dismissedByUserId], references: [id])
+  alerts            InAppAlert[]
+
+  @@index([taskType])
+  @@index([status])
+  @@index([dueDate])
+  @@index([assignedToUserId])
+  @@index([reviewScheduleId])
+  @@index([planInstanceId])
+  @@index([studentId])
+}
+
+// ============================================
+// IN-APP ALERT MODEL
+// Notifications for users
+// ============================================
+
+model InAppAlert {
+  id               String       @id @default(uuid())
+  userId           String
+  alertType        AlertType
+  title            String
+  message          String       @db.Text
+  linkUrl          String?
+  isRead           Boolean      @default(false)
+  readAt           DateTime?
+  isDismissed      Boolean      @default(false)
+  dismissedAt      DateTime?
+  complianceTaskId String?
+  reviewScheduleId String?
+  disputeCaseId    String?
+  createdAt        DateTime     @default(now())
+
+  // Relations
+  user             AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  complianceTask   ComplianceTask? @relation(fields: [complianceTaskId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([alertType])
+  @@index([createdAt])
+}
+
+// ============================================
+// DISPUTE CASE MODEL
+// Tracks complaints, disputes, and resolution
+// ============================================
+
+model DisputeCase {
+  id               String             @id @default(uuid())
+  caseNumber       String             @unique
+  studentId        String
+  planInstanceId   String?
+  caseType         DisputeCaseType
+  status           DisputeCaseStatus  @default(OPEN)
+  summary          String             @db.Text
+  filedDate        DateTime           @default(now())
+  resolvedDate     DateTime?
+  resolutionNotes  String?            @db.Text
+  ownerUserId      String?
+  createdByUserId  String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  // Relations
+  student          Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planInstance     PlanInstance?      @relation(fields: [planInstanceId], references: [id], onDelete: SetNull)
+  owner            AppUser?           @relation("DisputeCaseOwner", fields: [ownerUserId], references: [id])
+  createdBy        AppUser            @relation("DisputeCaseCreatedBy", fields: [createdByUserId], references: [id])
+  events           DisputeEvent[]
+  attachments      DisputeAttachment[]
+
+  @@index([studentId])
+  @@index([planInstanceId])
+  @@index([caseType])
+  @@index([status])
+  @@index([ownerUserId])
+  @@index([filedDate])
+}
+
+// ============================================
+// DISPUTE EVENT MODEL
+// Timeline events for dispute cases
+// ============================================
+
+model DisputeEvent {
+  id               String           @id @default(uuid())
+  disputeCaseId    String
+  eventType        DisputeEventType
+  eventDate        DateTime         @default(now())
+  description      String           @db.Text
+  notes            String?          @db.Text
+  performedByUserId String
+  createdAt        DateTime         @default(now())
+
+  // Relations
+  disputeCase      DisputeCase      @relation(fields: [disputeCaseId], references: [id], onDelete: Cascade)
+  performedBy      AppUser          @relation("DisputeEventPerformedBy", fields: [performedByUserId], references: [id])
+
+  @@index([disputeCaseId])
+  @@index([eventType])
+  @@index([eventDate])
+}
+
+// ============================================
+// DISPUTE ATTACHMENT MODEL
+// Attachments for dispute cases
+// ============================================
+
+model DisputeAttachment {
+  id               String       @id @default(uuid())
+  disputeCaseId    String
+  fileName         String
+  fileType         String
+  filePath         String
+  fileSize         Int
+  description      String?
+  uploadedByUserId String
+  createdAt        DateTime     @default(now())
+
+  // Relations
+  disputeCase      DisputeCase  @relation(fields: [disputeCaseId], references: [id], onDelete: Cascade)
+  uploadedBy       AppUser      @relation("DisputeAttachmentUploadedBy", fields: [uploadedByUserId], references: [id])
+
+  @@index([disputeCaseId])
+}
+
+// ============================================
+// AUDIT LOG ENUMS
+// ============================================
+
+enum AuditActionType {
+  PLAN_VIEWED
+  PLAN_UPDATED
+  PLAN_FINALIZED
+  PDF_EXPORTED
+  PDF_DOWNLOADED
+  SIGNATURE_ADDED
+  REVIEW_SCHEDULE_CREATED
+  CASE_VIEWED
+  CASE_EXPORTED
+  PERMISSION_DENIED
+}
+
+enum AuditEntityType {
+  PLAN
+  PLAN_VERSION
+  PLAN_EXPORT
+  STUDENT
+  GOAL
+  SERVICE
+  REVIEW_SCHEDULE
+  COMPLIANCE_TASK
+  DISPUTE_CASE
+  SIGNATURE_PACKET
+  MEETING
+}
+
+// ============================================
+// AUDIT LOG MODEL
+// Immutable record of sensitive record access and exports
+// ============================================
+
+model AuditLog {
+  id               String          @id @default(uuid())
+  actorUserId      String
+  actionType       AuditActionType
+  entityType       AuditEntityType
+  entityId         String
+  studentId        String?
+  planId           String?
+  planVersionId    String?
+  timestamp        DateTime        @default(now())
+  metadataJson     Json?           @db.JsonB
+  ipAddress        String?
+  userAgent        String?
+
+  // Relations
+  actor            AppUser         @relation("AuditLogActor", fields: [actorUserId], references: [id])
+
+  @@index([timestamp])
+  @@index([actorUserId, timestamp])
+  @@index([studentId, timestamp])
+  @@index([entityType, entityId])
 }
