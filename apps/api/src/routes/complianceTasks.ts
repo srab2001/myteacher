@@ -230,6 +230,84 @@ router.get('/compliance-tasks/my-tasks', requireAuth, async (req: Request, res: 
 });
 
 // ============================================
+// GET COMPLIANCE DASHBOARD SUMMARY
+// GET /api/compliance-tasks/dashboard
+// This route MUST be defined BEFORE /:taskId to prevent "dashboard" from being captured as taskId
+// ============================================
+
+router.get('/compliance-tasks/dashboard', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!canViewTasks(req.user?.role)) {
+      throw Errors.forbidden('Not authorized to view compliance dashboard');
+    }
+
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    // Get task counts by status
+    const [openCount, inProgressCount, overdueCount, dueIn30DaysCount] = await Promise.all([
+      prisma.complianceTask.count({
+        where: { status: ComplianceTaskStatus.OPEN },
+      }),
+      prisma.complianceTask.count({
+        where: { status: ComplianceTaskStatus.IN_PROGRESS },
+      }),
+      prisma.complianceTask.count({
+        where: {
+          status: { in: [ComplianceTaskStatus.OPEN, ComplianceTaskStatus.IN_PROGRESS] },
+          dueDate: { lt: now },
+        },
+      }),
+      prisma.complianceTask.count({
+        where: {
+          status: { in: [ComplianceTaskStatus.OPEN, ComplianceTaskStatus.IN_PROGRESS] },
+          dueDate: { gte: now, lte: thirtyDaysFromNow },
+        },
+      }),
+    ]);
+
+    // Get recent tasks for quick view
+    const recentTasks = await prisma.complianceTask.findMany({
+      where: {
+        status: { in: [ComplianceTaskStatus.OPEN, ComplianceTaskStatus.IN_PROGRESS] },
+      },
+      orderBy: [
+        { priority: 'desc' },
+        { dueDate: 'asc' },
+      ],
+      take: 10,
+      include: {
+        student: { select: { id: true, firstName: true, lastName: true } },
+        planInstance: {
+          select: {
+            id: true,
+            planType: { select: { code: true, name: true } },
+          },
+        },
+        assignedTo: { select: { id: true, displayName: true } },
+      },
+    });
+
+    res.json({
+      summary: {
+        open: openCount,
+        inProgress: inProgressCount,
+        overdue: overdueCount,
+        dueIn30Days: dueIn30DaysCount,
+      },
+      recentTasks,
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return next(error);
+    }
+    console.error('Error fetching compliance dashboard:', error);
+    next(Errors.internal('Failed to fetch compliance dashboard'));
+  }
+});
+
+// ============================================
 // GET SINGLE COMPLIANCE TASK
 // GET /api/compliance-tasks/:taskId
 // ============================================
@@ -506,83 +584,6 @@ router.get('/task-types', requireAuth, async (_req: Request, res: Response) => {
   ];
 
   res.json({ taskTypes });
-});
-
-// ============================================
-// GET COMPLIANCE DASHBOARD SUMMARY
-// GET /api/compliance-tasks/dashboard
-// ============================================
-
-router.get('/compliance-tasks/dashboard', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!canViewTasks(req.user?.role)) {
-      throw Errors.forbidden('Not authorized to view compliance dashboard');
-    }
-
-    const now = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-
-    // Get task counts by status
-    const [openCount, inProgressCount, overdueCount, dueIn30DaysCount] = await Promise.all([
-      prisma.complianceTask.count({
-        where: { status: ComplianceTaskStatus.OPEN },
-      }),
-      prisma.complianceTask.count({
-        where: { status: ComplianceTaskStatus.IN_PROGRESS },
-      }),
-      prisma.complianceTask.count({
-        where: {
-          status: { in: [ComplianceTaskStatus.OPEN, ComplianceTaskStatus.IN_PROGRESS] },
-          dueDate: { lt: now },
-        },
-      }),
-      prisma.complianceTask.count({
-        where: {
-          status: { in: [ComplianceTaskStatus.OPEN, ComplianceTaskStatus.IN_PROGRESS] },
-          dueDate: { gte: now, lte: thirtyDaysFromNow },
-        },
-      }),
-    ]);
-
-    // Get recent tasks for quick view
-    const recentTasks = await prisma.complianceTask.findMany({
-      where: {
-        status: { in: [ComplianceTaskStatus.OPEN, ComplianceTaskStatus.IN_PROGRESS] },
-      },
-      orderBy: [
-        { priority: 'desc' },
-        { dueDate: 'asc' },
-      ],
-      take: 10,
-      include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
-        planInstance: {
-          select: {
-            id: true,
-            planType: { select: { code: true, name: true } },
-          },
-        },
-        assignedTo: { select: { id: true, displayName: true } },
-      },
-    });
-
-    res.json({
-      summary: {
-        open: openCount,
-        inProgress: inProgressCount,
-        overdue: overdueCount,
-        dueIn30Days: dueIn30DaysCount,
-      },
-      recentTasks,
-    });
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return next(error);
-    }
-    console.error('Error fetching compliance dashboard:', error);
-    next(Errors.internal('Failed to fetch compliance dashboard'));
-  }
 });
 
 export default router;

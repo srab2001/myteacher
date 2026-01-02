@@ -166,6 +166,70 @@ router.get('/plans/:planId/review-schedules', requireAuth, async (req: Request, 
 });
 
 // ============================================
+// GET ALL DUE/OVERDUE REVIEWS (Dashboard)
+// GET /api/review-schedules/dashboard
+// NOTE: This route MUST be defined BEFORE /:scheduleId to avoid 'dashboard' being captured as a scheduleId
+// ============================================
+
+router.get('/review-schedules/dashboard', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!canViewReviews(req.user?.role)) {
+      throw Errors.forbidden('Not authorized to view review schedules');
+    }
+
+    const { days = '30' } = req.query;
+    const daysAhead = parseInt(days as string, 10) || 30;
+
+    const now = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+
+    // Get upcoming reviews (within lead window)
+    const upcomingReviews = await prisma.reviewSchedule.findMany({
+      where: {
+        status: { in: [ReviewScheduleStatus.OPEN, ReviewScheduleStatus.OVERDUE] },
+        dueDate: { lte: futureDate },
+      },
+      orderBy: { dueDate: 'asc' },
+      include: {
+        planInstance: {
+          select: {
+            id: true,
+            student: { select: { id: true, firstName: true, lastName: true } },
+            planType: { select: { code: true, name: true } },
+          },
+        },
+        assignedTo: { select: { id: true, displayName: true } },
+      },
+    });
+
+    // Separate into overdue and upcoming
+    const overdue = upcomingReviews.filter(r => r.dueDate < now || r.status === ReviewScheduleStatus.OVERDUE);
+    const upcoming = upcomingReviews.filter(r => r.dueDate >= now && r.status !== ReviewScheduleStatus.OVERDUE);
+
+    res.json({
+      overdue,
+      upcoming,
+      summary: {
+        overdueCount: overdue.length,
+        upcomingCount: upcoming.length,
+        totalDueWithin30Days: upcomingReviews.filter(r => {
+          const thirtyDays = new Date();
+          thirtyDays.setDate(thirtyDays.getDate() + 30);
+          return r.dueDate <= thirtyDays;
+        }).length,
+      },
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return next(error);
+    }
+    console.error('Error fetching review dashboard:', error);
+    next(Errors.internal('Failed to fetch review dashboard'));
+  }
+});
+
+// ============================================
 // GET SINGLE REVIEW SCHEDULE
 // GET /api/review-schedules/:scheduleId
 // ============================================
@@ -369,69 +433,6 @@ router.post('/review-schedules/:scheduleId/complete', requireAuth, async (req: R
     }
     console.error('Error completing review schedule:', error);
     next(Errors.internal('Failed to complete review schedule'));
-  }
-});
-
-// ============================================
-// GET ALL DUE/OVERDUE REVIEWS (Dashboard)
-// GET /api/review-schedules/dashboard
-// ============================================
-
-router.get('/review-schedules/dashboard', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!canViewReviews(req.user?.role)) {
-      throw Errors.forbidden('Not authorized to view review schedules');
-    }
-
-    const { days = '30' } = req.query;
-    const daysAhead = parseInt(days as string, 10) || 30;
-
-    const now = new Date();
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + daysAhead);
-
-    // Get upcoming reviews (within lead window)
-    const upcomingReviews = await prisma.reviewSchedule.findMany({
-      where: {
-        status: { in: [ReviewScheduleStatus.OPEN, ReviewScheduleStatus.OVERDUE] },
-        dueDate: { lte: futureDate },
-      },
-      orderBy: { dueDate: 'asc' },
-      include: {
-        planInstance: {
-          select: {
-            id: true,
-            student: { select: { id: true, firstName: true, lastName: true } },
-            planType: { select: { code: true, name: true } },
-          },
-        },
-        assignedTo: { select: { id: true, displayName: true } },
-      },
-    });
-
-    // Separate into overdue and upcoming
-    const overdue = upcomingReviews.filter(r => r.dueDate < now || r.status === ReviewScheduleStatus.OVERDUE);
-    const upcoming = upcomingReviews.filter(r => r.dueDate >= now && r.status !== ReviewScheduleStatus.OVERDUE);
-
-    res.json({
-      overdue,
-      upcoming,
-      summary: {
-        overdueCount: overdue.length,
-        upcomingCount: upcoming.length,
-        totalDueWithin30Days: upcomingReviews.filter(r => {
-          const thirtyDays = new Date();
-          thirtyDays.setDate(thirtyDays.getDate() + 30);
-          return r.dueDate <= thirtyDays;
-        }).length,
-      },
-    });
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return next(error);
-    }
-    console.error('Error fetching review dashboard:', error);
-    next(Errors.internal('Failed to fetch review dashboard'));
   }
 });
 

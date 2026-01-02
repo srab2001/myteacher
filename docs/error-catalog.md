@@ -505,3 +505,110 @@ When encountering "nothing happens" on button clicks:
 3. [ ] Verify async/await is handled correctly
 4. [ ] Check if setState timing is affecting logic
 5. [ ] Use local variables for values needed immediately after async calls
+
+---
+
+### 12. Express Route Ordering - Parameter Capture Issue
+
+**Error:**
+```
+[ERR_COMPLIANCE_TASK_NOT_FOUND] Compliance task not found { taskId: 'dashboard' }
+[ERR_REVIEW_SCHEDULE_NOT_FOUND] Review schedule not found { scheduleId: 'dashboard' }
+```
+
+**Cause:** Express matches routes in the order they are defined. A parameterized route like `/:taskId` defined BEFORE a specific route like `/dashboard` will capture "dashboard" as the taskId parameter.
+
+**Bad Order:**
+```typescript
+router.get('/compliance-tasks/:taskId', ...);  // Line 237 - catches "dashboard"
+router.get('/compliance-tasks/dashboard', ...); // Line 516 - never reached!
+```
+
+**Resolution:**
+Move specific routes BEFORE parameterized routes:
+
+```typescript
+// GOOD - Specific routes first
+router.get('/compliance-tasks/my-tasks', ...);   // Specific route
+router.get('/compliance-tasks/dashboard', ...);  // Specific route
+router.get('/compliance-tasks/:taskId', ...);    // Parameterized route LAST
+```
+
+**Files Fixed:**
+- `apps/api/src/routes/complianceTasks.ts` - moved `/dashboard` before `/:taskId`
+- `apps/api/src/routes/reviewSchedules.ts` - moved `/dashboard` before `/:scheduleId`
+
+**Prevention:**
+Always define specific routes before parameterized routes in Express routers.
+
+---
+
+### 13. Missing Database Tables After Schema Changes
+
+**Error:**
+```
+Invalid `prisma.disputeCase.count()` invocation:
+The table `public.DisputeCase` does not exist in the current database.
+```
+
+**Cause:** Prisma schema includes models that haven't been migrated to the database.
+
+**Resolution:**
+1. Create a manual migration SQL file with `CREATE TABLE IF NOT EXISTS`
+2. Place in `prisma/migrations/YYYYMMDDHHMMSS_migration_name/migration.sql`
+3. Run `pnpm --filter @myteacher/api build` to apply
+
+**Prevention:**
+- Always create migrations when adding new models
+- Check `prisma migrate status` before deploying
+
+---
+
+### 14. Vercel Build Cache Serving Old Code
+
+**Error:** Route fixes deployed but Vercel still serves old code.
+
+**Evidence in Build Log:**
+```
+Restored build cache from previous deployment (xxx)
+```
+
+**Resolution:**
+1. Go to Vercel Dashboard → Deployments
+2. Click three dots (⋮) on latest deployment → "Redeploy"
+3. **UNCHECK** "Use existing Build Cache"
+4. Click Redeploy
+
+---
+
+### 15. Google OAuth 401/500 Errors on Production
+
+**Cause:** Multiple possible issues:
+1. Vercel Root Directory incorrect (should be `apps/api` for API)
+2. Environment variables not set for Production
+3. Missing DATABASE_URL, SESSION_SECRET, FRONTEND_URL
+
+**Resolution:**
+1. Verify Root Directory in Vercel project settings
+2. Set all environment variables for **Production** (not just Preview)
+3. Redeploy without cache
+
+---
+
+## Quick Reference: Express Route Ordering
+
+**CRITICAL:** Routes are matched in definition order. Always define:
+1. Static routes (`/health`)
+2. Specific path routes (`/dashboard`, `/my-tasks`)
+3. Parameterized routes (`/:id`) - LAST
+
+---
+
+## Quick Reference: Vercel Deployment Checklist
+
+1. [ ] Root Directory correct (api vs web)
+2. [ ] Environment Variables set for Production
+3. [ ] Build Logs show no errors
+4. [ ] Runtime Logs checked for actual errors
+5. [ ] If code changes aren't reflected, redeploy WITHOUT cache
+6. [ ] Database migrations applied

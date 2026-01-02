@@ -152,7 +152,7 @@ router.get('/context', requireAuth, async (req: Request, res: Response) => {
       precedenceSearched.push({ scopeType: 'SCHOOL', scopeId: student.school.id });
       if (student.school.district) {
         precedenceSearched.push({ scopeType: 'DISTRICT', scopeId: student.school.district.id });
-        precedenceSearched.push({ scopeType: 'STATE', scopeId: student.school.district.stateCode });
+        precedenceSearched.push({ scopeType: 'STATE', scopeId: student.school.district.stateId });
       }
     }
 
