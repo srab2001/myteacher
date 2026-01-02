@@ -1,6 +1,6 @@
 // Vercel Serverless Function Entry Point
 // @ts-nocheck - Skip type checking for this entry point
-// Force rebuild: 2026-01-02T17:45 - Route ordering fixes for dashboard endpoints
+// Force rebuild: 2026-01-02T19:00 - Route ordering fixes MUST be deployed
 // Prisma client location: node_modules/@prisma/client (NOT prisma/generated)
 import { createApp } from '../src/app.js';
 
