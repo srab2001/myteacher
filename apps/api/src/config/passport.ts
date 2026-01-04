@@ -102,20 +102,44 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
           let user = await prisma.appUser.findUnique({
             where: { googleId: profile.id },
           });
-          console.log('Google OAuth - existing user found:', !!user);
+          console.log('Google OAuth - user found by googleId:', !!user);
 
           if (!user) {
-            // Create new user
-            console.log('Google OAuth - creating new user');
-            user = await prisma.appUser.create({
-              data: {
-                googleId: profile.id,
-                email,
-                displayName: profile.displayName || email,
-                avatarUrl: profile.photos?.[0]?.value,
-              },
+            // Not found by googleId - check if user exists with this email
+            console.log('Google OAuth - searching for user by email:', email);
+            const existingUserByEmail = await prisma.appUser.findUnique({
+              where: { email },
             });
-            console.log('Google OAuth - new user created:', user.id);
+
+            if (existingUserByEmail) {
+              if (existingUserByEmail.googleId && existingUserByEmail.googleId !== profile.id) {
+                // User exists with a different Google account - security concern
+                console.error('Google OAuth - email already linked to different Google account');
+                return done(new Error('This email is already linked to a different Google account'));
+              }
+              // User exists but has no googleId (e.g., created by admin) - link their Google account
+              console.log('Google OAuth - linking Google account to existing user:', existingUserByEmail.id);
+              user = await prisma.appUser.update({
+                where: { id: existingUserByEmail.id },
+                data: {
+                  googleId: profile.id,
+                  avatarUrl: existingUserByEmail.avatarUrl || profile.photos?.[0]?.value,
+                },
+              });
+              console.log('Google OAuth - Google account linked to existing user:', user.id);
+            } else {
+              // No user found - create new user
+              console.log('Google OAuth - creating new user');
+              user = await prisma.appUser.create({
+                data: {
+                  googleId: profile.id,
+                  email,
+                  displayName: profile.displayName || email,
+                  avatarUrl: profile.photos?.[0]?.value,
+                },
+              });
+              console.log('Google OAuth - new user created:', user.id);
+            }
           }
 
           return done(null, user);
