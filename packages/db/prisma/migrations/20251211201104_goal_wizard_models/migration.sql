@@ -1,41 +1,45 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('TEACHER', 'CASE_MANAGER', 'ADMIN');
+DO $$ BEGIN
+    CREATE TYPE "UserRole" AS ENUM ('TEACHER', 'CASE_MANAGER', 'ADMIN');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "PlanTypeCode" AS ENUM ('IEP', 'FIVE_OH_FOUR', 'BEHAVIOR_PLAN');
+DO $$ BEGIN CREATE TYPE "PlanTypeCode" AS ENUM ('IEP', 'FIVE_OH_FOUR', 'BEHAVIOR_PLAN'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "StatusScope" AS ENUM ('OVERALL', 'ACADEMIC', 'BEHAVIOR', 'SERVICES');
+DO $$ BEGIN CREATE TYPE "StatusScope" AS ENUM ('OVERALL', 'ACADEMIC', 'BEHAVIOR', 'SERVICES'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "StatusCode" AS ENUM ('ON_TRACK', 'WATCH', 'CONCERN', 'URGENT');
+DO $$ BEGIN CREATE TYPE "StatusCode" AS ENUM ('ON_TRACK', 'WATCH', 'CONCERN', 'URGENT'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "GoalArea" AS ENUM ('READING', 'WRITING', 'MATH', 'COMMUNICATION', 'SOCIAL_EMOTIONAL', 'BEHAVIOR', 'MOTOR_SKILLS', 'DAILY_LIVING', 'VOCATIONAL', 'OTHER');
+DO $$ BEGIN CREATE TYPE "GoalArea" AS ENUM ('READING', 'WRITING', 'MATH', 'COMMUNICATION', 'SOCIAL_EMOTIONAL', 'BEHAVIOR', 'MOTOR_SKILLS', 'DAILY_LIVING', 'VOCATIONAL', 'OTHER'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "ProgressLevel" AS ENUM ('NOT_ADDRESSED', 'FULL_SUPPORT', 'SOME_SUPPORT', 'LOW_SUPPORT', 'MET_TARGET');
+DO $$ BEGIN CREATE TYPE "ProgressLevel" AS ENUM ('NOT_ADDRESSED', 'FULL_SUPPORT', 'SOME_SUPPORT', 'LOW_SUPPORT', 'MET_TARGET'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "WorkSampleRating" AS ENUM ('BELOW_TARGET', 'NEAR_TARGET', 'MEETS_TARGET', 'ABOVE_TARGET');
+DO $$ BEGIN CREATE TYPE "WorkSampleRating" AS ENUM ('BELOW_TARGET', 'NEAR_TARGET', 'MEETS_TARGET', 'ABOVE_TARGET'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "ServiceType" AS ENUM ('SPECIAL_EDUCATION', 'SPEECH_LANGUAGE', 'OCCUPATIONAL_THERAPY', 'PHYSICAL_THERAPY', 'COUNSELING', 'BEHAVIORAL_SUPPORT', 'READING_SPECIALIST', 'PARAPROFESSIONAL', 'OTHER');
+DO $$ BEGIN CREATE TYPE "ServiceType" AS ENUM ('SPECIAL_EDUCATION', 'SPEECH_LANGUAGE', 'OCCUPATIONAL_THERAPY', 'PHYSICAL_THERAPY', 'COUNSELING', 'BEHAVIORAL_SUPPORT', 'READING_SPECIALIST', 'PARAPROFESSIONAL', 'OTHER'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "ServiceSetting" AS ENUM ('GENERAL_EDUCATION', 'SPECIAL_EDUCATION', 'RESOURCE_ROOM', 'THERAPY_ROOM', 'COMMUNITY', 'HOME', 'OTHER');
+DO $$ BEGIN CREATE TYPE "ServiceSetting" AS ENUM ('GENERAL_EDUCATION', 'SPECIAL_EDUCATION', 'RESOURCE_ROOM', 'THERAPY_ROOM', 'COMMUNITY', 'HOME', 'OTHER'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "PriorPlanSource" AS ENUM ('UPLOADED', 'SIS_IMPORT');
+DO $$ BEGIN CREATE TYPE "PriorPlanSource" AS ENUM ('UPLOADED', 'SIS_IMPORT'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "IngestionStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETE', 'ERROR');
+DO $$ BEGIN CREATE TYPE "IngestionStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETE', 'ERROR'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateEnum
-CREATE TYPE "BehaviorMeasurementType" AS ENUM ('FREQUENCY', 'DURATION', 'INTERVAL', 'RATING');
+DO $$ BEGIN CREATE TYPE "BehaviorMeasurementType" AS ENUM ('FREQUENCY', 'DURATION', 'INTERVAL', 'RATING'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateTable
-CREATE TABLE "AppUser" (
+CREATE TABLE IF NOT EXISTS "AppUser" (
     "id" TEXT NOT NULL,
     "googleId" TEXT,
     "username" TEXT,
@@ -58,7 +62,7 @@ CREATE TABLE "AppUser" (
 );
 
 -- CreateTable
-CREATE TABLE "Jurisdiction" (
+CREATE TABLE IF NOT EXISTS "Jurisdiction" (
     "id" TEXT NOT NULL,
     "stateCode" TEXT NOT NULL,
     "stateName" TEXT NOT NULL,
@@ -71,7 +75,7 @@ CREATE TABLE "Jurisdiction" (
 );
 
 -- CreateTable
-CREATE TABLE "Student" (
+CREATE TABLE IF NOT EXISTS "Student" (
     "id" TEXT NOT NULL,
     "recordId" TEXT NOT NULL,
     "externalId" TEXT,
@@ -91,7 +95,7 @@ CREATE TABLE "Student" (
 );
 
 -- CreateTable
-CREATE TABLE "StudentStatus" (
+CREATE TABLE IF NOT EXISTS "StudentStatus" (
     "id" TEXT NOT NULL,
     "scope" "StatusScope" NOT NULL,
     "code" "StatusCode" NOT NULL,
@@ -105,7 +109,7 @@ CREATE TABLE "StudentStatus" (
 );
 
 -- CreateTable
-CREATE TABLE "PlanType" (
+CREATE TABLE IF NOT EXISTS "PlanType" (
     "id" TEXT NOT NULL,
     "code" "PlanTypeCode" NOT NULL,
     "name" TEXT NOT NULL,
@@ -118,7 +122,7 @@ CREATE TABLE "PlanType" (
 );
 
 -- CreateTable
-CREATE TABLE "PlanSchema" (
+CREATE TABLE IF NOT EXISTS "PlanSchema" (
     "id" TEXT NOT NULL,
     "version" INTEGER NOT NULL DEFAULT 1,
     "name" TEXT NOT NULL,
@@ -136,7 +140,7 @@ CREATE TABLE "PlanSchema" (
 );
 
 -- CreateTable
-CREATE TABLE "PlanFieldConfig" (
+CREATE TABLE IF NOT EXISTS "PlanFieldConfig" (
     "id" TEXT NOT NULL,
     "planSchemaId" TEXT NOT NULL,
     "sectionKey" TEXT NOT NULL,
@@ -149,7 +153,7 @@ CREATE TABLE "PlanFieldConfig" (
 );
 
 -- CreateTable
-CREATE TABLE "PlanInstance" (
+CREATE TABLE IF NOT EXISTS "PlanInstance" (
     "id" TEXT NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
     "endDate" TIMESTAMP(3),
@@ -164,7 +168,7 @@ CREATE TABLE "PlanInstance" (
 );
 
 -- CreateTable
-CREATE TABLE "PlanFieldValue" (
+CREATE TABLE IF NOT EXISTS "PlanFieldValue" (
     "id" TEXT NOT NULL,
     "fieldKey" TEXT NOT NULL,
     "value" JSONB NOT NULL,
@@ -176,7 +180,7 @@ CREATE TABLE "PlanFieldValue" (
 );
 
 -- CreateTable
-CREATE TABLE "Goal" (
+CREATE TABLE IF NOT EXISTS "Goal" (
     "id" TEXT NOT NULL,
     "goalCode" TEXT NOT NULL,
     "area" "GoalArea" NOT NULL,
@@ -194,7 +198,7 @@ CREATE TABLE "Goal" (
 );
 
 -- CreateTable
-CREATE TABLE "GoalProgress" (
+CREATE TABLE IF NOT EXISTS "GoalProgress" (
     "id" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "quickSelect" "ProgressLevel" NOT NULL,
@@ -209,7 +213,7 @@ CREATE TABLE "GoalProgress" (
 );
 
 -- CreateTable
-CREATE TABLE "WorkSample" (
+CREATE TABLE IF NOT EXISTS "WorkSample" (
     "id" TEXT NOT NULL,
     "fileUrl" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
@@ -226,7 +230,7 @@ CREATE TABLE "WorkSample" (
 );
 
 -- CreateTable
-CREATE TABLE "ServiceLog" (
+CREATE TABLE IF NOT EXISTS "ServiceLog" (
     "id" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
     "minutes" INTEGER NOT NULL,
@@ -242,7 +246,7 @@ CREATE TABLE "ServiceLog" (
 );
 
 -- CreateTable
-CREATE TABLE "PriorPlanDocument" (
+CREATE TABLE IF NOT EXISTS "PriorPlanDocument" (
     "id" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
     "storageKey" TEXT NOT NULL,
@@ -258,7 +262,7 @@ CREATE TABLE "PriorPlanDocument" (
 );
 
 -- CreateTable
-CREATE TABLE "BestPracticeDocument" (
+CREATE TABLE IF NOT EXISTS "BestPracticeDocument" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -278,7 +282,7 @@ CREATE TABLE "BestPracticeDocument" (
 );
 
 -- CreateTable
-CREATE TABLE "FormTemplate" (
+CREATE TABLE IF NOT EXISTS "FormTemplate" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -294,7 +298,7 @@ CREATE TABLE "FormTemplate" (
 );
 
 -- CreateTable
-CREATE TABLE "BestPracticeChunk" (
+CREATE TABLE IF NOT EXISTS "BestPracticeChunk" (
     "id" TEXT NOT NULL,
     "sequence" INTEGER NOT NULL,
     "sectionTag" TEXT,
@@ -310,7 +314,7 @@ CREATE TABLE "BestPracticeChunk" (
 );
 
 -- CreateTable
-CREATE TABLE "BehaviorPlan" (
+CREATE TABLE IF NOT EXISTS "BehaviorPlan" (
     "id" TEXT NOT NULL,
     "planInstanceId" TEXT NOT NULL,
     "summary" TEXT,
@@ -321,7 +325,7 @@ CREATE TABLE "BehaviorPlan" (
 );
 
 -- CreateTable
-CREATE TABLE "BehaviorTarget" (
+CREATE TABLE IF NOT EXISTS "BehaviorTarget" (
     "id" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -338,7 +342,7 @@ CREATE TABLE "BehaviorTarget" (
 );
 
 -- CreateTable
-CREATE TABLE "BehaviorEvent" (
+CREATE TABLE IF NOT EXISTS "BehaviorEvent" (
     "id" TEXT NOT NULL,
     "eventDate" TIMESTAMP(3) NOT NULL,
     "startTime" TIMESTAMP(3),
@@ -355,7 +359,7 @@ CREATE TABLE "BehaviorEvent" (
 );
 
 -- CreateTable
-CREATE TABLE "UserPermission" (
+CREATE TABLE IF NOT EXISTS "UserPermission" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "canCreatePlans" BOOLEAN NOT NULL DEFAULT false,
@@ -370,7 +374,7 @@ CREATE TABLE "UserPermission" (
 );
 
 -- CreateTable
-CREATE TABLE "StudentAccess" (
+CREATE TABLE IF NOT EXISTS "StudentAccess" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
@@ -383,7 +387,7 @@ CREATE TABLE "StudentAccess" (
 );
 
 -- CreateTable
-CREATE TABLE "ArtifactComparison" (
+CREATE TABLE IF NOT EXISTS "ArtifactComparison" (
     "id" TEXT NOT NULL,
     "planInstanceId" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
@@ -401,181 +405,181 @@ CREATE TABLE "ArtifactComparison" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AppUser_googleId_key" ON "AppUser"("googleId");
+CREATE UNIQUE INDEX IF NOT EXISTS "AppUser_googleId_key" ON "AppUser"("googleId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AppUser_username_key" ON "AppUser"("username");
+CREATE UNIQUE INDEX IF NOT EXISTS "AppUser_username_key" ON "AppUser"("username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AppUser_email_key" ON "AppUser"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "AppUser_email_key" ON "AppUser"("email");
 
 -- CreateIndex
-CREATE INDEX "AppUser_googleId_idx" ON "AppUser"("googleId");
+CREATE INDEX IF NOT EXISTS "AppUser_googleId_idx" ON "AppUser"("googleId");
 
 -- CreateIndex
-CREATE INDEX "AppUser_email_idx" ON "AppUser"("email");
+CREATE INDEX IF NOT EXISTS "AppUser_email_idx" ON "AppUser"("email");
 
 -- CreateIndex
-CREATE INDEX "AppUser_username_idx" ON "AppUser"("username");
+CREATE INDEX IF NOT EXISTS "AppUser_username_idx" ON "AppUser"("username");
 
 -- CreateIndex
-CREATE INDEX "Jurisdiction_stateCode_idx" ON "Jurisdiction"("stateCode");
+CREATE INDEX IF NOT EXISTS "Jurisdiction_stateCode_idx" ON "Jurisdiction"("stateCode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Jurisdiction_stateCode_districtCode_key" ON "Jurisdiction"("stateCode", "districtCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "Jurisdiction_stateCode_districtCode_key" ON "Jurisdiction"("stateCode", "districtCode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Student_recordId_key" ON "Student"("recordId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Student_recordId_key" ON "Student"("recordId");
 
 -- CreateIndex
-CREATE INDEX "Student_recordId_idx" ON "Student"("recordId");
+CREATE INDEX IF NOT EXISTS "Student_recordId_idx" ON "Student"("recordId");
 
 -- CreateIndex
-CREATE INDEX "Student_externalId_idx" ON "Student"("externalId");
+CREATE INDEX IF NOT EXISTS "Student_externalId_idx" ON "Student"("externalId");
 
 -- CreateIndex
-CREATE INDEX "Student_lastName_firstName_idx" ON "Student"("lastName", "firstName");
+CREATE INDEX IF NOT EXISTS "Student_lastName_firstName_idx" ON "Student"("lastName", "firstName");
 
 -- CreateIndex
-CREATE INDEX "Student_teacherId_idx" ON "Student"("teacherId");
+CREATE INDEX IF NOT EXISTS "Student_teacherId_idx" ON "Student"("teacherId");
 
 -- CreateIndex
-CREATE INDEX "StudentStatus_studentId_scope_idx" ON "StudentStatus"("studentId", "scope");
+CREATE INDEX IF NOT EXISTS "StudentStatus_studentId_scope_idx" ON "StudentStatus"("studentId", "scope");
 
 -- CreateIndex
-CREATE INDEX "StudentStatus_studentId_effectiveDate_idx" ON "StudentStatus"("studentId", "effectiveDate");
+CREATE INDEX IF NOT EXISTS "StudentStatus_studentId_effectiveDate_idx" ON "StudentStatus"("studentId", "effectiveDate");
 
 -- CreateIndex
-CREATE INDEX "PlanType_code_idx" ON "PlanType"("code");
+CREATE INDEX IF NOT EXISTS "PlanType_code_idx" ON "PlanType"("code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PlanType_jurisdictionId_code_key" ON "PlanType"("jurisdictionId", "code");
+CREATE UNIQUE INDEX IF NOT EXISTS "PlanType_jurisdictionId_code_key" ON "PlanType"("jurisdictionId", "code");
 
 -- CreateIndex
-CREATE INDEX "PlanSchema_planTypeId_isActive_idx" ON "PlanSchema"("planTypeId", "isActive");
+CREATE INDEX IF NOT EXISTS "PlanSchema_planTypeId_isActive_idx" ON "PlanSchema"("planTypeId", "isActive");
 
 -- CreateIndex
-CREATE INDEX "PlanFieldConfig_planSchemaId_idx" ON "PlanFieldConfig"("planSchemaId");
+CREATE INDEX IF NOT EXISTS "PlanFieldConfig_planSchemaId_idx" ON "PlanFieldConfig"("planSchemaId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PlanFieldConfig_planSchemaId_sectionKey_fieldKey_key" ON "PlanFieldConfig"("planSchemaId", "sectionKey", "fieldKey");
+CREATE UNIQUE INDEX IF NOT EXISTS "PlanFieldConfig_planSchemaId_sectionKey_fieldKey_key" ON "PlanFieldConfig"("planSchemaId", "sectionKey", "fieldKey");
 
 -- CreateIndex
-CREATE INDEX "PlanInstance_studentId_planTypeId_idx" ON "PlanInstance"("studentId", "planTypeId");
+CREATE INDEX IF NOT EXISTS "PlanInstance_studentId_planTypeId_idx" ON "PlanInstance"("studentId", "planTypeId");
 
 -- CreateIndex
-CREATE INDEX "PlanInstance_status_idx" ON "PlanInstance"("status");
+CREATE INDEX IF NOT EXISTS "PlanInstance_status_idx" ON "PlanInstance"("status");
 
 -- CreateIndex
-CREATE INDEX "PlanFieldValue_planInstanceId_idx" ON "PlanFieldValue"("planInstanceId");
+CREATE INDEX IF NOT EXISTS "PlanFieldValue_planInstanceId_idx" ON "PlanFieldValue"("planInstanceId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PlanFieldValue_planInstanceId_fieldKey_key" ON "PlanFieldValue"("planInstanceId", "fieldKey");
+CREATE UNIQUE INDEX IF NOT EXISTS "PlanFieldValue_planInstanceId_fieldKey_key" ON "PlanFieldValue"("planInstanceId", "fieldKey");
 
 -- CreateIndex
-CREATE INDEX "Goal_planInstanceId_idx" ON "Goal"("planInstanceId");
+CREATE INDEX IF NOT EXISTS "Goal_planInstanceId_idx" ON "Goal"("planInstanceId");
 
 -- CreateIndex
-CREATE INDEX "Goal_area_idx" ON "Goal"("area");
+CREATE INDEX IF NOT EXISTS "Goal_area_idx" ON "Goal"("area");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Goal_planInstanceId_goalCode_key" ON "Goal"("planInstanceId", "goalCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "Goal_planInstanceId_goalCode_key" ON "Goal"("planInstanceId", "goalCode");
 
 -- CreateIndex
-CREATE INDEX "GoalProgress_goalId_date_idx" ON "GoalProgress"("goalId", "date");
+CREATE INDEX IF NOT EXISTS "GoalProgress_goalId_date_idx" ON "GoalProgress"("goalId", "date");
 
 -- CreateIndex
-CREATE INDEX "GoalProgress_goalId_idx" ON "GoalProgress"("goalId");
+CREATE INDEX IF NOT EXISTS "GoalProgress_goalId_idx" ON "GoalProgress"("goalId");
 
 -- CreateIndex
-CREATE INDEX "WorkSample_goalId_idx" ON "WorkSample"("goalId");
+CREATE INDEX IF NOT EXISTS "WorkSample_goalId_idx" ON "WorkSample"("goalId");
 
 -- CreateIndex
-CREATE INDEX "WorkSample_capturedAt_idx" ON "WorkSample"("capturedAt");
+CREATE INDEX IF NOT EXISTS "WorkSample_capturedAt_idx" ON "WorkSample"("capturedAt");
 
 -- CreateIndex
-CREATE INDEX "ServiceLog_planInstanceId_date_idx" ON "ServiceLog"("planInstanceId", "date");
+CREATE INDEX IF NOT EXISTS "ServiceLog_planInstanceId_date_idx" ON "ServiceLog"("planInstanceId", "date");
 
 -- CreateIndex
-CREATE INDEX "ServiceLog_planInstanceId_serviceType_idx" ON "ServiceLog"("planInstanceId", "serviceType");
+CREATE INDEX IF NOT EXISTS "ServiceLog_planInstanceId_serviceType_idx" ON "ServiceLog"("planInstanceId", "serviceType");
 
 -- CreateIndex
-CREATE INDEX "ServiceLog_providerId_idx" ON "ServiceLog"("providerId");
+CREATE INDEX IF NOT EXISTS "ServiceLog_providerId_idx" ON "ServiceLog"("providerId");
 
 -- CreateIndex
-CREATE INDEX "PriorPlanDocument_studentId_idx" ON "PriorPlanDocument"("studentId");
+CREATE INDEX IF NOT EXISTS "PriorPlanDocument_studentId_idx" ON "PriorPlanDocument"("studentId");
 
 -- CreateIndex
-CREATE INDEX "PriorPlanDocument_studentId_planTypeId_idx" ON "PriorPlanDocument"("studentId", "planTypeId");
+CREATE INDEX IF NOT EXISTS "PriorPlanDocument_studentId_planTypeId_idx" ON "PriorPlanDocument"("studentId", "planTypeId");
 
 -- CreateIndex
-CREATE INDEX "PriorPlanDocument_uploadedById_idx" ON "PriorPlanDocument"("uploadedById");
+CREATE INDEX IF NOT EXISTS "PriorPlanDocument_uploadedById_idx" ON "PriorPlanDocument"("uploadedById");
 
 -- CreateIndex
-CREATE INDEX "BestPracticeDocument_planTypeId_idx" ON "BestPracticeDocument"("planTypeId");
+CREATE INDEX IF NOT EXISTS "BestPracticeDocument_planTypeId_idx" ON "BestPracticeDocument"("planTypeId");
 
 -- CreateIndex
-CREATE INDEX "BestPracticeDocument_jurisdictionId_idx" ON "BestPracticeDocument"("jurisdictionId");
+CREATE INDEX IF NOT EXISTS "BestPracticeDocument_jurisdictionId_idx" ON "BestPracticeDocument"("jurisdictionId");
 
 -- CreateIndex
-CREATE INDEX "BestPracticeDocument_isActive_idx" ON "BestPracticeDocument"("isActive");
+CREATE INDEX IF NOT EXISTS "BestPracticeDocument_isActive_idx" ON "BestPracticeDocument"("isActive");
 
 -- CreateIndex
-CREATE INDEX "BestPracticeDocument_ingestionStatus_idx" ON "BestPracticeDocument"("ingestionStatus");
+CREATE INDEX IF NOT EXISTS "BestPracticeDocument_ingestionStatus_idx" ON "BestPracticeDocument"("ingestionStatus");
 
 -- CreateIndex
-CREATE INDEX "FormTemplate_planTypeId_idx" ON "FormTemplate"("planTypeId");
+CREATE INDEX IF NOT EXISTS "FormTemplate_planTypeId_idx" ON "FormTemplate"("planTypeId");
 
 -- CreateIndex
-CREATE INDEX "FormTemplate_jurisdictionId_idx" ON "FormTemplate"("jurisdictionId");
+CREATE INDEX IF NOT EXISTS "FormTemplate_jurisdictionId_idx" ON "FormTemplate"("jurisdictionId");
 
 -- CreateIndex
-CREATE INDEX "FormTemplate_planTypeId_jurisdictionId_isDefault_idx" ON "FormTemplate"("planTypeId", "jurisdictionId", "isDefault");
+CREATE INDEX IF NOT EXISTS "FormTemplate_planTypeId_jurisdictionId_isDefault_idx" ON "FormTemplate"("planTypeId", "jurisdictionId", "isDefault");
 
 -- CreateIndex
-CREATE INDEX "BestPracticeChunk_bestPracticeDocumentId_idx" ON "BestPracticeChunk"("bestPracticeDocumentId");
+CREATE INDEX IF NOT EXISTS "BestPracticeChunk_bestPracticeDocumentId_idx" ON "BestPracticeChunk"("bestPracticeDocumentId");
 
 -- CreateIndex
-CREATE INDEX "BestPracticeChunk_planTypeCode_jurisdictionId_gradeBand_sec_idx" ON "BestPracticeChunk"("planTypeCode", "jurisdictionId", "gradeBand", "sectionTag");
+CREATE INDEX IF NOT EXISTS "BestPracticeChunk_planTypeCode_jurisdictionId_gradeBand_sec_idx" ON "BestPracticeChunk"("planTypeCode", "jurisdictionId", "gradeBand", "sectionTag");
 
 -- CreateIndex
-CREATE INDEX "BestPracticeChunk_sectionTag_idx" ON "BestPracticeChunk"("sectionTag");
+CREATE INDEX IF NOT EXISTS "BestPracticeChunk_sectionTag_idx" ON "BestPracticeChunk"("sectionTag");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BehaviorPlan_planInstanceId_key" ON "BehaviorPlan"("planInstanceId");
+CREATE UNIQUE INDEX IF NOT EXISTS "BehaviorPlan_planInstanceId_key" ON "BehaviorPlan"("planInstanceId");
 
 -- CreateIndex
-CREATE INDEX "BehaviorTarget_behaviorPlanId_idx" ON "BehaviorTarget"("behaviorPlanId");
+CREATE INDEX IF NOT EXISTS "BehaviorTarget_behaviorPlanId_idx" ON "BehaviorTarget"("behaviorPlanId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BehaviorTarget_behaviorPlanId_code_key" ON "BehaviorTarget"("behaviorPlanId", "code");
+CREATE UNIQUE INDEX IF NOT EXISTS "BehaviorTarget_behaviorPlanId_code_key" ON "BehaviorTarget"("behaviorPlanId", "code");
 
 -- CreateIndex
-CREATE INDEX "BehaviorEvent_behaviorTargetId_eventDate_idx" ON "BehaviorEvent"("behaviorTargetId", "eventDate");
+CREATE INDEX IF NOT EXISTS "BehaviorEvent_behaviorTargetId_eventDate_idx" ON "BehaviorEvent"("behaviorTargetId", "eventDate");
 
 -- CreateIndex
-CREATE INDEX "BehaviorEvent_behaviorTargetId_idx" ON "BehaviorEvent"("behaviorTargetId");
+CREATE INDEX IF NOT EXISTS "BehaviorEvent_behaviorTargetId_idx" ON "BehaviorEvent"("behaviorTargetId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserPermission_userId_key" ON "UserPermission"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "UserPermission_userId_key" ON "UserPermission"("userId");
 
 -- CreateIndex
-CREATE INDEX "UserPermission_userId_idx" ON "UserPermission"("userId");
+CREATE INDEX IF NOT EXISTS "UserPermission_userId_idx" ON "UserPermission"("userId");
 
 -- CreateIndex
-CREATE INDEX "StudentAccess_userId_idx" ON "StudentAccess"("userId");
+CREATE INDEX IF NOT EXISTS "StudentAccess_userId_idx" ON "StudentAccess"("userId");
 
 -- CreateIndex
-CREATE INDEX "StudentAccess_studentId_idx" ON "StudentAccess"("studentId");
+CREATE INDEX IF NOT EXISTS "StudentAccess_studentId_idx" ON "StudentAccess"("studentId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "StudentAccess_userId_studentId_key" ON "StudentAccess"("userId", "studentId");
+CREATE UNIQUE INDEX IF NOT EXISTS "StudentAccess_userId_studentId_key" ON "StudentAccess"("userId", "studentId");
 
 -- CreateIndex
-CREATE INDEX "ArtifactComparison_planInstanceId_idx" ON "ArtifactComparison"("planInstanceId");
+CREATE INDEX IF NOT EXISTS "ArtifactComparison_planInstanceId_idx" ON "ArtifactComparison"("planInstanceId");
 
 -- CreateIndex
-CREATE INDEX "ArtifactComparison_studentId_idx" ON "ArtifactComparison"("studentId");
+CREATE INDEX IF NOT EXISTS "ArtifactComparison_studentId_idx" ON "ArtifactComparison"("studentId");
 
 -- AddForeignKey
 ALTER TABLE "AppUser" ADD CONSTRAINT "AppUser_jurisdictionId_fkey" FOREIGN KEY ("jurisdictionId") REFERENCES "Jurisdiction"("id") ON DELETE SET NULL ON UPDATE CASCADE;
