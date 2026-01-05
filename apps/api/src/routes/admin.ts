@@ -1578,7 +1578,8 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
       lastName: z.string().min(1, 'Last name is required'),
       dateOfBirth: z.string().optional(),
       grade: z.string().optional(),
-      schoolName: z.string().optional(),
+      schoolId: z.string().optional(),    // New: reference to School table
+      schoolName: z.string().optional(),  // Legacy: direct school name
       districtName: z.string().optional(),
       jurisdictionId: z.string().optional(),
     });
@@ -1588,15 +1589,48 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
     // Generate a unique record ID
     const recordId = await generateStudentRecordId();
 
-    // Find jurisdiction - use provided ID, lookup by district name, or use user's jurisdiction
+    let schoolName = data.schoolName;
+    let districtName = data.districtName;
     let jurisdictionId = data.jurisdictionId;
 
-    if (!jurisdictionId && data.districtName) {
-      // Try to find jurisdiction by district name (case-insensitive)
+    // If schoolId is provided, look up school details
+    if (data.schoolId) {
+      const school = await prisma.school.findUnique({
+        where: { id: data.schoolId },
+        include: {
+          district: {
+            include: {
+              state: true,
+            },
+          },
+        },
+      });
+
+      if (school) {
+        schoolName = school.name;
+        districtName = school.district.name;
+
+        // Try to find matching jurisdiction by state and district codes
+        if (!jurisdictionId) {
+          const jurisdiction = await prisma.jurisdiction.findFirst({
+            where: {
+              stateCode: school.district.state.code,
+              districtCode: school.district.code,
+            },
+          });
+          if (jurisdiction) {
+            jurisdictionId = jurisdiction.id;
+          }
+        }
+      }
+    }
+
+    // Fall back: lookup jurisdiction by district name
+    if (!jurisdictionId && districtName) {
       const jurisdiction = await prisma.jurisdiction.findFirst({
         where: {
           districtName: {
-            contains: data.districtName,
+            contains: districtName,
             mode: 'insensitive',
           },
         },
@@ -1612,7 +1646,7 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
     }
 
     if (!jurisdictionId) {
-      return res.status(400).json({ error: 'No jurisdiction found. Please provide a valid district name or jurisdiction ID.' });
+      return res.status(400).json({ error: 'No jurisdiction found. Please provide a valid school or district.' });
     }
 
     const student = await prisma.student.create({
@@ -1622,8 +1656,8 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
         lastName: data.lastName,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         grade: data.grade || null,
-        schoolName: data.schoolName || null,
-        districtName: data.districtName || null,
+        schoolName: schoolName || null,
+        districtName: districtName || null,
         jurisdiction: { connect: { id: jurisdictionId } },
         teacher: { connect: { id: req.user!.id } },
         isActive: true,

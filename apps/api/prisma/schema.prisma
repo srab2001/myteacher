@@ -251,9 +251,9 @@ model Student {
   externalId    String?             // External SIS ID if used
   firstName     String
   lastName      String
-  dateOfBirth   DateTime
-  grade         String
-  schoolName    String
+  dateOfBirth   DateTime?
+  grade         String?
+  schoolName    String?
   districtName  String?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
