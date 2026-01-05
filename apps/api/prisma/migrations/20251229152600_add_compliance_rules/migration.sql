@@ -1,20 +1,40 @@
--- CreateEnum
-CREATE TYPE "RuleScopeType" AS ENUM ('STATE', 'DISTRICT', 'SCHOOL');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "RuleScopeType" AS ENUM ('STATE', 'DISTRICT', 'SCHOOL');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- CreateEnum
-CREATE TYPE "RulePlanType" AS ENUM ('IEP', 'PLAN504', 'BIP', 'ALL');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "RulePlanType" AS ENUM ('IEP', 'PLAN504', 'BIP', 'ALL');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- CreateEnum
-CREATE TYPE "MeetingTypeCode" AS ENUM ('INITIAL', 'ANNUAL', 'REVIEW', 'AMENDMENT', 'CONTINUED');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "MeetingTypeCode" AS ENUM ('INITIAL', 'ANNUAL', 'REVIEW', 'AMENDMENT', 'CONTINUED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- CreateEnum
-CREATE TYPE "MeetingStatus" AS ENUM ('SCHEDULED', 'HELD', 'CLOSED', 'CANCELED');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "MeetingStatus" AS ENUM ('SCHEDULED', 'HELD', 'CLOSED', 'CANCELED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- CreateEnum
-CREATE TYPE "ParentDeliveryMethod" AS ENUM ('SEND_HOME', 'US_MAIL', 'PICK_UP');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "ParentDeliveryMethod" AS ENUM ('SEND_HOME', 'US_MAIL', 'PICK_UP');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- CreateTable
-CREATE TABLE "RuleDefinition" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "RuleDefinition" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -26,8 +46,8 @@ CREATE TABLE "RuleDefinition" (
     CONSTRAINT "RuleDefinition_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "RuleEvidenceType" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "RuleEvidenceType" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -37,8 +57,8 @@ CREATE TABLE "RuleEvidenceType" (
     CONSTRAINT "RuleEvidenceType_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "RulePack" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "RulePack" (
     "id" TEXT NOT NULL,
     "scopeType" "RuleScopeType" NOT NULL,
     "scopeId" TEXT NOT NULL,
@@ -54,8 +74,8 @@ CREATE TABLE "RulePack" (
     CONSTRAINT "RulePack_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "RulePackRule" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "RulePackRule" (
     "id" TEXT NOT NULL,
     "rulePackId" TEXT NOT NULL,
     "ruleDefinitionId" TEXT NOT NULL,
@@ -68,8 +88,8 @@ CREATE TABLE "RulePackRule" (
     CONSTRAINT "RulePackRule_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "RulePackEvidenceRequirement" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "RulePackEvidenceRequirement" (
     "id" TEXT NOT NULL,
     "rulePackRuleId" TEXT NOT NULL,
     "evidenceTypeId" TEXT NOT NULL,
@@ -78,8 +98,8 @@ CREATE TABLE "RulePackEvidenceRequirement" (
     CONSTRAINT "RulePackEvidenceRequirement_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "MeetingType" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "MeetingType" (
     "id" TEXT NOT NULL,
     "code" "MeetingTypeCode" NOT NULL,
     "name" TEXT NOT NULL,
@@ -89,8 +109,8 @@ CREATE TABLE "MeetingType" (
     CONSTRAINT "MeetingType_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "PlanMeeting" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "PlanMeeting" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
     "planInstanceId" TEXT,
@@ -112,8 +132,8 @@ CREATE TABLE "PlanMeeting" (
     CONSTRAINT "PlanMeeting_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "MeetingEvidence" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "MeetingEvidence" (
     "id" TEXT NOT NULL,
     "meetingId" TEXT NOT NULL,
     "evidenceTypeId" TEXT NOT NULL,
@@ -125,8 +145,8 @@ CREATE TABLE "MeetingEvidence" (
     CONSTRAINT "MeetingEvidence_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "FileUpload" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "FileUpload" (
     "id" TEXT NOT NULL,
     "ownerType" TEXT NOT NULL,
     "ownerId" TEXT NOT NULL,
@@ -141,119 +161,171 @@ CREATE TABLE "FileUpload" (
     CONSTRAINT "FileUpload_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "RuleDefinition_key_key" ON "RuleDefinition"("key");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "RuleDefinition_key_key" ON "RuleDefinition"("key");
 
--- CreateIndex
-CREATE INDEX "RuleDefinition_key_idx" ON "RuleDefinition"("key");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RuleDefinition_key_idx" ON "RuleDefinition"("key");
 
--- CreateIndex
-CREATE UNIQUE INDEX "RuleEvidenceType_key_key" ON "RuleEvidenceType"("key");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "RuleEvidenceType_key_key" ON "RuleEvidenceType"("key");
 
--- CreateIndex
-CREATE INDEX "RuleEvidenceType_key_idx" ON "RuleEvidenceType"("key");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RuleEvidenceType_key_idx" ON "RuleEvidenceType"("key");
 
--- CreateIndex
-CREATE INDEX "RuleEvidenceType_planType_idx" ON "RuleEvidenceType"("planType");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RuleEvidenceType_planType_idx" ON "RuleEvidenceType"("planType");
 
--- CreateIndex
-CREATE INDEX "RulePack_scopeType_scopeId_idx" ON "RulePack"("scopeType", "scopeId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RulePack_scopeType_scopeId_idx" ON "RulePack"("scopeType", "scopeId");
 
--- CreateIndex
-CREATE INDEX "RulePack_planType_idx" ON "RulePack"("planType");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RulePack_planType_idx" ON "RulePack"("planType");
 
--- CreateIndex
-CREATE INDEX "RulePack_isActive_idx" ON "RulePack"("isActive");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RulePack_isActive_idx" ON "RulePack"("isActive");
 
--- CreateIndex
-CREATE UNIQUE INDEX "RulePack_scopeType_scopeId_planType_version_key" ON "RulePack"("scopeType", "scopeId", "planType", "version");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "RulePack_scopeType_scopeId_planType_version_key" ON "RulePack"("scopeType", "scopeId", "planType", "version");
 
--- CreateIndex
-CREATE INDEX "RulePackRule_rulePackId_idx" ON "RulePackRule"("rulePackId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RulePackRule_rulePackId_idx" ON "RulePackRule"("rulePackId");
 
--- CreateIndex
-CREATE INDEX "RulePackRule_ruleDefinitionId_idx" ON "RulePackRule"("ruleDefinitionId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RulePackRule_ruleDefinitionId_idx" ON "RulePackRule"("ruleDefinitionId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "RulePackRule_rulePackId_ruleDefinitionId_key" ON "RulePackRule"("rulePackId", "ruleDefinitionId");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "RulePackRule_rulePackId_ruleDefinitionId_key" ON "RulePackRule"("rulePackId", "ruleDefinitionId");
 
--- CreateIndex
-CREATE INDEX "RulePackEvidenceRequirement_rulePackRuleId_idx" ON "RulePackEvidenceRequirement"("rulePackRuleId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RulePackEvidenceRequirement_rulePackRuleId_idx" ON "RulePackEvidenceRequirement"("rulePackRuleId");
 
--- CreateIndex
-CREATE INDEX "RulePackEvidenceRequirement_evidenceTypeId_idx" ON "RulePackEvidenceRequirement"("evidenceTypeId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "RulePackEvidenceRequirement_evidenceTypeId_idx" ON "RulePackEvidenceRequirement"("evidenceTypeId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "RulePackEvidenceRequirement_rulePackRuleId_evidenceTypeId_key" ON "RulePackEvidenceRequirement"("rulePackRuleId", "evidenceTypeId");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "RulePackEvidenceRequirement_rulePackRuleId_evidenceTypeId_key" ON "RulePackEvidenceRequirement"("rulePackRuleId", "evidenceTypeId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "MeetingType_code_key" ON "MeetingType"("code");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "MeetingType_code_key" ON "MeetingType"("code");
 
--- CreateIndex
-CREATE INDEX "MeetingType_code_idx" ON "MeetingType"("code");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "MeetingType_code_idx" ON "MeetingType"("code");
 
--- CreateIndex
-CREATE INDEX "PlanMeeting_studentId_idx" ON "PlanMeeting"("studentId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "PlanMeeting_studentId_idx" ON "PlanMeeting"("studentId");
 
--- CreateIndex
-CREATE INDEX "PlanMeeting_planInstanceId_idx" ON "PlanMeeting"("planInstanceId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "PlanMeeting_planInstanceId_idx" ON "PlanMeeting"("planInstanceId");
 
--- CreateIndex
-CREATE INDEX "PlanMeeting_meetingTypeId_idx" ON "PlanMeeting"("meetingTypeId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "PlanMeeting_meetingTypeId_idx" ON "PlanMeeting"("meetingTypeId");
 
--- CreateIndex
-CREATE INDEX "PlanMeeting_status_idx" ON "PlanMeeting"("status");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "PlanMeeting_status_idx" ON "PlanMeeting"("status");
 
--- CreateIndex
-CREATE INDEX "PlanMeeting_scheduledAt_idx" ON "PlanMeeting"("scheduledAt");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "PlanMeeting_scheduledAt_idx" ON "PlanMeeting"("scheduledAt");
 
--- CreateIndex
-CREATE INDEX "MeetingEvidence_meetingId_idx" ON "MeetingEvidence"("meetingId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "MeetingEvidence_meetingId_idx" ON "MeetingEvidence"("meetingId");
 
--- CreateIndex
-CREATE INDEX "MeetingEvidence_evidenceTypeId_idx" ON "MeetingEvidence"("evidenceTypeId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "MeetingEvidence_evidenceTypeId_idx" ON "MeetingEvidence"("evidenceTypeId");
 
--- CreateIndex
-CREATE INDEX "FileUpload_ownerType_ownerId_idx" ON "FileUpload"("ownerType", "ownerId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "FileUpload_ownerType_ownerId_idx" ON "FileUpload"("ownerType", "ownerId");
 
--- CreateIndex
-CREATE INDEX "FileUpload_createdByUserId_idx" ON "FileUpload"("createdByUserId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "FileUpload_createdByUserId_idx" ON "FileUpload"("createdByUserId");
 
--- AddForeignKey
-ALTER TABLE "RulePackRule" ADD CONSTRAINT "RulePackRule_rulePackId_fkey" FOREIGN KEY ("rulePackId") REFERENCES "RulePack"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'RulePackRule_rulePackId_fkey') THEN
+        ALTER TABLE "RulePackRule" ADD CONSTRAINT "RulePackRule_rulePackId_fkey" FOREIGN KEY ("rulePackId") REFERENCES "RulePack"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "RulePackRule" ADD CONSTRAINT "RulePackRule_ruleDefinitionId_fkey" FOREIGN KEY ("ruleDefinitionId") REFERENCES "RuleDefinition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'RulePackRule_ruleDefinitionId_fkey') THEN
+        ALTER TABLE "RulePackRule" ADD CONSTRAINT "RulePackRule_ruleDefinitionId_fkey" FOREIGN KEY ("ruleDefinitionId") REFERENCES "RuleDefinition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "RulePackEvidenceRequirement" ADD CONSTRAINT "RulePackEvidenceRequirement_rulePackRuleId_fkey" FOREIGN KEY ("rulePackRuleId") REFERENCES "RulePackRule"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'RulePackEvidenceRequirement_rulePackRuleId_fkey') THEN
+        ALTER TABLE "RulePackEvidenceRequirement" ADD CONSTRAINT "RulePackEvidenceRequirement_rulePackRuleId_fkey" FOREIGN KEY ("rulePackRuleId") REFERENCES "RulePackRule"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "RulePackEvidenceRequirement" ADD CONSTRAINT "RulePackEvidenceRequirement_evidenceTypeId_fkey" FOREIGN KEY ("evidenceTypeId") REFERENCES "RuleEvidenceType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'RulePackEvidenceRequirement_evidenceTypeId_fkey') THEN
+        ALTER TABLE "RulePackEvidenceRequirement" ADD CONSTRAINT "RulePackEvidenceRequirement_evidenceTypeId_fkey" FOREIGN KEY ("evidenceTypeId") REFERENCES "RuleEvidenceType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PlanMeeting_studentId_fkey') THEN
+        ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_planInstanceId_fkey" FOREIGN KEY ("planInstanceId") REFERENCES "PlanInstance"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PlanMeeting_planInstanceId_fkey') THEN
+        ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_planInstanceId_fkey" FOREIGN KEY ("planInstanceId") REFERENCES "PlanInstance"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_meetingTypeId_fkey" FOREIGN KEY ("meetingTypeId") REFERENCES "MeetingType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PlanMeeting_meetingTypeId_fkey') THEN
+        ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_meetingTypeId_fkey" FOREIGN KEY ("meetingTypeId") REFERENCES "MeetingType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_continuedFromMeetingId_fkey" FOREIGN KEY ("continuedFromMeetingId") REFERENCES "PlanMeeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PlanMeeting_continuedFromMeetingId_fkey') THEN
+        ALTER TABLE "PlanMeeting" ADD CONSTRAINT "PlanMeeting_continuedFromMeetingId_fkey" FOREIGN KEY ("continuedFromMeetingId") REFERENCES "PlanMeeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "PlanMeeting"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'MeetingEvidence_meetingId_fkey') THEN
+        ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "PlanMeeting"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_evidenceTypeId_fkey" FOREIGN KEY ("evidenceTypeId") REFERENCES "RuleEvidenceType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'MeetingEvidence_evidenceTypeId_fkey') THEN
+        ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_evidenceTypeId_fkey" FOREIGN KEY ("evidenceTypeId") REFERENCES "RuleEvidenceType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_fileUploadId_fkey" FOREIGN KEY ("fileUploadId") REFERENCES "FileUpload"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'MeetingEvidence_fileUploadId_fkey') THEN
+        ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_fileUploadId_fkey" FOREIGN KEY ("fileUploadId") REFERENCES "FileUpload"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'MeetingEvidence_createdByUserId_fkey') THEN
+        ALTER TABLE "MeetingEvidence" ADD CONSTRAINT "MeetingEvidence_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "FileUpload" ADD CONSTRAINT "FileUpload_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FileUpload_createdByUserId_fkey') THEN
+        ALTER TABLE "FileUpload" ADD CONSTRAINT "FileUpload_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
