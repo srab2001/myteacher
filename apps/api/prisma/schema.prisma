@@ -30,6 +30,7 @@ enum FormType {
   IEP
   IEP_REPORT
   FIVE_OH_FOUR
+  BIP
 }
 
 enum ControlType {
@@ -39,6 +40,7 @@ enum ControlType {
   RADIO
   SIGNATURE
   CHECKBOX
+  CHECKBOX_GROUP
   DATE
 }
 

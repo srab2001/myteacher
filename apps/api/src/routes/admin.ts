@@ -2173,9 +2173,6 @@ router.get('/districts/:districtId/schools', requireAdmin, async (req, res) => {
     const schools = await prisma.school.findMany({
       where: { districtId },
       orderBy: { name: 'asc' },
-      include: {
-        _count: { select: { students: true } },
-      },
     });
 
     res.json({
@@ -2186,7 +2183,7 @@ router.get('/districts/:districtId/schools', requireAdmin, async (req, res) => {
         schoolType: s.schoolType,
         districtId: s.districtId,
         isActive: s.isActive,
-        studentCount: s._count.students,
+        studentCount: 0, // TODO: Add proper student count when School-Student relation exists
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,
       })),

@@ -618,8 +618,7 @@ router.get('/admin/schools', requireAdmin, async (req, res) => {
 const createSchoolSchema = z.object({
   name: z.string().min(1),
   code: z.string().optional(),
-  stateCode: z.string().optional(),
-  districtId: z.string().optional(),
+  districtId: z.string().min(1, 'District ID is required'),
   address: z.string().optional(),
 });
 
@@ -631,9 +630,8 @@ router.post('/admin/schools', requireAdmin, async (req, res) => {
       data: {
         name: data.name,
         code: data.code,
-        stateCode: data.stateCode,
         districtId: data.districtId,
-        
+        address: data.address,
       },
     });
 
@@ -651,8 +649,7 @@ router.post('/admin/schools', requireAdmin, async (req, res) => {
 const updateSchoolSchema = z.object({
   name: z.string().min(1).optional(),
   code: z.string().nullable().optional(),
-  stateCode: z.string().nullable().optional(),
-  districtId: z.string().nullable().optional(),
+  districtId: z.string().optional(),
   address: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
 });
