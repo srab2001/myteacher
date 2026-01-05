@@ -10,7 +10,7 @@ interface AppUserType {
   email: string;
   displayName: string;
   avatarUrl: string | null;
-  role: 'TEACHER' | 'CASE_MANAGER' | 'ADMIN' | null;
+  role: 'TEACHER' | 'CASE_MANAGER' | 'ADMIN' | 'RELATED_SERVICE_PROVIDER' | 'READ_ONLY' | null;
   stateCode: string | null;
   districtName: string | null;
   schoolName: string | null;
