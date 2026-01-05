@@ -246,9 +246,9 @@ CREATE TABLE IF NOT EXISTS "DisputeEvent" (
     "disputeCaseId" TEXT NOT NULL,
     "eventType" "DisputeEventType" NOT NULL,
     "eventDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "description" TEXT NOT NULL,
-    "notes" TEXT,
-    "performedByUserId" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
+    "details" TEXT,
+    "createdByUserId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "DisputeEvent_pkey" PRIMARY KEY ("id")
@@ -260,10 +260,11 @@ CREATE TABLE IF NOT EXISTS "DisputeAttachment" (
     "disputeCaseId" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
     "fileType" TEXT NOT NULL,
-    "filePath" TEXT NOT NULL,
+    "fileUrl" TEXT NOT NULL,
     "fileSize" INTEGER NOT NULL,
     "description" TEXT,
     "uploadedByUserId" TEXT NOT NULL,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "DisputeAttachment_pkey" PRIMARY KEY ("id")
@@ -608,8 +609,8 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'DisputeEvent_performedByUserId_fkey') THEN
-        ALTER TABLE "DisputeEvent" ADD CONSTRAINT "DisputeEvent_performedByUserId_fkey" FOREIGN KEY ("performedByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'DisputeEvent_createdByUserId_fkey') THEN
+        ALTER TABLE "DisputeEvent" ADD CONSTRAINT "DisputeEvent_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
     END IF;
 END $$;
 
