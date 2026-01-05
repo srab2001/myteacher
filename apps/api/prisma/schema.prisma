@@ -2629,10 +2629,12 @@ model InAppAlert {
   readAt           DateTime?
   isDismissed      Boolean      @default(false)
   dismissedAt      DateTime?
-  complianceTaskId String?
-  reviewScheduleId String?
-  disputeCaseId    String?
-  createdAt        DateTime     @default(now())
+  complianceTaskId  String?
+  reviewScheduleId  String?
+  disputeCaseId     String?
+  relatedEntityType String?
+  relatedEntityId   String?
+  createdAt         DateTime     @default(now())
 
   // Relations
   user             AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)

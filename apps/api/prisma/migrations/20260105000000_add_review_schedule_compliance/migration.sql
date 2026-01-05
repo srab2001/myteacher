@@ -199,10 +199,25 @@ CREATE TABLE IF NOT EXISTS "InAppAlert" (
     "complianceTaskId" TEXT,
     "reviewScheduleId" TEXT,
     "disputeCaseId" TEXT,
+    "relatedEntityType" TEXT,
+    "relatedEntityId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "InAppAlert_pkey" PRIMARY KEY ("id")
 );
+
+-- Add relatedEntityType and relatedEntityId columns if not exists (for existing tables)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'InAppAlert' AND column_name = 'relatedEntityType') THEN
+        ALTER TABLE "InAppAlert" ADD COLUMN "relatedEntityType" TEXT;
+    END IF;
+END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'InAppAlert' AND column_name = 'relatedEntityId') THEN
+        ALTER TABLE "InAppAlert" ADD COLUMN "relatedEntityId" TEXT;
+    END IF;
+END $$;
 
 -- CreateTable DisputeCase (idempotent)
 CREATE TABLE IF NOT EXISTS "DisputeCase" (
