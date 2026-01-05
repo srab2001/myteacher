@@ -341,6 +341,36 @@ SELECT column_name FROM information_schema.columns WHERE table_name = 'TableName
 
 **Solution:** Update seed scripts whenever schema changes significantly.
 
+### 9. Make Migrations Idempotent for Failure Recovery
+
+**Problem:** Migration ran partially (some objects created) then failed. Re-running fails with "already exists" errors.
+
+**Solution:** Convert migration SQL to be idempotent:
+
+```sql
+-- For CREATE TYPE (enums)
+DO $$ BEGIN
+    CREATE TYPE "MyEnum" AS ENUM ('VALUE1', 'VALUE2');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- For CREATE TABLE
+CREATE TABLE IF NOT EXISTS "MyTable" (...);
+
+-- For CREATE INDEX
+CREATE INDEX IF NOT EXISTS "my_index" ON "MyTable"("column");
+
+-- For ADD CONSTRAINT (foreign keys)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_name') THEN
+        ALTER TABLE "MyTable" ADD CONSTRAINT "fk_name" FOREIGN KEY ...;
+    END IF;
+END $$;
+```
+
+**When to apply:** When `prisma migrate deploy` fails with P3018 errors like "type already exists" or "relation already exists".
+
 ---
 
 ### 9. Express Route Ordering Causes 404 Errors

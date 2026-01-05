@@ -190,6 +190,98 @@ export const OptionsEditableBy = {
   NONE: 'NONE',
 } as const;
 
+export const ScheduledServiceStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+} as const;
+
+export const ScheduleType = {
+  IEP_ANNUAL_REVIEW: 'IEP_ANNUAL_REVIEW',
+  IEP_REEVALUATION: 'IEP_REEVALUATION',
+  PLAN_AMENDMENT_REVIEW: 'PLAN_AMENDMENT_REVIEW',
+  SECTION504_PERIODIC_REVIEW: 'SECTION504_PERIODIC_REVIEW',
+  BIP_REVIEW: 'BIP_REVIEW',
+} as const;
+
+export const ReviewScheduleStatus = {
+  OPEN: 'OPEN',
+  COMPLETE: 'COMPLETE',
+  OVERDUE: 'OVERDUE',
+} as const;
+
+export const ComplianceTaskType = {
+  REVIEW_DUE_SOON: 'REVIEW_DUE_SOON',
+  REVIEW_OVERDUE: 'REVIEW_OVERDUE',
+  DOCUMENT_REQUIRED: 'DOCUMENT_REQUIRED',
+  SIGNATURE_NEEDED: 'SIGNATURE_NEEDED',
+  MEETING_REQUIRED: 'MEETING_REQUIRED',
+} as const;
+
+export const ComplianceTaskStatus = {
+  OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETE: 'COMPLETE',
+  DISMISSED: 'DISMISSED',
+} as const;
+
+export const AlertType = {
+  REVIEW_DUE_SOON: 'REVIEW_DUE_SOON',
+  REVIEW_OVERDUE: 'REVIEW_OVERDUE',
+  COMPLIANCE_TASK: 'COMPLIANCE_TASK',
+  SIGNATURE_REQUESTED: 'SIGNATURE_REQUESTED',
+  MEETING_SCHEDULED: 'MEETING_SCHEDULED',
+  DOCUMENT_UPLOADED: 'DOCUMENT_UPLOADED',
+  GENERAL: 'GENERAL',
+} as const;
+
+export const DisputeCaseType = {
+  SECTION504_COMPLAINT: 'SECTION504_COMPLAINT',
+  IEP_DISPUTE: 'IEP_DISPUTE',
+  RECORDS_REQUEST: 'RECORDS_REQUEST',
+  OTHER: 'OTHER',
+} as const;
+
+export const DisputeCaseStatus = {
+  OPEN: 'OPEN',
+  IN_REVIEW: 'IN_REVIEW',
+  RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED',
+} as const;
+
+export const DisputeEventType = {
+  INTAKE: 'INTAKE',
+  MEETING: 'MEETING',
+  RESPONSE_SENT: 'RESPONSE_SENT',
+  DOCUMENT_RECEIVED: 'DOCUMENT_RECEIVED',
+  RESOLUTION: 'RESOLUTION',
+  STATUS_CHANGE: 'STATUS_CHANGE',
+  NOTE: 'NOTE',
+} as const;
+
+export const AuditActionType = {
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE',
+  VIEW: 'VIEW',
+  EXPORT: 'EXPORT',
+  SIGN: 'SIGN',
+  APPROVE: 'APPROVE',
+  REJECT: 'REJECT',
+} as const;
+
+export const AuditEntityType = {
+  USER: 'USER',
+  STUDENT: 'STUDENT',
+  PLAN: 'PLAN',
+  GOAL: 'GOAL',
+  SERVICE: 'SERVICE',
+  DOCUMENT: 'DOCUMENT',
+  MEETING: 'MEETING',
+  SIGNATURE: 'SIGNATURE',
+  DISPUTE: 'DISPUTE',
+  COMPLIANCE_TASK: 'COMPLIANCE_TASK',
+} as const;
+
 export class PrismaClient {
   constructor() {}
   $connect() { return Promise.resolve(); }

@@ -2465,4 +2465,121 @@ router.get('/stats/versions', requireAdmin, async (_req, res) => {
   }
 });
 
+// ============================================
+// SEED REFERENCE DATA
+// ============================================
+
+/**
+ * POST /api/admin/seed
+ * Seed reference data (jurisdictions, plan types, schemas) if missing
+ */
+router.post('/seed', requireAdmin, async (_req, res) => {
+  try {
+    const results: string[] = [];
+
+    // Check and seed jurisdictions
+    const jurisdictionCount = await prisma.jurisdiction.count();
+    if (jurisdictionCount === 0) {
+      const jurisdictions = [
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'HCPSS', districtName: 'Howard County Public School System' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'AACPS', districtName: 'Anne Arundel County Public Schools' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'BCPS', districtName: 'Baltimore County Public Schools' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'BCPSS', districtName: 'Baltimore City Public Schools' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'CCPS', districtName: 'Carroll County Public Schools' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'FCPS', districtName: 'Frederick County Public Schools' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'MCPS', districtName: 'Montgomery County Public Schools' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'PGCPS', districtName: "Prince George's County Public Schools" },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'HCPS', districtName: 'Harford County Public Schools' },
+        { stateCode: 'MD', stateName: 'Maryland', districtCode: 'WCPS', districtName: 'Washington County Public Schools' },
+        { stateCode: 'VA', stateName: 'Virginia', districtCode: 'FCPS', districtName: 'Fairfax County Public Schools' },
+        { stateCode: 'VA', stateName: 'Virginia', districtCode: 'LCPS', districtName: 'Loudoun County Public Schools' },
+        { stateCode: 'VA', stateName: 'Virginia', districtCode: 'PWCS', districtName: 'Prince William County Schools' },
+        { stateCode: 'DC', stateName: 'District of Columbia', districtCode: 'DCPS', districtName: 'DC Public Schools' },
+      ];
+
+      for (const j of jurisdictions) {
+        await prisma.jurisdiction.upsert({
+          where: {
+            stateCode_districtCode: {
+              stateCode: j.stateCode,
+              districtCode: j.districtCode,
+            },
+          },
+          update: {},
+          create: j,
+        });
+      }
+      results.push(`Created ${jurisdictions.length} jurisdictions`);
+    } else {
+      results.push(`Jurisdictions already exist (${jurisdictionCount})`);
+    }
+
+    // Check and seed plan types
+    const planTypeCount = await prisma.planType.count();
+    if (planTypeCount === 0) {
+      // Get first jurisdiction for plan types
+      const firstJurisdiction = await prisma.jurisdiction.findFirst();
+      if (firstJurisdiction) {
+        const planTypes = [
+          { code: 'IEP' as const, name: 'Individualized Education Program' },
+          { code: 'FIVE_OH_FOUR' as const, name: 'Section 504 Plan' },
+          { code: 'BEHAVIOR_PLAN' as const, name: 'Behavior Intervention Plan' },
+        ];
+
+        for (const pt of planTypes) {
+          await prisma.planType.upsert({
+            where: { code: pt.code },
+            update: {},
+            create: {
+              code: pt.code,
+              name: pt.name,
+              jurisdictionId: firstJurisdiction.id,
+            },
+          });
+        }
+        results.push(`Created ${planTypes.length} plan types`);
+      }
+    } else {
+      results.push(`Plan types already exist (${planTypeCount})`);
+    }
+
+    res.json({
+      success: true,
+      message: 'Reference data seeding complete',
+      results,
+    });
+  } catch (error) {
+    console.error('Seed error:', error);
+    res.status(500).json({ error: 'Failed to seed reference data' });
+  }
+});
+
+/**
+ * GET /api/admin/seed/status
+ * Check if reference data needs seeding
+ */
+router.get('/seed/status', requireAdmin, async (_req, res) => {
+  try {
+    const [jurisdictionCount, planTypeCount, schemaCount] = await Promise.all([
+      prisma.jurisdiction.count(),
+      prisma.planType.count(),
+      prisma.planSchema.count(),
+    ]);
+
+    const needsSeeding = jurisdictionCount === 0 || planTypeCount === 0;
+
+    res.json({
+      needsSeeding,
+      counts: {
+        jurisdictions: jurisdictionCount,
+        planTypes: planTypeCount,
+        schemas: schemaCount,
+      },
+    });
+  } catch (error) {
+    console.error('Seed status error:', error);
+    res.status(500).json({ error: 'Failed to check seed status' });
+  }
+});
+
 export default router;

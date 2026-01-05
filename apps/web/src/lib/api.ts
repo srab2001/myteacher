@@ -897,6 +897,15 @@ class ApiClient {
     return this.fetch('/api/admin/jurisdictions');
   }
 
+  // Admin: Seed reference data
+  async getSeedStatus(): Promise<{ needsSeeding: boolean; counts: { jurisdictions: number; planTypes: number; schemas: number } }> {
+    return this.fetch('/api/admin/seed/status');
+  }
+
+  async seedReferenceData(): Promise<{ success: boolean; message: string; results: string[] }> {
+    return this.fetch('/api/admin/seed', { method: 'POST' });
+  }
+
   // Phase 3: Behavior Plan API
   async getBehaviorPlan(planId: string): Promise<{ behaviorPlan: BehaviorPlan }> {
     return this.fetch(`/api/behavior-plans/plans/${planId}`);
