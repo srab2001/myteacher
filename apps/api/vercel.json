@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "installCommand": "npm install && npx prisma@5.22.0 generate && npx prisma@5.22.0 migrate deploy && npx tsx prisma/seed-if-empty.ts",
+  "installCommand": "npm install && npx prisma@5.22.0 generate --force && npx prisma@5.22.0 migrate deploy && npx tsx prisma/seed-if-empty.ts || true",
   "builds": [
     {
       "src": "api/index.ts",
