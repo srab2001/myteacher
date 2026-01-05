@@ -97,6 +97,13 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+-- CreateEnum SchoolType (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "SchoolType" AS ENUM ('ELEMENTARY', 'MIDDLE', 'HIGH', 'K8', 'K12', 'OTHER');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 -- ============================================
 -- TABLES
 -- ============================================

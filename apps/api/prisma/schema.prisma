@@ -139,6 +139,15 @@ enum BehaviorMeasurementType {
   RATING
 }
 
+enum SchoolType {
+  ELEMENTARY
+  MIDDLE
+  HIGH
+  K8
+  K12
+  OTHER
+}
+
 // ============================================
 // USER MODEL
 // ============================================
