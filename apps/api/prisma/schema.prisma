@@ -30,7 +30,7 @@ enum FormType {
   IEP
   IEP_REPORT
   FIVE_OH_FOUR
-  BIP
+  BIP              // Behavior Intervention Plan
 }
 
 enum ControlType {
@@ -40,7 +40,7 @@ enum ControlType {
   RADIO
   SIGNATURE
   CHECKBOX
-  CHECKBOX_GROUP
+  CHECKBOX_GROUP   // Group of checkboxes
   DATE
 }
 
@@ -139,15 +139,6 @@ enum BehaviorMeasurementType {
   RATING
 }
 
-enum SchoolType {
-  ELEMENTARY
-  MIDDLE
-  HIGH
-  K8
-  K12
-  OTHER
-}
-
 // ============================================
 // USER MODEL
 // ============================================
@@ -212,6 +203,10 @@ model AppUser {
   signaturePacketsCreatedBy SignaturePacket[] @relation("SignaturePacketCreatedBy")
   signatureRecordsSigner   SignatureRecord[] @relation("SignatureRecordSigner")
 
+  // Scheduled services
+  scheduledPlansCreatedBy  ScheduledServicePlan[] @relation("ScheduledPlanCreatedBy")
+  scheduledPlansUpdatedBy  ScheduledServicePlan[] @relation("ScheduledPlanUpdatedBy")
+
   // Review schedules and compliance
   reviewSchedulesCompleted  ReviewSchedule[] @relation("ReviewScheduleCompletedBy")
   reviewSchedulesAssigned   ReviewSchedule[] @relation("ReviewScheduleAssignedTo")
@@ -223,14 +218,10 @@ model AppUser {
   inAppAlerts               InAppAlert[]
 
   // Dispute cases
-  disputeCasesOwned         DisputeCase[] @relation("DisputeCaseOwner")
+  disputeCasesAssigned      DisputeCase[] @relation("DisputeCaseOwner")
   disputeCasesCreated       DisputeCase[] @relation("DisputeCaseCreatedBy")
   disputeEventsPerformed    DisputeEvent[] @relation("DisputeEventPerformedBy")
   disputeAttachmentsUploaded DisputeAttachment[] @relation("DisputeAttachmentUploadedBy")
-
-  // Scheduled services
-  scheduledPlansCreatedBy  ScheduledServicePlan[] @relation("ScheduledPlanCreatedBy")
-  scheduledPlansUpdatedBy  ScheduledServicePlan[] @relation("ScheduledPlanUpdatedBy")
 
   // Audit logs
   auditLogs                 AuditLog[] @relation("AuditLogActor")
@@ -276,48 +267,6 @@ model Jurisdiction {
 }
 
 // ============================================
-// STATE MODEL (Geographic Hierarchy)
-// ============================================
-
-model State {
-  id        String     @id @default(uuid())
-  code      String     @unique  // e.g., "MD", "VA", "DC"
-  name      String     // e.g., "Maryland", "Virginia"
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  // Relations
-  districts District[]
-
-  @@index([code])
-  @@index([isActive])
-}
-
-// ============================================
-// DISTRICT MODEL (School Districts)
-// ============================================
-
-model District {
-  id        String   @id @default(uuid())
-  stateId   String
-  code      String   // e.g., "HCPSS", "MCPS"
-  name      String   // e.g., "Howard County Public School System"
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  state     State    @relation(fields: [stateId], references: [id])
-  schools   School[]
-
-  @@unique([stateId, code])
-  @@index([stateId])
-  @@index([code])
-  @@index([isActive])
-}
-
-// ============================================
 // STUDENT MODEL
 // ============================================
 
@@ -331,7 +280,7 @@ model Student {
   grade         String
   schoolName    String
   districtName  String?
-  schoolId      String?             // Optional link to School model
+  schoolId      String?             // Optional relation to School
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -341,7 +290,7 @@ model Student {
   jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
   teacherId      String
   teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
-  school         School?         @relation("StudentSchool", fields: [schoolId], references: [id])
+  school         School?         @relation(fields: [schoolId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
@@ -351,8 +300,8 @@ model Student {
   planMeetings   PlanMeeting[]
   referrals      Referral[]
   evaluationCases EvaluationCase[]
-  disputeCases   DisputeCase[]
   complianceTasks ComplianceTask[]
+  disputeCases   DisputeCase[]
 
   @@index([recordId])
   @@index([externalId])
@@ -497,13 +446,13 @@ model PlanInstance {
   planVersions             PlanVersion[]
   decisions                DecisionLedgerEntry[]
 
+  // Scheduled services
+  scheduledServicePlan     ScheduledServicePlan?
+
   // Review schedules and compliance
   reviewSchedules          ReviewSchedule[]
   complianceTasks          ComplianceTask[]
   disputeCases             DisputeCase[]
-
-  // Scheduled services
-  scheduledServicePlan     ScheduledServicePlan?
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -778,8 +727,8 @@ model Goal {
   goalCode         String    // e.g., "GOAL-1", "GOAL-2"
   area             GoalArea
   baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
-  baselineValue    Float?    // Numeric baseline value for progress tracking
-  targetValue      Float?    // Numeric target value for goal completion
+  baselineValue    Float?    // Numeric baseline for tracking
+  targetValue      Float?    // Target value for tracking
   annualGoalText   String    @db.Text
   shortTermObjectives Json?  // Array of short-term objectives (legacy, use GoalObjective relation)
   progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
@@ -884,16 +833,16 @@ model GoalTemplate {
 // ============================================
 
 model GoalProgress {
-  id             String        @id @default(uuid())
-  date           DateTime      @default(now())
-  quickSelect    ProgressLevel // One-tap progress level
-  measureJson    Json?         // Detailed measurement data
-  percentCorrect Float?        // Percentage correct (0-100)
-  trials         Int?          // Number of trials/attempts
-  notes          String?       @db.Text  // Additional notes
-  comment        String?       @db.Text
-  isDictated     Boolean       @default(false) // True if entered via voice
-  createdAt      DateTime      @default(now())
+  id           String        @id @default(uuid())
+  date         DateTime      @default(now())
+  quickSelect  ProgressLevel // One-tap progress level
+  measureJson  Json?         // Detailed measurement data
+  comment      String?       @db.Text
+  isDictated   Boolean       @default(false) // True if entered via voice
+  percentCorrect Float?      // Percentage correct for tracking
+  trials       Int?          // Number of trials
+  notes        String?       @db.Text
+  createdAt    DateTime      @default(now())
 
   // Relations
   goalId     String
@@ -935,16 +884,16 @@ model WorkSample {
 // ============================================
 
 model ServiceLog {
-  id            String        @id @default(uuid())
+  id            String         @id @default(uuid())
   date          DateTime
   minutes       Int
   serviceType   ServiceType
   setting       ServiceSetting
-  notes         String?       @db.Text
-  missedReason  String?       @db.Text   // Reason if session was missed (minutes=0)
-  makeupPlanned Boolean       @default(false)  // Whether makeup session is planned
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  notes         String?        @db.Text
+  missedReason  String?        @db.Text   // Reason if session was missed (minutes=0)
+  makeupPlanned Boolean        @default(false)  // Whether makeup session is planned
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   // Relations
   planInstanceId String
@@ -1524,7 +1473,6 @@ model IEPIndependentAssessmentReview {
   dateOfTeamReview            DateTime?      // Date IEP team reviewed the assessment
   assessmentType              AssessmentType
   assessmentTypeOther         String?        // If assessmentType is OTHER
-  evaluator                   String?        // Name of the evaluator who conducted the assessment
 
   // Part I: Review by Qualified School Personnel
   // Reviewer information
@@ -1591,6 +1539,12 @@ model IEPIndependentAssessmentReview {
   // Team members who participated in review
   teamMembers                   Json?        // Array of team member names and roles
 
+  // Simple fields for basic review mode
+  evaluator                     String?      // Name of evaluator
+  summary                       String?      @db.Text
+  recommendations               String?      @db.Text
+  attachmentUrl                 String?
+
   createdAt                     DateTime     @default(now())
   updatedAt                     DateTime     @updatedAt
 
@@ -1609,13 +1563,67 @@ model IEPIndependentAssessmentReview {
 }
 
 // ============================================
+// STATE MODEL
+// ============================================
+
+model State {
+  id        String     @id @default(uuid())
+  code      String     @unique  // e.g., "MD", "VA", "DC"
+  name      String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  districts District[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+// ============================================
+// DISTRICT MODEL
+// ============================================
+
+model District {
+  id        String     @id @default(uuid())
+  stateId   String
+  code      String     // e.g., "HCPSS", "MCPS"
+  name      String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  state     State      @relation(fields: [stateId], references: [id])
+  schools   School[]
+
+  @@unique([stateId, code])
+  @@index([stateId])
+  @@index([isActive])
+}
+
+// ============================================
+// SCHOOL TYPE ENUM
+// ============================================
+
+enum SchoolType {
+  ELEMENTARY
+  MIDDLE
+  HIGH
+  K8
+  K12
+  OTHER
+}
+
+// ============================================
 // SCHOOL MODEL (Admin-Managed School List)
 // ============================================
 
 model School {
   id           String      @id @default(uuid())
   stateCode    String?
-  districtId   String
+  districtId   String?
   name         String
   code         String?     // Optional school code (e.g., "HCPSS-001")
   address      String?
@@ -1625,14 +1633,14 @@ model School {
   updatedAt    DateTime    @updatedAt
 
   // Relations
-  district     District    @relation(fields: [districtId], references: [id])
-  students     Student[]   @relation("StudentSchool")
+  district     District?   @relation(fields: [districtId], references: [id])
+  students     Student[]
 
+  @@unique([stateCode, code])
   @@unique([districtId, name])
   @@index([stateCode])
   @@index([districtId])
   @@index([isActive])
-  @@index([schoolType])
 }
 
 // ============================================
@@ -2585,12 +2593,12 @@ model ComplianceTask {
   reviewScheduleId  String?
   planInstanceId    String?
   studentId         String?
+  createdByUserId   String?              // Who created the task
   completedAt       DateTime?
   completedByUserId String?
   dismissedAt       DateTime?
   dismissedByUserId String?
   dismissReason     String?
-  createdByUserId   String?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
@@ -2629,12 +2637,12 @@ model InAppAlert {
   readAt           DateTime?
   isDismissed      Boolean      @default(false)
   dismissedAt      DateTime?
-  complianceTaskId  String?
-  reviewScheduleId  String?
-  disputeCaseId     String?
-  relatedEntityType String?
-  relatedEntityId   String?
-  createdAt         DateTime     @default(now())
+  relatedEntityType String?     // e.g., "COMPLIANCE_TASK", "REVIEW_SCHEDULE", "DISPUTE_CASE"
+  relatedEntityId  String?      // ID of the related entity
+  complianceTaskId String?
+  reviewScheduleId String?
+  disputeCaseId    String?
+  createdAt        DateTime     @default(now())
 
   // Relations
   user             AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2662,7 +2670,8 @@ model DisputeCase {
   filedDate        DateTime           @default(now())
   resolvedDate     DateTime?
   resolutionNotes  String?            @db.Text
-  ownerUserId      String?
+  externalReference String?           // External case reference number
+  assignedToUserId String?            // Assigned case manager
   createdByUserId  String
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
@@ -2670,7 +2679,7 @@ model DisputeCase {
   // Relations
   student          Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
   planInstance     PlanInstance?      @relation(fields: [planInstanceId], references: [id], onDelete: SetNull)
-  owner            AppUser?           @relation("DisputeCaseOwner", fields: [ownerUserId], references: [id])
+  assignedTo       AppUser?           @relation("DisputeCaseOwner", fields: [assignedToUserId], references: [id])
   createdBy        AppUser            @relation("DisputeCaseCreatedBy", fields: [createdByUserId], references: [id])
   events           DisputeEvent[]
   attachments      DisputeAttachment[]
@@ -2679,7 +2688,7 @@ model DisputeCase {
   @@index([planInstanceId])
   @@index([caseType])
   @@index([status])
-  @@index([ownerUserId])
+  @@index([assignedToUserId])
   @@index([filedDate])
 }
 
@@ -2693,14 +2702,14 @@ model DisputeEvent {
   disputeCaseId    String
   eventType        DisputeEventType
   eventDate        DateTime         @default(now())
-  description      String           @db.Text
-  notes            String?          @db.Text
-  performedByUserId String
+  summary          String           @db.Text      // Short summary of the event
+  details          String?          @db.Text      // Detailed notes
+  createdByUserId  String
   createdAt        DateTime         @default(now())
 
   // Relations
   disputeCase      DisputeCase      @relation(fields: [disputeCaseId], references: [id], onDelete: Cascade)
-  performedBy      AppUser          @relation("DisputeEventPerformedBy", fields: [performedByUserId], references: [id])
+  createdBy        AppUser          @relation("DisputeEventPerformedBy", fields: [createdByUserId], references: [id])
 
   @@index([disputeCaseId])
   @@index([eventType])
@@ -2717,10 +2726,11 @@ model DisputeAttachment {
   disputeCaseId    String
   fileName         String
   fileType         String
-  filePath         String
+  fileUrl          String       // URL or path to file
   fileSize         Int
   description      String?
   uploadedByUserId String
+  uploadedAt       DateTime     @default(now())
   createdAt        DateTime     @default(now())
 
   // Relations
