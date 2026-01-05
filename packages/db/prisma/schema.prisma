@@ -1,6 +1,3 @@
-// Prisma schema for MyTeacher - Special Education Portal
-// Database: PostgreSQL
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,49 +7,346 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// ENUMS
-// ============================================
+model AppUser {
+  id                  String                 @id @default(uuid())
+  googleId            String?                @unique
+  username            String?                @unique
+  passwordHash        String?
+  email               String                 @unique
+  displayName         String
+  avatarUrl           String?
+  role                UserRole?
+  stateCode           String?
+  districtName        String?
+  schoolName          String?
+  isOnboarded         Boolean                @default(false)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  jurisdictionId      String?
+  jurisdiction        Jurisdiction?          @relation(fields: [jurisdictionId], references: [id])
+  bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
+  formTemplateUploads FormTemplate[]         @relation("FormTemplateUploadedBy")
+  progressRecords     GoalProgress[]         @relation("ProgressRecordedBy")
+  priorPlanUploads    PriorPlanDocument[]    @relation("PriorPlanUploadedBy")
+  serviceLogs         ServiceLog[]           @relation("ServiceProvider")
+  students            Student[]              @relation("TeacherStudents")
+  statusUpdates       StudentStatus[]        @relation("StatusUpdatedBy")
+  workSamples         WorkSample[]           @relation("WorkSampleUploadedBy")
+
+  @@index([googleId])
+  @@index([email])
+  @@index([username])
+}
+
+model Jurisdiction {
+  id               String                 @id @default(uuid())
+  stateCode        String
+  stateName        String
+  districtCode     String
+  districtName     String
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  users            AppUser[]
+  bestPracticeDocs BestPracticeDocument[] @relation("BestPracticeJurisdiction")
+  formTemplates    FormTemplate[]         @relation("FormTemplateJurisdiction")
+  planTypes        PlanType[]
+  students         Student[]
+
+  @@unique([stateCode, districtCode])
+  @@index([stateCode])
+}
+
+model Student {
+  id                 String              @id @default(uuid())
+  firstName          String
+  lastName           String
+  dateOfBirth        DateTime
+  grade              String
+  schoolName         String
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  jurisdictionId     String
+  teacherId          String
+  externalId         String?
+  recordId           String              @unique
+  planInstances      PlanInstance[]
+  priorPlanDocuments PriorPlanDocument[]
+  jurisdiction       Jurisdiction        @relation(fields: [jurisdictionId], references: [id])
+  teacher            AppUser             @relation("TeacherStudents", fields: [teacherId], references: [id])
+  statuses           StudentStatus[]
+
+  @@index([recordId])
+  @@index([externalId])
+  @@index([lastName, firstName])
+  @@index([teacherId])
+}
+
+model StudentStatus {
+  id            String      @id @default(uuid())
+  scope         StatusScope
+  code          StatusCode
+  summary       String?
+  effectiveDate DateTime
+  createdAt     DateTime    @default(now())
+  studentId     String
+  updatedById   String
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  updatedBy     AppUser     @relation("StatusUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([studentId, scope])
+  @@index([studentId, effectiveDate])
+}
+
+model PlanType {
+  id                 String                 @id @default(uuid())
+  code               PlanTypeCode
+  name               String
+  description        String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  jurisdictionId     String
+  bestPracticeDocs   BestPracticeDocument[] @relation("BestPracticeDocs")
+  formTemplates      FormTemplate[]         @relation("FormTemplates")
+  instances          PlanInstance[]
+  schemas            PlanSchema[]
+  jurisdiction       Jurisdiction           @relation(fields: [jurisdictionId], references: [id])
+  priorPlanDocuments PriorPlanDocument[]
+
+  @@unique([jurisdictionId, code])
+  @@index([code])
+}
+
+model PlanSchema {
+  id            String         @id @default(uuid())
+  version       Int            @default(1)
+  name          String
+  description   String?
+  fields        Json
+  isActive      Boolean        @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  planTypeId    String
+  instances     PlanInstance[]
+  planType      PlanType       @relation(fields: [planTypeId], references: [id])
+
+  @@index([planTypeId, isActive])
+}
+
+model PlanInstance {
+  id          String           @id @default(uuid())
+  startDate   DateTime
+  endDate     DateTime?
+  status      String           @default("DRAFT")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  studentId   String
+  planTypeId  String
+  schemaId    String
+  goals       Goal[]
+  fieldValues PlanFieldValue[]
+  planType    PlanType         @relation(fields: [planTypeId], references: [id])
+  schema      PlanSchema       @relation(fields: [schemaId], references: [id])
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  serviceLogs ServiceLog[]
+
+  @@index([studentId, planTypeId])
+  @@index([status])
+}
+
+model PlanFieldValue {
+  id             String       @id @default(uuid())
+  fieldKey       String
+  value          Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  planInstanceId String
+  planInstance   PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+
+  @@unique([planInstanceId, fieldKey])
+  @@index([planInstanceId])
+}
+
+model Goal {
+  id                  String         @id @default(uuid())
+  goalCode            String
+  area                GoalArea
+  baselineJson        Json?
+  annualGoalText      String
+  shortTermObjectives Json?
+  progressSchedule    String?
+  targetDate          DateTime?
+  isActive            Boolean        @default(true)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  planInstanceId      String
+  planInstance        PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  progressRecords     GoalProgress[]
+  workSamples         WorkSample[]
+
+  @@unique([planInstanceId, goalCode])
+  @@index([planInstanceId])
+  @@index([area])
+}
+
+model GoalProgress {
+  id           String        @id @default(uuid())
+  date         DateTime      @default(now())
+  quickSelect  ProgressLevel
+  measureJson  Json?
+  comment      String?
+  isDictated   Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  goalId       String
+  recordedById String
+  goal         Goal          @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  recordedBy   AppUser       @relation("ProgressRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([goalId, date])
+  @@index([goalId])
+}
+
+model WorkSample {
+  id           String           @id @default(uuid())
+  fileUrl      String
+  fileName     String
+  fileType     String
+  fileSize     Int
+  rating       WorkSampleRating
+  comment      String?
+  capturedAt   DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  goalId       String
+  uploadedById String
+  goal         Goal             @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  uploadedBy   AppUser          @relation("WorkSampleUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([goalId])
+  @@index([capturedAt])
+}
+
+model ServiceLog {
+  id             String         @id @default(uuid())
+  date           DateTime
+  minutes        Int
+  serviceType    ServiceType
+  setting        ServiceSetting
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  planInstanceId String
+  providerId     String
+  planInstance   PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  provider       AppUser        @relation("ServiceProvider", fields: [providerId], references: [id])
+
+  @@index([planInstanceId, date])
+  @@index([planInstanceId, serviceType])
+  @@index([providerId])
+}
+
+model PriorPlanDocument {
+  id           String          @id @default(uuid())
+  fileName     String
+  storageKey   String
+  planDate     DateTime?
+  source       PriorPlanSource @default(UPLOADED)
+  notes        String?
+  createdAt    DateTime        @default(now())
+  studentId    String
+  planTypeId   String
+  uploadedById String
+  planType     PlanType        @relation(fields: [planTypeId], references: [id])
+  student      Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  uploadedBy   AppUser         @relation("PriorPlanUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([studentId])
+  @@index([studentId, planTypeId])
+  @@index([uploadedById])
+}
+
+model BestPracticeDocument {
+  id               String              @id @default(uuid())
+  title            String
+  description      String?
+  fileUrl          String
+  gradeBand        String?
+  isActive         Boolean             @default(true)
+  ingestionStatus  IngestionStatus     @default(PENDING)
+  ingestionMessage String?
+  ingestionAt      DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  planTypeId       String
+  jurisdictionId   String?
+  uploadedById     String
+  chunks           BestPracticeChunk[]
+  jurisdiction     Jurisdiction?       @relation("BestPracticeJurisdiction", fields: [jurisdictionId], references: [id])
+  planType         PlanType            @relation("BestPracticeDocs", fields: [planTypeId], references: [id])
+  uploadedBy       AppUser             @relation("BestPracticeUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([planTypeId])
+  @@index([jurisdictionId])
+  @@index([isActive])
+  @@index([ingestionStatus])
+}
+
+model FormTemplate {
+  id             String        @id @default(uuid())
+  title          String
+  description    String?
+  fileUrl        String
+  isDefault      Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  planTypeId     String
+  jurisdictionId String?
+  uploadedById   String
+  jurisdiction   Jurisdiction? @relation("FormTemplateJurisdiction", fields: [jurisdictionId], references: [id])
+  planType       PlanType      @relation("FormTemplates", fields: [planTypeId], references: [id])
+  uploadedBy     AppUser       @relation("FormTemplateUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([planTypeId])
+  @@index([jurisdictionId])
+  @@index([planTypeId, jurisdictionId, isDefault])
+}
+
+model BestPracticeChunk {
+  id                     String               @id @default(uuid())
+  sequence               Int
+  sectionTag             String?
+  text                   String
+  embedding              Bytes?
+  createdAt              DateTime             @default(now())
+  planTypeCode           String
+  jurisdictionId         String?
+  gradeBand              String?
+  bestPracticeDocumentId String
+  document               BestPracticeDocument @relation(fields: [bestPracticeDocumentId], references: [id], onDelete: Cascade)
+
+  @@index([bestPracticeDocumentId])
+  @@index([planTypeCode, jurisdictionId, gradeBand, sectionTag])
+  @@index([sectionTag])
+}
+
+model session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+}
 
 enum UserRole {
   TEACHER
   CASE_MANAGER
   ADMIN
-  RELATED_SERVICE_PROVIDER
-  READ_ONLY
-}
-
-// ============================================
-// FORM FIELD DEFINITION ENUMS
-// ============================================
-
-enum FormType {
-  IEP
-  IEP_REPORT
-  FIVE_OH_FOUR
-  BIP              // Behavior Intervention Plan
-}
-
-enum ControlType {
-  TEXT
-  TEXTAREA
-  DROPDOWN
-  RADIO
-  SIGNATURE
-  CHECKBOX
-  CHECKBOX_GROUP   // Group of checkboxes
-  DATE
-}
-
-enum OptionsEditableBy {
-  ADMIN_ONLY
-  TEACHER_ALLOWED
-  NONE
 }
 
 enum PlanTypeCode {
   IEP
-  FIVE_OH_FOUR // 504 Plan
+  FIVE_OH_FOUR
   BEHAVIOR_PLAN
 }
 
@@ -130,2671 +424,4 @@ enum IngestionStatus {
   PROCESSING
   COMPLETE
   ERROR
-}
-
-enum BehaviorMeasurementType {
-  FREQUENCY
-  DURATION
-  INTERVAL
-  RATING
-}
-
-// ============================================
-// USER MODEL
-// ============================================
-
-model AppUser {
-  id            String    @id @default(uuid())
-  googleId      String?   @unique  // Optional for local auth users
-  username      String?   @unique  // For local auth
-  passwordHash  String?            // For local auth (bcrypt hashed)
-  email         String    @unique
-  displayName   String
-  avatarUrl     String?
-  role          UserRole?
-  stateCode     String?
-  districtName  String?
-  schoolName    String?
-  isOnboarded   Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  jurisdictionId String?
-  jurisdiction   Jurisdiction? @relation(fields: [jurisdictionId], references: [id])
-  students       Student[]     @relation("TeacherStudents")
-  statusUpdates  StudentStatus[] @relation("StatusUpdatedBy")
-  progressRecords GoalProgress[] @relation("ProgressRecordedBy")
-  workSamples    WorkSample[]   @relation("WorkSampleUploadedBy")
-  serviceLogs    ServiceLog[]   @relation("ServiceProvider")
-  priorPlanUploads PriorPlanDocument[] @relation("PriorPlanUploadedBy")
-  bestPracticeUploads BestPracticeDocument[] @relation("BestPracticeUploadedBy")
-  formTemplateUploads FormTemplate[] @relation("FormTemplateUploadedBy")
-  behaviorEvents BehaviorEvent[] @relation("BehaviorRecordedBy")
-  permission     UserPermission?
-  studentAccess  StudentAccess[]
-  artifactComparisons ArtifactComparison[] @relation("ArtifactComparisonCreatedBy")
-  assessmentReviews   IEPIndependentAssessmentReview[] @relation("AssessmentReviewCreatedBy")
-  meetingEvidence     MeetingEvidence[] @relation("MeetingEvidenceCreatedBy")
-  fileUploads         FileUpload[] @relation("FileUploadCreatedBy")
-  authCodes AuthCode[] @relation("AuthCodeUser")
-  referralsAsCaseManager    Referral[] @relation("ReferralCaseManager")
-  referralsAsReferrer       Referral[] @relation("ReferralReferredBy")
-  referralsClosedBy         Referral[] @relation("ReferralClosedBy")
-  referralsCreatedBy        Referral[] @relation("ReferralCreatedBy")
-  referralAttachments       ReferralAttachment[] @relation("ReferralAttachmentCreatedBy")
-  referralTimelineEvents    ReferralTimelineEvent[] @relation("ReferralTimelinePerformedBy")
-  evaluationCasesAsCaseManager EvaluationCase[] @relation("EvaluationCaseCaseManager")
-  evaluationCasesCreatedBy  EvaluationCase[] @relation("EvaluationCaseCreatedBy")
-  evaluationCasesClosedBy   EvaluationCase[] @relation("EvaluationCaseClosedBy")
-  evaluationAssessmentsCreatedBy EvaluationAssessment[] @relation("EvaluationAssessmentCreatedBy")
-  evaluationParticipants    EvaluationParticipant[] @relation("EvaluationParticipantUser")
-  eligibilityDeterminationsCreatedBy EligibilityDetermination[] @relation("EligibilityDeterminationCreatedBy")
-  evaluationCaseTimelineEvents EvaluationCaseTimelineEvent[] @relation("EvaluationCaseTimelinePerformedBy")
-
-  // Plan versioning, decisions, and signatures
-  planVersionsFinalizedBy  PlanVersion[] @relation("PlanVersionFinalizedBy")
-  planVersionsDistributedBy PlanVersion[] @relation("PlanVersionDistributedBy")
-  planExportsExportedBy    PlanExport[] @relation("PlanExportExportedBy")
-  decisionsDecidedBy       DecisionLedgerEntry[] @relation("DecisionDecidedBy")
-  decisionsVoidedBy        DecisionLedgerEntry[] @relation("DecisionVoidedBy")
-  signaturePacketsCreatedBy SignaturePacket[] @relation("SignaturePacketCreatedBy")
-  signatureRecordsSigner   SignatureRecord[] @relation("SignatureRecordSigner")
-
-  // Scheduled services
-  scheduledPlansCreatedBy  ScheduledServicePlan[] @relation("ScheduledPlanCreatedBy")
-  scheduledPlansUpdatedBy  ScheduledServicePlan[] @relation("ScheduledPlanUpdatedBy")
-
-  // Review schedules and compliance
-  reviewSchedulesCompleted  ReviewSchedule[] @relation("ReviewScheduleCompletedBy")
-  reviewSchedulesAssigned   ReviewSchedule[] @relation("ReviewScheduleAssignedTo")
-  reviewSchedulesCreated    ReviewSchedule[] @relation("ReviewScheduleCreatedBy")
-  complianceTasksAssigned   ComplianceTask[] @relation("ComplianceTaskAssignedTo")
-  complianceTasksCreated    ComplianceTask[] @relation("ComplianceTaskCreatedBy")
-  complianceTasksCompleted  ComplianceTask[] @relation("ComplianceTaskCompletedBy")
-  complianceTasksDismissed  ComplianceTask[] @relation("ComplianceTaskDismissedBy")
-  inAppAlerts               InAppAlert[]
-
-  // Dispute cases
-  disputeCasesAssigned      DisputeCase[] @relation("DisputeCaseOwner")
-  disputeCasesCreated       DisputeCase[] @relation("DisputeCaseCreatedBy")
-  disputeEventsPerformed    DisputeEvent[] @relation("DisputeEventPerformedBy")
-  disputeAttachmentsUploaded DisputeAttachment[] @relation("DisputeAttachmentUploadedBy")
-
-  // Audit logs
-  auditLogs                 AuditLog[] @relation("AuditLogActor")
-
-  @@index([googleId])
-  @@index([email])
-  @@index([username])
-}
-model AuthCode {
-  id        String   @id
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      AppUser  @relation("AuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([expiresAt])
-}
-
-// ============================================
-// JURISDICTION MODEL
-// ============================================
-
-model Jurisdiction {
-  id           String   @id @default(uuid())
-  stateCode    String
-  stateName    String
-  districtCode String
-  districtName String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  users     AppUser[]
-  planTypes PlanType[]
-  students  Student[]
-  planSchemas      PlanSchema[]           @relation("PlanSchemaJurisdiction")
-  bestPracticeDocs BestPracticeDocument[] @relation("BestPracticeJurisdiction")
-  formTemplates    FormTemplate[]         @relation("FormTemplateJurisdiction")
-  goalTemplates    GoalTemplate[]         @relation("GoalTemplateJurisdiction")
-
-  @@unique([stateCode, districtCode])
-  @@index([stateCode])
-}
-
-// ============================================
-// STUDENT MODEL
-// ============================================
-
-model Student {
-  id            String    @id @default(uuid())
-  recordId      String    @unique  // Stable, human-readable ID (e.g., "HCPSS-000123")
-  externalId    String?             // External SIS ID if used
-  firstName     String
-  lastName      String
-  dateOfBirth   DateTime
-  grade         String
-  schoolName    String
-  districtName  String?
-  schoolId      String?             // Optional relation to School
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  jurisdictionId String
-  jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
-  teacherId      String
-  teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
-  school         School?         @relation(fields: [schoolId], references: [id])
-  statuses       StudentStatus[]
-  planInstances  PlanInstance[]
-  priorPlanDocuments PriorPlanDocument[]
-  accessGrants   StudentAccess[]
-  artifactComparisons ArtifactComparison[]
-  assessmentReviews   IEPIndependentAssessmentReview[]
-  planMeetings   PlanMeeting[]
-  referrals      Referral[]
-  evaluationCases EvaluationCase[]
-  complianceTasks ComplianceTask[]
-  disputeCases   DisputeCase[]
-
-  @@index([recordId])
-  @@index([externalId])
-  @@index([lastName, firstName])
-  @@index([teacherId])
-  @@index([schoolId])
-}
-
-// ============================================
-// STUDENT STATUS MODEL
-// ============================================
-
-model StudentStatus {
-  id            String      @id @default(uuid())
-  scope         StatusScope
-  code          StatusCode
-  summary       String?
-  effectiveDate DateTime
-  createdAt     DateTime    @default(now())
-
-  // Relations
-  studentId   String
-  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  updatedById String
-  updatedBy   AppUser  @relation("StatusUpdatedBy", fields: [updatedById], references: [id])
-
-  @@index([studentId, scope])
-  @@index([studentId, effectiveDate])
-}
-
-// ============================================
-// PLAN TYPE MODEL
-// ============================================
-
-model PlanType {
-  id          String       @id @default(uuid())
-  code        PlanTypeCode
-  name        String
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  // Relations
-  jurisdictionId String
-  jurisdiction   Jurisdiction   @relation(fields: [jurisdictionId], references: [id])
-  schemas        PlanSchema[]
-  instances      PlanInstance[]
-  priorPlanDocuments PriorPlanDocument[]
-  bestPracticeDocs   BestPracticeDocument[] @relation("BestPracticeDocs")
-  formTemplates      FormTemplate[]         @relation("FormTemplates")
-  artifactComparisons ArtifactComparison[]
-
-  @@unique([jurisdictionId, code])
-  @@index([code])
-}
-
-// ============================================
-// PLAN SCHEMA MODEL (Template for Plans)
-// ============================================
-
-model PlanSchema {
-  id           String   @id @default(uuid())
-  version      Int      @default(1)
-  name         String
-  description  String?
-  fields       Json     // Array of field definitions
-  isActive     Boolean  @default(true)
-  effectiveFrom DateTime
-  effectiveTo   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  planTypeId     String
-  planType       PlanType          @relation(fields: [planTypeId], references: [id])
-  jurisdictionId String?
-  jurisdiction   Jurisdiction?     @relation("PlanSchemaJurisdiction", fields: [jurisdictionId], references: [id])
-  instances      PlanInstance[]
-  fieldConfigs   PlanFieldConfig[]
-
-  @@index([planTypeId, isActive])
-}
-
-// ============================================
-// PLAN FIELD CONFIG MODEL (Field Requirement Overrides)
-// ============================================
-
-model PlanFieldConfig {
-  id           String     @id @default(cuid())
-  planSchema   PlanSchema @relation(fields: [planSchemaId], references: [id], onDelete: Cascade)
-  planSchemaId String
-
-  sectionKey   String     // References section.key in schema
-  fieldKey     String     // References field.key in schema
-
-  // If null, use required flag from schemaJson
-  isRequired   Boolean?
-
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@unique([planSchemaId, sectionKey, fieldKey])
-  @@index([planSchemaId])
-}
-
-// ============================================
-// PLAN INSTANCE MODEL (Actual Student Plans)
-// ============================================
-
-model PlanInstance {
-  id            String    @id @default(uuid())
-  startDate     DateTime
-  endDate       DateTime?
-  status        String    @default("DRAFT") // DRAFT, ACTIVE, EXPIRED, SUPERSEDED
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  studentId    String
-  student      Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  planTypeId   String
-  planType     PlanType        @relation(fields: [planTypeId], references: [id])
-  schemaId     String
-  schema       PlanSchema      @relation(fields: [schemaId], references: [id])
-  fieldValues  PlanFieldValue[]
-  goals        Goal[]
-  serviceLogs  ServiceLog[]
-  behaviorPlan BehaviorPlan?
-  artifactComparisons ArtifactComparison[]
-
-  // Maryland IEP-specific relations
-  iepServices              IEPService[]
-  iepAccommodations        IEPAccommodation[]
-  iepAssessmentDecisions   IEPAssessmentDecision[]
-  iepTransition            IEPTransition?
-  iepExtendedSchoolYear    IEPExtendedSchoolYear?
-  assessmentReviews        IEPIndependentAssessmentReview[]
-  planMeetings             PlanMeeting[]
-  eligibilityDeterminations EligibilityDetermination[] @relation("EligibilityResultingPlan")
-
-  // Versioning and decisions
-  planVersions             PlanVersion[]
-  decisions                DecisionLedgerEntry[]
-
-  // Scheduled services
-  scheduledServicePlan     ScheduledServicePlan?
-
-  // Review schedules and compliance
-  reviewSchedules          ReviewSchedule[]
-  complianceTasks          ComplianceTask[]
-  disputeCases             DisputeCase[]
-
-  @@index([studentId, planTypeId])
-  @@index([status])
-}
-
-// ============================================
-// PLAN FIELD VALUE MODEL (Data for Each Plan Field)
-// ============================================
-
-model PlanFieldValue {
-  id         String   @id @default(uuid())
-  fieldKey   String   // References field key in PlanSchema.fields
-  value      Json     // Flexible value storage
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  planInstanceId String
-  planInstance   PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-
-  @@unique([planInstanceId, fieldKey])
-  @@index([planInstanceId])
-}
-
-// ============================================
-// PLAN VERSION MODEL (Finalized snapshots of plans)
-// ============================================
-
-enum PlanVersionStatus {
-  FINAL           // Version has been finalized
-  DISTRIBUTED     // Version has been distributed to parents
-  SUPERSEDED      // A newer version exists
-}
-
-model PlanVersion {
-  id               String            @id @default(uuid())
-  planInstanceId   String
-  versionNumber    Int               // Incremented for each version
-  status           PlanVersionStatus @default(FINAL)
-
-  // Snapshot of the entire plan at time of finalization
-  snapshotJson     Json              @db.JsonB
-
-  // Finalization metadata
-  finalizedAt      DateTime          @default(now())
-  finalizedByUserId String
-
-  // Distribution tracking
-  distributedAt    DateTime?
-  distributedByUserId String?
-
-  // Notes about this version
-  versionNotes     String?           @db.Text
-
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-
-  // Relations
-  planInstance     PlanInstance      @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  finalizedBy      AppUser           @relation("PlanVersionFinalizedBy", fields: [finalizedByUserId], references: [id])
-  distributedBy    AppUser?          @relation("PlanVersionDistributedBy", fields: [distributedByUserId], references: [id])
-  exports          PlanExport[]
-  signaturePacket  SignaturePacket?
-  decisions        DecisionLedgerEntry[]
-
-  @@unique([planInstanceId, versionNumber])
-  @@index([planInstanceId])
-  @@index([finalizedAt])
-}
-
-// ============================================
-// PLAN EXPORT MODEL (PDF and other exports of plan versions)
-// ============================================
-
-enum ExportFormat {
-  PDF
-  DOCX
-  HTML
-}
-
-model PlanExport {
-  id               String       @id @default(uuid())
-  planVersionId    String
-  format           ExportFormat @default(PDF)
-
-  // Storage reference (key in file storage or blob reference)
-  storageKey       String
-  fileName         String
-  fileSizeBytes    Int?
-  mimeType         String       @default("application/pdf")
-
-  // Export metadata
-  exportedAt       DateTime     @default(now())
-  exportedByUserId String
-
-  // Relations
-  planVersion      PlanVersion  @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
-  exportedBy       AppUser      @relation("PlanExportExportedBy", fields: [exportedByUserId], references: [id])
-
-  @@index([planVersionId])
-  @@index([exportedAt])
-}
-
-// ============================================
-// DECISION LEDGER MODEL (Immutable record of plan decisions)
-// ============================================
-
-enum DecisionType {
-  ELIGIBILITY_CATEGORY
-  PLACEMENT_LRE
-  SERVICES_CHANGE
-  GOALS_CHANGE
-  ACCOMMODATIONS_CHANGE
-  ESY_DECISION
-  ASSESSMENT_PARTICIPATION
-  BEHAVIOR_SUPPORTS
-  TRANSITION_SERVICES
-  OTHER
-}
-
-enum DecisionStatus {
-  ACTIVE
-  VOID
-}
-
-model DecisionLedgerEntry {
-  id                  String         @id @default(uuid())
-  planInstanceId      String
-  planVersionId       String?        // If decision was made during finalize
-  meetingId           String?        // If decision was made during a meeting
-
-  // Decision details
-  decisionType        DecisionType
-  sectionKey          String?        // ex: "LRE", "SERVICES", "ACCOMMODATIONS", "ESY", "GOALS"
-  summary             String         @db.Text
-  rationale           String         @db.Text
-  optionsConsidered   String?        @db.Text
-  participants        String?        @db.Text  // Text list of participants if not linked to meeting
-
-  // Decision metadata
-  decidedAt           DateTime
-  decidedByUserId     String
-
-  // Status (decisions are immutable except for voiding)
-  status              DecisionStatus @default(ACTIVE)
-  voidedAt            DateTime?
-  voidedByUserId      String?
-  voidReason          String?        @db.Text
-
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-
-  // Relations
-  planInstance        PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  planVersion         PlanVersion?   @relation(fields: [planVersionId], references: [id])
-  meeting             PlanMeeting?   @relation(fields: [meetingId], references: [id])
-  decidedBy           AppUser        @relation("DecisionDecidedBy", fields: [decidedByUserId], references: [id])
-  voidedBy            AppUser?       @relation("DecisionVoidedBy", fields: [voidedByUserId], references: [id])
-
-  @@index([planInstanceId])
-  @@index([planVersionId])
-  @@index([meetingId])
-  @@index([decisionType])
-  @@index([sectionKey])
-  @@index([decidedAt])
-}
-
-// ============================================
-// SIGNATURE PACKET MODEL (Collection of signatures for a plan version)
-// ============================================
-
-enum SignaturePacketStatus {
-  OPEN       // Collecting signatures
-  COMPLETE   // All required signatures collected
-  EXPIRED    // Signature collection period expired
-}
-
-model SignaturePacket {
-  id               String                @id @default(uuid())
-  planVersionId    String                @unique
-  status           SignaturePacketStatus @default(OPEN)
-
-  // Required roles for this packet (JSON array of SignatureRole values)
-  requiredRoles    Json                  @default("[]")
-
-  // Completion tracking
-  completedAt      DateTime?
-  expiresAt        DateTime?
-
-  createdAt        DateTime              @default(now())
-  createdByUserId  String
-  updatedAt        DateTime              @updatedAt
-
-  // Relations
-  planVersion      PlanVersion           @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
-  createdBy        AppUser               @relation("SignaturePacketCreatedBy", fields: [createdByUserId], references: [id])
-  signatures       SignatureRecord[]
-
-  @@index([status])
-  @@index([createdAt])
-}
-
-// ============================================
-// SIGNATURE RECORD MODEL (Individual signatures)
-// ============================================
-
-enum SignatureRole {
-  PARENT_GUARDIAN
-  CASE_MANAGER
-  SPECIAL_ED_TEACHER
-  GENERAL_ED_TEACHER
-  RELATED_SERVICE_PROVIDER
-  ADMINISTRATOR
-  STUDENT
-  OTHER
-}
-
-enum SignatureMethod {
-  ELECTRONIC      // Typed name + attestation
-  IN_PERSON       // Signed in person (witnessed)
-  PAPER_RETURNED  // Paper copy signed and returned
-}
-
-enum SignatureStatus {
-  PENDING
-  SIGNED
-  DECLINED
-}
-
-model SignatureRecord {
-  id               String           @id @default(uuid())
-  packetId         String
-
-  // Signer information
-  role             SignatureRole
-  signerUserId     String?          // If signer is a system user
-  signerName       String           // Name of signer (required)
-  signerEmail      String?          // Email for notification
-  signerTitle      String?          // Title/role description
-
-  // Signature details
-  method           SignatureMethod?
-  status           SignatureStatus  @default(PENDING)
-  signedAt         DateTime?
-
-  // Electronic signature fields
-  attestationText  String?          @db.Text  // The attestation they agreed to
-  ipAddress        String?          // IP address when signed electronically
-
-  // Decline information
-  declinedAt       DateTime?
-  declineReason    String?          @db.Text
-
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-
-  // Relations
-  packet           SignaturePacket  @relation(fields: [packetId], references: [id], onDelete: Cascade)
-  signerUser       AppUser?         @relation("SignatureRecordSigner", fields: [signerUserId], references: [id])
-
-  @@index([packetId])
-  @@index([role])
-  @@index([status])
-}
-
-// ============================================
-// GOAL MODEL (IEP Goals)
-// ============================================
-
-model Goal {
-  id               String    @id @default(uuid())
-  goalCode         String    // e.g., "GOAL-1", "GOAL-2"
-  area             GoalArea
-  baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
-  baselineValue    Float?    // Numeric baseline for tracking
-  targetValue      Float?    // Target value for tracking
-  annualGoalText   String    @db.Text
-  shortTermObjectives Json?  // Array of short-term objectives (legacy, use GoalObjective relation)
-  progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
-  targetDate       DateTime?
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  // Present Levels and Wizard fields
-  presentLevelJson    Json?      // Structured present levels data from wizard
-  draftStatus         String?    // WIZARD_DRAFT, REVIEW, FINALIZED
-  comarAlignmentJson  Json?      // COMAR compliance validation data
-  templateSourceId    String?    // Reference to template used if any
-
-  // Relations
-  planInstanceId String
-  planInstance   PlanInstance   @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  progressRecords GoalProgress[]
-  workSamples    WorkSample[]
-  objectives     GoalObjective[]
-  artifactLinks  GoalArtifactLink[]
-
-  @@unique([planInstanceId, goalCode])
-  @@index([planInstanceId])
-  @@index([area])
-  @@index([draftStatus])
-}
-
-// ============================================
-// GOAL OBJECTIVE MODEL (Short-Term Objectives)
-// ============================================
-
-model GoalObjective {
-  id           String   @id @default(uuid())
-  sequence     Int      // Order of the objective (1, 2, 3...)
-  objectiveText String  @db.Text
-  targetDate   DateTime?
-  measurementCriteria String? @db.Text // How progress will be measured
-  isCompleted  Boolean  @default(false)
-  completedAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  goalId String
-  goal   Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
-
-  @@unique([goalId, sequence])
-  @@index([goalId])
-}
-
-// ============================================
-// GOAL ARTIFACT LINK MODEL (Links Artifact Comparisons to Goals)
-// ============================================
-
-model GoalArtifactLink {
-  id                   String   @id @default(uuid())
-  relevanceNote        String?  @db.Text // Why this artifact is relevant to this goal
-  linkedAt             DateTime @default(now())
-
-  // Relations
-  goalId               String
-  goal                 Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  artifactComparisonId String
-  artifactComparison   ArtifactComparison @relation(fields: [artifactComparisonId], references: [id], onDelete: Cascade)
-
-  @@unique([goalId, artifactComparisonId])
-  @@index([goalId])
-  @@index([artifactComparisonId])
-}
-
-// ============================================
-// GOAL TEMPLATE MODEL (Pre-built Goal Templates)
-// ============================================
-
-model GoalTemplate {
-  id                 String    @id @default(uuid())
-  title              String    // Short descriptive title
-  area               GoalArea
-  gradeBand          String?   // e.g., "K-2", "3-5", "6-8", "9-12"
-  goalTextTemplate   String    @db.Text // Template text with placeholders
-  objectivesTemplate Json?     // Array of objective templates
-  comarReference     String?   // Maryland COMAR reference (e.g., "13A.05.01.09")
-  measurementSuggestions Json? // Suggested measurement methods
-  isActive           Boolean   @default(true)
-  usageCount         Int       @default(0) // Track popularity
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  // Relations
-  jurisdictionId     String?
-  jurisdiction       Jurisdiction? @relation("GoalTemplateJurisdiction", fields: [jurisdictionId], references: [id])
-
-  @@index([area])
-  @@index([gradeBand])
-  @@index([isActive])
-  @@index([jurisdictionId])
-}
-
-// ============================================
-// GOAL PROGRESS MODEL (Progress Tracking)
-// ============================================
-
-model GoalProgress {
-  id           String        @id @default(uuid())
-  date         DateTime      @default(now())
-  quickSelect  ProgressLevel // One-tap progress level
-  measureJson  Json?         // Detailed measurement data
-  comment      String?       @db.Text
-  isDictated   Boolean       @default(false) // True if entered via voice
-  percentCorrect Float?      // Percentage correct for tracking
-  trials       Int?          // Number of trials
-  notes        String?       @db.Text
-  createdAt    DateTime      @default(now())
-
-  // Relations
-  goalId     String
-  goal       Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  recordedById String
-  recordedBy   AppUser @relation("ProgressRecordedBy", fields: [recordedById], references: [id])
-
-  @@index([goalId, date])
-  @@index([goalId])
-}
-
-// ============================================
-// WORK SAMPLE MODEL (Student Work Samples)
-// ============================================
-
-model WorkSample {
-  id         String           @id @default(uuid())
-  fileUrl    String           // URL to stored file (S3, GCP, Azure)
-  fileName   String
-  fileType   String           // MIME type
-  fileSize   Int              // Size in bytes
-  rating     WorkSampleRating
-  comment    String?
-  capturedAt DateTime         @default(now())
-  createdAt  DateTime         @default(now())
-
-  // Relations
-  goalId     String
-  goal       Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  uploadedById String
-  uploadedBy   AppUser @relation("WorkSampleUploadedBy", fields: [uploadedById], references: [id])
-
-  @@index([goalId])
-  @@index([capturedAt])
-}
-
-// ============================================
-// SERVICE LOG MODEL (Service Delivery Tracking)
-// ============================================
-
-model ServiceLog {
-  id            String         @id @default(uuid())
-  date          DateTime
-  minutes       Int
-  serviceType   ServiceType
-  setting       ServiceSetting
-  notes         String?        @db.Text
-  missedReason  String?        @db.Text   // Reason if session was missed (minutes=0)
-  makeupPlanned Boolean        @default(false)  // Whether makeup session is planned
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  // Relations
-  planInstanceId String
-  planInstance   PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  providerId     String
-  provider       AppUser      @relation("ServiceProvider", fields: [providerId], references: [id])
-
-  @@index([planInstanceId, date])
-  @@index([planInstanceId, serviceType])
-  @@index([providerId])
-}
-
-// ============================================
-// SCHEDULED SERVICE MODELS (Expected Service Delivery)
-// ============================================
-
-enum ScheduledServiceStatus {
-  ACTIVE
-  INACTIVE
-}
-
-model ScheduledServicePlan {
-  id             String                 @id @default(uuid())
-  status         ScheduledServiceStatus @default(ACTIVE)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-
-  // Relations
-  planInstanceId String                @unique
-  planInstance   PlanInstance          @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  createdById    String
-  createdBy      AppUser               @relation("ScheduledPlanCreatedBy", fields: [createdById], references: [id])
-  updatedById    String?
-  updatedBy      AppUser?              @relation("ScheduledPlanUpdatedBy", fields: [updatedById], references: [id])
-  items          ScheduledServiceItem[]
-
-  @@index([planInstanceId])
-  @@index([status])
-}
-
-model ScheduledServiceItem {
-  id                     String      @id @default(uuid())
-  serviceType            ServiceType
-  expectedMinutesPerWeek Int
-  startDate              DateTime
-  endDate                DateTime?
-  providerRole           String?     // e.g., "Speech Therapist", "OT"
-  location               String?     // e.g., "Resource Room", "Classroom"
-  notes                  String?     @db.Text
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
-
-  // Relations
-  scheduledPlanId String
-  scheduledPlan   ScheduledServicePlan @relation(fields: [scheduledPlanId], references: [id], onDelete: Cascade)
-
-  @@index([scheduledPlanId])
-  @@index([serviceType])
-}
-
-// ============================================
-// PRIOR PLAN DOCUMENT MODEL (Uploaded Prior Plans)
-// ============================================
-
-model PriorPlanDocument {
-  id           String          @id @default(uuid())
-  fileName     String
-  storageKey   String          // Path or key in storage (local/S3)
-  planDate     DateTime?       // Date of the prior plan (optional)
-  source       PriorPlanSource @default(UPLOADED)
-  notes        String?         @db.Text
-  createdAt    DateTime        @default(now())
-
-  // Relations
-  studentId    String
-  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  planTypeId   String
-  planType     PlanType @relation(fields: [planTypeId], references: [id])
-  uploadedById String
-  uploadedBy   AppUser  @relation("PriorPlanUploadedBy", fields: [uploadedById], references: [id])
-
-  @@index([studentId])
-  @@index([studentId, planTypeId])
-  @@index([uploadedById])
-}
-
-// ============================================
-// BEST PRACTICE DOCUMENT MODEL (Example IEPs, 504s, etc.)
-// ============================================
-
-model BestPracticeDocument {
-  id               String          @id @default(uuid())
-  title            String
-  description      String?         @db.Text
-  fileUrl          String          // Storage path or URL
-  gradeBand        String?         // e.g., "K-2", "3-5", "6-8", "9-12"
-  isActive         Boolean         @default(true)
-  ingestionStatus  IngestionStatus @default(PENDING)
-  ingestionMessage String?         // Error message if ingestion failed
-  ingestionAt      DateTime?       // Last ingestion timestamp
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-
-  // Relations
-  planTypeId     String
-  planType       PlanType      @relation("BestPracticeDocs", fields: [planTypeId], references: [id])
-  jurisdictionId String?
-  jurisdiction   Jurisdiction? @relation("BestPracticeJurisdiction", fields: [jurisdictionId], references: [id])
-  uploadedById   String
-  uploadedBy     AppUser       @relation("BestPracticeUploadedBy", fields: [uploadedById], references: [id])
-  chunks         BestPracticeChunk[]
-
-  @@index([planTypeId])
-  @@index([jurisdictionId])
-  @@index([isActive])
-  @@index([ingestionStatus])
-}
-
-// ============================================
-// FORM TEMPLATE MODEL (Blank printable forms)
-// ============================================
-
-model FormTemplate {
-  id             String    @id @default(uuid())
-  title          String
-  description    String?   @db.Text
-  fileUrl        String    // Storage path or URL
-  isDefault      Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  // Relations
-  planTypeId     String
-  planType       PlanType      @relation("FormTemplates", fields: [planTypeId], references: [id])
-  jurisdictionId String?
-  jurisdiction   Jurisdiction? @relation("FormTemplateJurisdiction", fields: [jurisdictionId], references: [id])
-  uploadedById   String
-  uploadedBy     AppUser       @relation("FormTemplateUploadedBy", fields: [uploadedById], references: [id])
-
-  @@index([planTypeId])
-  @@index([jurisdictionId])
-  @@index([planTypeId, jurisdictionId, isDefault])
-}
-
-// ============================================
-// BEST PRACTICE CHUNK MODEL (Extracted text for content generation)
-// ============================================
-
-model BestPracticeChunk {
-  id                     String    @id @default(uuid())
-  sequence               Int       // Order within the document
-  sectionTag             String?   // e.g., "goals_reading", "accommodations", "present_levels"
-  text                   String    @db.Text
-  embedding              Bytes?    // Optional vector embedding for semantic search
-  createdAt              DateTime  @default(now())
-
-  // Denormalized fields for efficient querying
-  planTypeCode           String    // IEP, FIVE_OH_FOUR, BEHAVIOR_PLAN
-  jurisdictionId         String?
-  gradeBand              String?
-
-  // Relations
-  bestPracticeDocumentId String
-  document               BestPracticeDocument @relation(fields: [bestPracticeDocumentId], references: [id], onDelete: Cascade)
-
-  @@index([bestPracticeDocumentId])
-  @@index([planTypeCode, jurisdictionId, gradeBand, sectionTag])
-  @@index([sectionTag])
-}
-
-// ============================================
-// BEHAVIOR PLAN MODEL (Behavior Intervention Plans)
-// ============================================
-
-model BehaviorPlan {
-  id             String   @id @default(uuid())
-  planInstanceId String   @unique
-  summary        String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  planInstance PlanInstance     @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  targets      BehaviorTarget[]
-}
-
-// ============================================
-// BEHAVIOR TARGET MODEL (Target Behaviors)
-// ============================================
-
-model BehaviorTarget {
-  id              String                  @id @default(uuid())
-  code            String                  // e.g., "BT-1", "BT-2"
-  name            String                  // Short name for the behavior
-  definition      String    @db.Text      // Operational definition
-  examples        String?   @db.Text      // Examples of the behavior
-  nonExamples     String?   @db.Text      // Non-examples (what it is not)
-  measurementType BehaviorMeasurementType
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  // Relations
-  behaviorPlanId String
-  behaviorPlan   BehaviorPlan    @relation(fields: [behaviorPlanId], references: [id], onDelete: Cascade)
-  events         BehaviorEvent[]
-
-  @@unique([behaviorPlanId, code])
-  @@index([behaviorPlanId])
-}
-
-// ============================================
-// BEHAVIOR EVENT MODEL (Behavior Occurrences)
-// ============================================
-
-model BehaviorEvent {
-  id               String    @id @default(uuid())
-  eventDate        DateTime
-  startTime        DateTime?
-  endTime          DateTime?
-  count            Int?              // For frequency measurement
-  rating           Int?              // For rating measurement (1-5 scale)
-  durationSeconds  Int?              // For duration measurement
-  contextJson      Json?             // Antecedent, setting, notes
-  createdAt        DateTime  @default(now())
-
-  // Relations
-  behaviorTargetId String
-  target           BehaviorTarget @relation(fields: [behaviorTargetId], references: [id], onDelete: Cascade)
-  recordedById     String
-  recordedBy       AppUser        @relation("BehaviorRecordedBy", fields: [recordedById], references: [id])
-
-  @@index([behaviorTargetId, eventDate])
-  @@index([behaviorTargetId])
-}
-
-// ============================================
-// USER PERMISSION MODEL (Fine-grained permissions)
-// ============================================
-
-model UserPermission {
-  id             String   @id @default(uuid())
-  userId         String   @unique
-  canCreatePlans Boolean  @default(false) // Can create new 504/IEP/Behavior plans
-  canUpdatePlans Boolean  @default(false) // Can edit plans, add targets, events
-  canReadAll     Boolean  @default(false) // Can read all students in jurisdiction
-  canManageUsers Boolean  @default(false) // Admin: can manage users and permissions
-  canManageDocs  Boolean  @default(false) // Admin: can manage schemas, best practices
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-// ============================================
-// STUDENT ACCESS MODEL (Explicit student access grants)
-// ============================================
-
-model StudentAccess {
-  id        String   @id @default(uuid())
-  userId    String
-  studentId String
-  canEdit   Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  grantedAt DateTime  @default(now())
-  expiresAt DateTime? // Optional expiration
-
-  // Relations
-  user    AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, studentId])
-  @@index([userId])
-  @@index([studentId])
-}
-
-// ============================================
-// ARTIFACT COMPARISON MODEL (Artifact Compare Feature)
-// ============================================
-
-model ArtifactComparison {
-  id               String   @id @default(uuid())
-  planInstanceId   String?
-  studentId        String
-  planTypeId       String?
-
-  artifactDate     DateTime
-  description      String?  @db.Text
-
-  baselineFileUrl  String
-  compareFileUrl   String
-
-  analysisText     String?  @db.Text
-
-  createdById      String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relations
-  planInstance     PlanInstance? @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  student          Student       @relation(fields: [studentId], references: [id])
-  planType         PlanType?     @relation(fields: [planTypeId], references: [id])
-  createdBy        AppUser       @relation("ArtifactComparisonCreatedBy", fields: [createdById], references: [id])
-  goalLinks        GoalArtifactLink[]
-
-  @@index([planInstanceId])
-  @@index([studentId])
-}
-
-// ============================================
-// MARYLAND IEP ENUMS
-// ============================================
-
-enum AssessmentType {
-  AUDIOLOGICAL
-  EDUCATIONAL
-  OCCUPATIONAL_THERAPY
-  PHYSICAL_THERAPY
-  PSYCHOLOGICAL
-  SPEECH_LANGUAGE
-  OTHER
-}
-
-enum IEPServiceCategory {
-  SPECIAL_EDUCATION
-  RELATED_SERVICE
-  SUPPLEMENTARY_AID
-  PROGRAM_MODIFICATION
-  SUPPORT_FOR_PERSONNEL
-}
-
-enum IEPServiceFrequency {
-  DAILY
-  WEEKLY
-  MONTHLY
-  QUARTERLY
-  AS_NEEDED
-  OTHER
-}
-
-enum TransitionAssessmentType {
-  INTEREST_INVENTORY
-  APTITUDE_ASSESSMENT
-  CAREER_ASSESSMENT
-  INDEPENDENT_LIVING_ASSESSMENT
-  SELF_DETERMINATION_ASSESSMENT
-  OTHER
-}
-
-enum PostsecondaryGoalArea {
-  EDUCATION_TRAINING
-  EMPLOYMENT
-  INDEPENDENT_LIVING
-}
-
-enum AccommodationType {
-  PRESENTATION
-  RESPONSE
-  SETTING
-  TIMING_SCHEDULING
-  OTHER
-}
-
-enum AssessmentDecision {
-  STANDARD_WITH_ACCOMMODATIONS
-  ALTERNATE_ASSESSMENT
-  NOT_APPLICABLE
-}
-
-// ============================================
-// IEP SERVICE MODEL (Planned Services - Maryland IEP)
-// Maryland COMAR 13A.05.01.09 requires documentation of:
-// - Special education services
-// - Related services
-// - Supplementary aids and services
-// - Program modifications
-// - Supports for school personnel
-// ============================================
-
-model IEPService {
-  id                String              @id @default(uuid())
-  category          IEPServiceCategory
-  serviceType       String              // Specific service (e.g., "Speech Therapy", "Reading Instruction")
-  description       String?             @db.Text
-  provider          String?             // Who provides the service
-  location          String?             // Where service is provided (e.g., "General Education Classroom")
-  frequency         IEPServiceFrequency
-  frequencyDetail   String?             // e.g., "3 times per week"
-  duration          Int?                // Minutes per session
-  startDate         DateTime
-  endDate           DateTime?
-  isActive          Boolean             @default(true)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-
-  // Relations
-  planInstanceId    String
-  planInstance      PlanInstance        @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-
-  @@index([planInstanceId])
-  @@index([category])
-}
-
-// ============================================
-// IEP ACCOMMODATION MODEL (Testing & Classroom Accommodations)
-// Maryland requires documentation of accommodations for:
-// - State and district assessments
-// - Classroom instruction and tests
-// ============================================
-
-model IEPAccommodation {
-  id                String            @id @default(uuid())
-  accommodationType AccommodationType
-  description       String            @db.Text // Specific accommodation description
-  setting           String?           // Where it applies (classroom, testing, both)
-
-  // Assessment-specific fields
-  forStateAssessment    Boolean       @default(false)
-  forDistrictAssessment Boolean       @default(false)
-  forClassroom          Boolean       @default(true)
-
-  isActive          Boolean           @default(true)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  // Relations
-  planInstanceId    String
-  planInstance      PlanInstance      @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-
-  @@index([planInstanceId])
-  @@index([accommodationType])
-}
-
-// ============================================
-// IEP ASSESSMENT DECISION MODEL (State/District Assessment Participation)
-// Maryland COMAR requires documentation of assessment decisions
-// ============================================
-
-model IEPAssessmentDecision {
-  id                    String             @id @default(uuid())
-  assessmentName        String             // e.g., "MCAP ELA", "MCAP Math", "MISA"
-  assessmentArea        String?            // e.g., "English Language Arts", "Mathematics", "Science"
-  decision              AssessmentDecision
-  alternateAssessmentRationale String?     @db.Text // Required if alternate assessment selected
-  accommodationsApplied String?            @db.Text // List of accommodations for this assessment
-
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-
-  // Relations
-  planInstanceId        String
-  planInstance          PlanInstance       @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-
-  @@index([planInstanceId])
-}
-
-// ============================================
-// IEP TRANSITION MODEL (Secondary Transition - Age 14+/16+)
-// Maryland COMAR 13A.05.01.09 requires transition planning starting at age 14
-// and transition services starting at age 16
-// ============================================
-
-model IEPTransition {
-  id                        String                   @id @default(uuid())
-
-  // Student's vision and preferences (required starting at age 14)
-  studentVision             String?                  @db.Text // Student's vision for future
-  studentStrengths          String?                  @db.Text
-  studentPreferences        String?                  @db.Text
-  studentInterests          String?                  @db.Text
-
-  // Age-appropriate transition assessments
-  assessmentsCompleted      Json?                    // Array of TransitionAssessment objects
-  assessmentsSummary        String?                  @db.Text
-
-  // Course of study (starting at age 14)
-  courseOfStudy             String?                  @db.Text
-  diplomaTrack              String?                  // e.g., "Maryland High School Diploma", "Maryland High School Certificate"
-
-  // Postsecondary goals (required at age 16)
-  educationTrainingGoal     String?                  @db.Text
-  employmentGoal            String?                  @db.Text
-  independentLivingGoal     String?                  @db.Text // Required if applicable
-  independentLivingApplicable Boolean               @default(true)
-
-  // Transition services and activities
-  transitionServices        Json?                    // Detailed services linked to postsecondary goals
-  agencyParticipation       String?                  @db.Text // Agency involvement
-  agenciesInvited           Json?                    // List of agencies invited to IEP meeting
-
-  // Student participation
-  studentInvited            Boolean                  @default(true)
-  studentAttended           Boolean?
-  transferOfRightsDiscussed Boolean?                 // Required at age 17 in Maryland
-
-  createdAt                 DateTime                 @default(now())
-  updatedAt                 DateTime                 @updatedAt
-
-  // Relations
-  planInstanceId            String                   @unique
-  planInstance              PlanInstance             @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-
-  @@index([planInstanceId])
-}
-
-// ============================================
-// IEP EXTENDED SCHOOL YEAR MODEL (ESY Decision)
-// Maryland COMAR requires documentation of ESY factors:
-// - Regression/Recoupment
-// - Critical life skills
-// - Emerging skills/breakthrough opportunities
-// - Interfering behaviors
-// - Nature and severity of disability
-// - Special circumstances
-// ============================================
-
-model IEPExtendedSchoolYear {
-  id                        String    @id @default(uuid())
-
-  // ESY Decision
-  esyEligible               Boolean
-  esyDecisionDate           DateTime?
-
-  // Factor analysis (Maryland-specific factors)
-  regressionRecoupmentData  String?   @db.Text // Evidence of significant regression
-  regressionRisk            Boolean?
-  regressionNotes           String?   @db.Text
-
-  criticalLifeSkillsAtRisk  Boolean?
-  criticalLifeSkillsNotes   String?   @db.Text
-
-  emergingSkillsAtRisk      Boolean?  // Breakthrough opportunity at risk
-  emergingSkillsNotes       String?   @db.Text
-
-  interferingBehaviors      Boolean?
-  interferingBehaviorsNotes String?   @db.Text
-
-  severityOfDisability      String?   @db.Text // Nature and severity considerations
-
-  specialCircumstances      Boolean?
-  specialCircumstancesNotes String?   @db.Text
-
-  // ESY Services (if eligible)
-  esyServicesDescription    String?   @db.Text
-  esyGoals                  Json?     // Goals to be addressed during ESY
-  esyStartDate              DateTime?
-  esyEndDate                DateTime?
-  esyLocation               String?
-
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
-
-  // Relations
-  planInstanceId            String    @unique
-  planInstance              PlanInstance @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-
-  @@index([planInstanceId])
-}
-
-// ============================================
-// IEP INDEPENDENT ASSESSMENT REVIEW MODEL
-// Based on Howard County "Review of Independent Assessment" form
-// Used when an independent educational evaluation (IEE) is reviewed
-// ============================================
-
-model IEPIndependentAssessmentReview {
-  id                          String         @id @default(uuid())
-
-  // Header information
-  school                      String?
-  grade                       String?
-  dateOfBirth                 DateTime?
-  dateOfReport                DateTime?      // Date of the independent assessment report
-  dateOfTeamReview            DateTime?      // Date IEP team reviewed the assessment
-  assessmentType              AssessmentType
-  assessmentTypeOther         String?        // If assessmentType is OTHER
-
-  // Part I: Review by Qualified School Personnel
-  // Reviewer information
-  schoolReviewerName          String?
-  schoolReviewerTitle         String?
-  schoolReviewerCredentials   String?
-
-  // Examiner information
-  examinerName                String?
-  examinerTitle               String?
-  examinerLicensed            Boolean?       // Is the examiner appropriately licensed?
-  examinerLicenseDetails      String?
-  examinerQualified           Boolean?       // Is the examiner professionally qualified?
-  examinerQualificationNotes  String?        @db.Text
-
-  // Report quality checks
-  reportWrittenDatedSigned    Boolean?       // Is the report written, dated, and signed?
-
-  // Assessment materials review
-  materialsTechnicallySound     Boolean?     // Are materials technically sound?
-  materialsFollowedInstructions Boolean?     // Were materials administered per instructions?
-  materialsInstructionsNotes    String?      @db.Text
-  materialsLanguageAccurate     Boolean?     // Materials in appropriate language/form?
-  materialsLanguageNotes        String?      @db.Text
-  materialsBiasFree             Boolean?     // Materials racially/culturally bias-free?
-  materialsBiasNotes            String?      @db.Text
-  materialsValidPurpose         Boolean?     // Materials valid for their purpose?
-  materialsValidNotes           String?      @db.Text
-
-  // Results review
-  resultsReflectAptitude        Boolean?     // Results reflect aptitude/achievement?
-  resultsReflectAptitudeNA      Boolean?     // Not applicable
-  resultsNotes                  String?      @db.Text
-
-  // Part II: Review by IEP/504 Team
-  describesPerformanceAllAreas  Boolean?     // Describes performance in all areas of suspected disability?
-  performanceAreasNotes         String?      @db.Text
-  includesVariedAssessmentData  Boolean?     // Includes varied assessment tools/strategies?
-  assessmentDataNotes           String?      @db.Text
-  includesInstructionalImplications Boolean? // Includes instructional implications?
-  instructionalNotes            String?      @db.Text
-
-  // Part III: Conclusions
-  findingsMatchData             Boolean?     // Are findings consistent with assessment data?
-  findingsMatchDataNote         String?      @db.Text
-  dataMatchExistingSchoolData   Boolean?     // Data consistent with existing school data?
-  dataMatchExistingNote         String?      @db.Text
-  recommendationsSupported      Boolean?     // Are recommendations supported by data?
-  recommendationsToConsider     String?      @db.Text // Which recommendations will team consider?
-
-  // Assessment waiver decision
-  schoolAssessmentWaived        Boolean?     // Is additional school assessment waived?
-  schoolAssessmentWaivedNote    String?      @db.Text // If no, what additional assessments recommended?
-
-  // Part IV: For IEP Teams Only
-  includesDataForIEPContent     Boolean?     // Includes data for IEP content and participation?
-  iepContentNotes               String?      @db.Text
-  disabilityConsistentWithCOMAR Boolean?     // Is identified disability consistent with COMAR?
-  comarDisabilityNotes          String?      @db.Text
-
-  // Additional notes
-  additionalNotes               String?      @db.Text
-
-  // Team members who participated in review
-  teamMembers                   Json?        // Array of team member names and roles
-
-  // Simple fields for basic review mode
-  evaluator                     String?      // Name of evaluator
-  summary                       String?      @db.Text
-  recommendations               String?      @db.Text
-  attachmentUrl                 String?
-
-  createdAt                     DateTime     @default(now())
-  updatedAt                     DateTime     @updatedAt
-
-  // Relations
-  studentId                     String
-  student                       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  planInstanceId                String?      // Link to IEP if applicable
-  planInstance                  PlanInstance? @relation(fields: [planInstanceId], references: [id])
-  createdById                   String
-  createdBy                     AppUser      @relation("AssessmentReviewCreatedBy", fields: [createdById], references: [id])
-
-  @@index([studentId])
-  @@index([planInstanceId])
-  @@index([assessmentType])
-  @@index([dateOfTeamReview])
-}
-
-// ============================================
-// STATE MODEL
-// ============================================
-
-model State {
-  id        String     @id @default(uuid())
-  code      String     @unique  // e.g., "MD", "VA", "DC"
-  name      String
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  // Relations
-  districts District[]
-
-  @@index([code])
-  @@index([isActive])
-}
-
-// ============================================
-// DISTRICT MODEL
-// ============================================
-
-model District {
-  id        String     @id @default(uuid())
-  stateId   String
-  code      String     // e.g., "HCPSS", "MCPS"
-  name      String
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  // Relations
-  state     State      @relation(fields: [stateId], references: [id])
-  schools   School[]
-
-  @@unique([stateId, code])
-  @@index([stateId])
-  @@index([isActive])
-}
-
-// ============================================
-// SCHOOL TYPE ENUM
-// ============================================
-
-enum SchoolType {
-  ELEMENTARY
-  MIDDLE
-  HIGH
-  K8
-  K12
-  OTHER
-}
-
-// ============================================
-// SCHOOL MODEL (Admin-Managed School List)
-// ============================================
-
-model School {
-  id           String      @id @default(uuid())
-  stateCode    String?
-  districtId   String?
-  name         String
-  code         String?     // Optional school code (e.g., "HCPSS-001")
-  address      String?
-  schoolType   SchoolType?
-  isActive     Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  // Relations
-  district     District?   @relation(fields: [districtId], references: [id])
-  students     Student[]
-
-  @@unique([stateCode, code])
-  @@unique([districtId, name])
-  @@index([stateCode])
-  @@index([districtId])
-  @@index([isActive])
-}
-
-// ============================================
-// FORM FIELD DEFINITION MODEL (IEP/IEP Report Field Definitions)
-// Stores the configuration for each field in the IEP and IEP Report forms
-// Only admin can create/update these records
-// ============================================
-
-model FormFieldDefinition {
-  id                 String           @id @default(uuid())
-  formType           FormType
-  section            String           // Section name (e.g., "Student Information", "Present Levels")
-  sectionOrder       Int              @default(0) // Order of section in form
-  fieldKey           String           // Stable key (e.g., "student_name", "plaa_academic_performance")
-  fieldLabel         String           // Display label
-  controlType        ControlType
-  isRequired         Boolean          @default(false)
-  valueEditableBy    Json             // Array of roles that can edit the value: ["ADMIN", "CASE_MANAGER", "TEACHER"]
-  optionsEditableBy  OptionsEditableBy @default(NONE)
-  helpText           String?          // Optional help text for the field
-  placeholder        String?          // Optional placeholder text
-  validationRegex    String?          // Optional regex for validation
-  minLength          Int?             // Minimum length for text fields
-  maxLength          Int?             // Maximum length for text fields
-  sortOrder          Int              @default(0) // Order of field within section
-  isActive           Boolean          @default(true)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-
-  // Relations
-  options            FormFieldOption[]
-
-  @@unique([formType, fieldKey])
-  @@index([formType])
-  @@index([formType, section])
-  @@index([isActive])
-}
-
-// ============================================
-// FORM FIELD OPTION MODEL (Dropdown/Radio Options)
-// Stores options for dropdown and radio fields
-// Only admin can modify options where optionsEditableBy = ADMIN_ONLY
-// ============================================
-
-model FormFieldOption {
-  id                   String              @id @default(uuid())
-  value                String              // Stored value
-  label                String              // Display label
-  sortOrder            Int                 @default(0)
-  isActive             Boolean             @default(true)
-  isDefault            Boolean             @default(false) // Default selection
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-
-  // Relations
-  fieldDefinitionId    String
-  fieldDefinition      FormFieldDefinition @relation(fields: [fieldDefinitionId], references: [id], onDelete: Cascade)
-
-  @@unique([fieldDefinitionId, value])
-  @@index([fieldDefinitionId])
-  @@index([isActive])
-}
-
-// ============================================
-// FORM FIELD VALUE MODEL (Student/Plan Field Values)
-// Stores the actual values entered for each field
-// Uses the existing PlanFieldValue model for plan-specific values
-// This model is for student-level values that aren't plan-specific
-// ============================================
-
-model StudentFieldValue {
-  id           String   @id @default(uuid())
-  studentId    String
-  fieldKey     String   // References FormFieldDefinition.fieldKey
-  value        Json     // Flexible value storage
-  createdById  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@unique([studentId, fieldKey])
-  @@index([studentId])
-  @@index([fieldKey])
-}
-
-// ============================================
-// COMPLIANCE RULES ENUMS
-// ============================================
-
-enum RuleScopeType {
-  STATE
-  DISTRICT
-  SCHOOL
-}
-
-enum RulePlanType {
-  IEP
-  PLAN504
-  BIP
-  ALL
-}
-
-enum MeetingTypeCode {
-  INITIAL
-  ANNUAL
-  REVIEW
-  AMENDMENT
-  CONTINUED
-}
-
-enum MeetingStatus {
-  SCHEDULED
-  HELD
-  CLOSED
-  CANCELED
-}
-
-enum ParentDeliveryMethod {
-  SEND_HOME
-  US_MAIL
-  PICK_UP
-}
-
-// ============================================
-// RULE DEFINITION MODEL
-// Defines the available rule types in the system
-// ============================================
-
-model RuleDefinition {
-  id            String   @id @default(uuid())
-  key           String   @unique  // Unique rule key (e.g., "PRE_MEETING_DOCS_DAYS")
-  name          String   // Human-readable name
-  description   String?  @db.Text
-  defaultConfig Json?    // Default configuration values for this rule
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  rulePackRules RulePackRule[]
-
-  @@index([key])
-}
-
-// ============================================
-// RULE EVIDENCE TYPE MODEL
-// Defines types of evidence that can be required
-// ============================================
-
-model RuleEvidenceType {
-  id        String       @id @default(uuid())
-  key       String       @unique  // e.g., "PARENT_DOCS_SENT", "CONSENT_FORM"
-  name      String       // Human-readable name
-  planType  RulePlanType // Which plan type this evidence applies to
-  createdAt DateTime     @default(now())
-
-  // Relations
-  evidenceRequirements RulePackEvidenceRequirement[]
-  meetingEvidence      MeetingEvidence[]
-
-  @@index([key])
-  @@index([planType])
-}
-
-// ============================================
-// RULE PACK MODEL
-// A collection of rules scoped to a jurisdiction level
-// ============================================
-
-model RulePack {
-  id            String        @id @default(uuid())
-  scopeType     RuleScopeType // STATE, DISTRICT, or SCHOOL
-  scopeId       String        // ID of the state/district/school
-  planType      RulePlanType  // IEP, PLAN504, BIP, or ALL
-  name          String
-  version       Int           @default(1)
-  isActive      Boolean       @default(true)
-  effectiveFrom DateTime
-  effectiveTo   DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  // Relations
-  rules RulePackRule[]
-
-  @@unique([scopeType, scopeId, planType, version])
-  @@index([scopeType, scopeId])
-  @@index([planType])
-  @@index([isActive])
-}
-
-// ============================================
-// RULE PACK RULE MODEL
-// Links a rule definition to a rule pack with configuration
-// ============================================
-
-model RulePackRule {
-  id               String   @id @default(uuid())
-  rulePackId       String
-  ruleDefinitionId String
-  isEnabled        Boolean  @default(true)
-  config           Json?    // Rule-specific configuration (e.g., { "days": 5 })
-  sortOrder        Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relations
-  rulePack             RulePack                      @relation(fields: [rulePackId], references: [id], onDelete: Cascade)
-  ruleDefinition       RuleDefinition                @relation(fields: [ruleDefinitionId], references: [id])
-  evidenceRequirements RulePackEvidenceRequirement[]
-
-  @@unique([rulePackId, ruleDefinitionId])
-  @@index([rulePackId])
-  @@index([ruleDefinitionId])
-}
-
-// ============================================
-// RULE PACK EVIDENCE REQUIREMENT MODEL
-// Specifies which evidence types are required for a rule
-// ============================================
-
-model RulePackEvidenceRequirement {
-  id             String  @id @default(uuid())
-  rulePackRuleId String
-  evidenceTypeId String
-  isRequired     Boolean @default(true)
-
-  // Relations
-  rulePackRule RulePackRule     @relation(fields: [rulePackRuleId], references: [id], onDelete: Cascade)
-  evidenceType RuleEvidenceType @relation(fields: [evidenceTypeId], references: [id])
-
-  @@unique([rulePackRuleId, evidenceTypeId])
-  @@index([rulePackRuleId])
-  @@index([evidenceTypeId])
-}
-
-// ============================================
-// MEETING TYPE MODEL
-// Reference table for meeting types
-// ============================================
-
-model MeetingType {
-  id          String          @id @default(uuid())
-  code        MeetingTypeCode @unique
-  name        String
-  description String?
-  createdAt   DateTime        @default(now())
-
-  // Relations
-  meetings PlanMeeting[]
-
-  @@index([code])
-}
-
-// ============================================
-// PLAN MEETING MODEL
-// Tracks meetings for IEP/504/BIP plans
-// ============================================
-
-model PlanMeeting {
-  id                            String                @id @default(uuid())
-  studentId                     String
-  planInstanceId                String?               // Nullable - may not have plan yet for initial
-  planType                      RulePlanType
-  meetingTypeId                 String
-  scheduledAt                   DateTime
-  heldAt                        DateTime?
-  closedAt                      DateTime?             // When meeting was marked as closed
-  status                        MeetingStatus         @default(SCHEDULED)
-  isContinued                   Boolean               @default(false)
-  continuedFromMeetingId        String?
-  parentDeliveryMethod          ParentDeliveryMethod?
-  mutualAgreementForContinuedDate Boolean?            // For continued meetings: was the date mutually agreed?
-  noticeWaiverSigned            Boolean?              // If continued meeting with < 10 days notice
-  parentRecording               Boolean?              // Is parent recording the meeting?
-  staffRecording                Boolean?              // Is staff recording (required if parent records)?
-
-  // Document delivery tracking
-  preDocsDeliveredAt            DateTime?             // When pre-meeting docs were sent
-  preDocsDeliveryMethod         ParentDeliveryMethod? // How pre-meeting docs were delivered
-  postDocsDeliveredAt           DateTime?             // When post-meeting docs were sent
-  postDocsDeliveryMethod        ParentDeliveryMethod? // How post-meeting docs were delivered
-
-  // Initial IEP consent tracking
-  consentObtainedAt             DateTime?             // When consent was obtained
-  consentStatus                 String?               // 'PENDING', 'OBTAINED', 'REFUSED'
-
-  // Outcomes and notes
-  outcomeNotes                  String?   @db.Text    // Meeting outcome notes
-  actionItems                   Json?                 // Array of action items
-
-  // Audit fields
-  rulePackId                    String?               // Which rule pack version was used
-  rulePackVersion               Int?                  // Rule pack version number
-  closedByUserId                String?               // Who closed the meeting
-
-  createdAt                     DateTime              @default(now())
-  updatedAt                     DateTime              @updatedAt
-  createdByUserId               String?               // Who created the meeting
-
-  // Relations
-  student              Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  planInstance         PlanInstance? @relation(fields: [planInstanceId], references: [id])
-  meetingType          MeetingType   @relation(fields: [meetingTypeId], references: [id])
-  continuedFromMeeting PlanMeeting?  @relation("ContinuedMeeting", fields: [continuedFromMeetingId], references: [id])
-  continuedMeetings    PlanMeeting[] @relation("ContinuedMeeting")
-  evidence             MeetingEvidence[]
-  tasks                MeetingTask[]
-  decisions            DecisionLedgerEntry[]
-
-  @@index([studentId])
-  @@index([planInstanceId])
-  @@index([meetingTypeId])
-  @@index([status])
-  @@index([scheduledAt])
-}
-
-// ============================================
-// MEETING TASK MODEL
-// Tracks tasks/action items from meetings
-// ============================================
-
-model MeetingTask {
-  id           String    @id @default(uuid())
-  meetingId    String
-  title        String
-  description  String?   @db.Text
-  assignedTo   String?   // Name or role of assignee
-  dueDate      DateTime?
-  isCompleted  Boolean   @default(false)
-  completedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  meeting PlanMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-
-  @@index([meetingId])
-  @@index([isCompleted])
-}
-
-// ============================================
-// MEETING EVIDENCE MODEL
-// Stores evidence documents/notes for meeting compliance
-// ============================================
-
-model MeetingEvidence {
-  id              String    @id @default(uuid())
-  meetingId       String
-  evidenceTypeId  String
-  fileUploadId    String?   // Optional file attachment
-  note            String?   @db.Text
-  evidenceDate    DateTime? // When the evidence was collected (e.g., consent date)
-  deliveryMethod  ParentDeliveryMethod? // For document delivery evidence
-  createdAt       DateTime  @default(now())
-  createdByUserId String
-
-  // Relations
-  meeting      PlanMeeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  evidenceType RuleEvidenceType @relation(fields: [evidenceTypeId], references: [id])
-  fileUpload   FileUpload?      @relation(fields: [fileUploadId], references: [id])
-  createdBy    AppUser          @relation("MeetingEvidenceCreatedBy", fields: [createdByUserId], references: [id])
-
-  @@unique([meetingId, evidenceTypeId]) // One evidence record per type per meeting
-  @@index([meetingId])
-  @@index([evidenceTypeId])
-}
-
-// ============================================
-// FILE UPLOAD MODEL
-// Generic file upload storage
-// ============================================
-
-model FileUpload {
-  id           String   @id @default(uuid())
-  ownerType    String   // e.g., "meeting_evidence", "work_sample"
-  ownerId      String   // ID of the owner record
-  filename     String
-  originalName String
-  mimeType     String
-  size         Int      // File size in bytes
-  storageKey   String   // Path or key in storage system
-  createdAt    DateTime @default(now())
-  createdByUserId String
-
-  // Relations
-  createdBy            AppUser              @relation("FileUploadCreatedBy", fields: [createdByUserId], references: [id])
-  meetingEvidence      MeetingEvidence[]
-  referralAttachments  ReferralAttachment[]
-  assessmentReports    EvaluationAssessment[] @relation("AssessmentReportFile")
-
-  @@index([ownerType, ownerId])
-  @@index([createdByUserId])
-}
-
-// ============================================
-// EVALUATION CASE ENUMS
-// ============================================
-
-enum EvaluationCaseStatus {
-  OPEN
-  ASSESSMENTS_IN_PROGRESS
-  MEETING_SCHEDULED
-  DETERMINATION_COMPLETE
-  CLOSED
-}
-
-enum EvaluationCaseType {
-  IDEA             // Special education evaluation under IDEA
-  SECTION_504      // 504 plan evaluation
-}
-
-enum DeterminationOutcome {
-  ELIGIBLE
-  NOT_ELIGIBLE
-  PENDING_ADDITIONAL_DATA
-}
-
-enum IDEADisabilityCategory {
-  AUTISM
-  DEAF_BLINDNESS
-  DEAFNESS
-  DEVELOPMENTAL_DELAY
-  EMOTIONAL_DISTURBANCE
-  HEARING_IMPAIRMENT
-  INTELLECTUAL_DISABILITY
-  MULTIPLE_DISABILITIES
-  ORTHOPEDIC_IMPAIRMENT
-  OTHER_HEALTH_IMPAIRMENT
-  SPECIFIC_LEARNING_DISABILITY
-  SPEECH_LANGUAGE_IMPAIRMENT
-  TRAUMATIC_BRAIN_INJURY
-  VISUAL_IMPAIRMENT
-}
-
-enum AssessmentStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
-enum ParticipantRole {
-  PARENT
-  GENERAL_ED_TEACHER
-  SPECIAL_ED_TEACHER
-  SCHOOL_PSYCHOLOGIST
-  ADMINISTRATOR
-  SPEECH_LANGUAGE_PATHOLOGIST
-  OCCUPATIONAL_THERAPIST
-  PHYSICAL_THERAPIST
-  SCHOOL_COUNSELOR
-  BEHAVIOR_SPECIALIST
-  STUDENT
-  OTHER
-}
-
-// ============================================
-// REFERRAL ENUMS
-// ============================================
-
-enum ReferralStatus {
-  DRAFT
-  SUBMITTED
-  IN_REVIEW
-  CONSENT_REQUESTED
-  CONSENT_RECEIVED
-  CONSENT_DECLINED
-  CLOSED
-}
-
-enum ReferralType {
-  IDEA_EVALUATION       // Special education evaluation under IDEA
-  SECTION_504_EVALUATION // 504 plan evaluation
-  BEHAVIOR_SUPPORT      // Behavior support request
-}
-
-enum ReferralSource {
-  TEACHER
-  PARENT
-  ADMINISTRATOR
-  STUDENT_SUPPORT_TEAM
-  OTHER
-}
-
-// ============================================
-// REFERRAL MODEL
-// Tracks referrals for special education evaluation
-// ============================================
-
-model Referral {
-  id                    String          @id @default(uuid())
-  studentId             String
-  referralType          ReferralType
-  status                ReferralStatus  @default(DRAFT)
-
-  // Referral source information
-  source                ReferralSource
-  sourceOther           String?         // If source is OTHER
-  referredByUserId      String?         // User who made the referral (if internal)
-  referredByName        String?         // Name if external referrer
-  referredByEmail       String?         // Email if external referrer
-
-  // Referral details
-  reasonForReferral     String          @db.Text  // Why the student is being referred
-  areasOfConcern        Json?           // Array of concern areas
-  interventionsTried    String?         @db.Text  // Interventions already attempted
-  supportingData        String?         @db.Text  // Data supporting the referral
-
-  // Case manager assignment
-  caseManagerId         String?         // Assigned case manager
-
-  // Consent tracking
-  consentStatus         String?         // 'PENDING', 'REQUESTED', 'RECEIVED', 'DECLINED'
-  consentRequestedAt    DateTime?
-  consentReceivedAt     DateTime?
-  consentDeclinedAt     DateTime?
-  consentDeclineReason  String?         @db.Text
-  parentContactEmail    String?         // Parent email for consent request
-  parentContactPhone    String?         // Parent phone
-
-  // Due date tracking (user-configured, not hardcoded rules)
-  evaluationDueDate     DateTime?       // When evaluation must be completed
-  consentDueDate        DateTime?       // When consent must be obtained
-
-  // Internal notes (not visible to parents)
-  internalNotes         String?         @db.Text
-
-  // Timestamps
-  submittedAt           DateTime?       // When referral was submitted
-  closedAt              DateTime?       // When referral was closed
-  closedByUserId        String?         // Who closed the referral
-  closedReason          String?         // Reason for closing
-
-  // Audit fields
-  createdByUserId       String
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-
-  // Relations
-  student               Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  caseManager           AppUser?        @relation("ReferralCaseManager", fields: [caseManagerId], references: [id])
-  referredBy            AppUser?        @relation("ReferralReferredBy", fields: [referredByUserId], references: [id])
-  closedBy              AppUser?        @relation("ReferralClosedBy", fields: [closedByUserId], references: [id])
-  createdBy             AppUser         @relation("ReferralCreatedBy", fields: [createdByUserId], references: [id])
-  attachments           ReferralAttachment[]
-  timelineEvents        ReferralTimelineEvent[]
-  evaluationCases       EvaluationCase[]
-
-  @@index([studentId])
-  @@index([status])
-  @@index([referralType])
-  @@index([caseManagerId])
-  @@index([createdAt])
-}
-
-// ============================================
-// REFERRAL ATTACHMENT MODEL
-// Stores file attachments for referrals
-// ============================================
-
-model ReferralAttachment {
-  id              String    @id @default(uuid())
-  referralId      String
-  fileUploadId    String
-  title           String?   // Optional title for the attachment
-  description     String?   @db.Text
-  attachmentType  String?   // e.g., "parent_request", "teacher_report", "assessment", "other"
-  createdByUserId String
-  createdAt       DateTime  @default(now())
-
-  // Relations
-  referral   Referral   @relation(fields: [referralId], references: [id], onDelete: Cascade)
-  fileUpload FileUpload @relation(fields: [fileUploadId], references: [id])
-  createdBy  AppUser    @relation("ReferralAttachmentCreatedBy", fields: [createdByUserId], references: [id])
-
-  @@index([referralId])
-  @@index([attachmentType])
-}
-
-// ============================================
-// REFERRAL TIMELINE EVENT MODEL
-// Immutable audit trail for referral actions
-// ============================================
-
-model ReferralTimelineEvent {
-  id              String    @id @default(uuid())
-  referralId      String
-  eventType       String    // e.g., "CREATED", "STATUS_CHANGE", "CONSENT_REQUESTED", "NOTE_ADDED", "ATTACHMENT_ADDED"
-  eventData       Json?     // Event-specific data (e.g., { from: "DRAFT", to: "SUBMITTED" })
-  description     String    // Human-readable description
-  performedByUserId String
-  createdAt       DateTime  @default(now())
-
-  // Relations
-  referral    Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
-  performedBy AppUser  @relation("ReferralTimelinePerformedBy", fields: [performedByUserId], references: [id])
-
-  @@index([referralId])
-  @@index([eventType])
-  @@index([createdAt])
-}
-
-// ============================================
-// EVALUATION CASE MODEL
-// Tracks the evaluation process from referral through eligibility determination
-// ============================================
-
-model EvaluationCase {
-  id                        String                 @id @default(uuid())
-  studentId                 String
-  referralId                String?                // Optional link to referral that triggered this
-  caseType                  EvaluationCaseType
-  status                    EvaluationCaseStatus   @default(OPEN)
-
-  // Case manager assignment
-  caseManagerId             String?
-
-  // Meeting information
-  meetingScheduledAt        DateTime?
-  meetingLocation           String?
-  meetingLink               String?                // Virtual meeting URL
-  meetingHeldAt             DateTime?
-
-  // Determination information (set when meeting concludes)
-  determinationOutcome      DeterminationOutcome?
-  determinationDate         DateTime?
-  determinationRationale    String?                @db.Text
-
-  // IDEA-specific fields (only used when caseType = IDEA)
-  primaryDisabilityCategory IDEADisabilityCategory?
-  secondaryDisabilities     Json?                  // Array of additional disability categories
-
-  // 504-specific fields (only used when caseType = SECTION_504)
-  qualifyingImpairment      String?                @db.Text  // Description of major life activity impairment
-
-  // Non-eligibility information
-  nonEligibilityReason      String?                @db.Text
-  alternativeRecommendations String?               @db.Text
-
-  // Parent notification/response
-  parentNotifiedAt          DateTime?
-  parentAgreement           String?                // 'AGREE', 'DISAGREE', 'PENDING'
-  parentDisagreementReason  String?                @db.Text
-
-  // Internal notes
-  internalNotes             String?                @db.Text
-
-  // Audit fields
-  createdByUserId           String
-  closedAt                  DateTime?
-  closedByUserId            String?
-  closedReason              String?
-
-  createdAt                 DateTime               @default(now())
-  updatedAt                 DateTime               @updatedAt
-
-  // Relations
-  student                   Student                @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  referral                  Referral?              @relation(fields: [referralId], references: [id])
-  caseManager               AppUser?               @relation("EvaluationCaseCaseManager", fields: [caseManagerId], references: [id])
-  createdBy                 AppUser                @relation("EvaluationCaseCreatedBy", fields: [createdByUserId], references: [id])
-  closedBy                  AppUser?               @relation("EvaluationCaseClosedBy", fields: [closedByUserId], references: [id])
-  assessments               EvaluationAssessment[]
-  participants              EvaluationParticipant[]
-  determination             EligibilityDetermination?
-  timelineEvents            EvaluationCaseTimelineEvent[]
-
-  @@index([studentId])
-  @@index([referralId])
-  @@index([status])
-  @@index([caseType])
-  @@index([caseManagerId])
-  @@index([createdAt])
-}
-
-// ============================================
-// EVALUATION ASSESSMENT MODEL
-// Individual assessments conducted during the evaluation process
-// ============================================
-
-model EvaluationAssessment {
-  id                 String            @id @default(uuid())
-  evaluationCaseId   String
-
-  // Assessment information
-  assessmentType     AssessmentType    // Reusing existing AssessmentType enum
-  assessmentName     String            // Specific assessment name (e.g., "WISC-V", "Woodcock-Johnson IV")
-  assessorName       String?           // Name of person conducting the assessment
-  assessorTitle      String?           // Title/credentials
-  status             AssessmentStatus  @default(NOT_STARTED)
-
-  // Scheduling
-  scheduledAt        DateTime?
-  completedAt        DateTime?
-
-  // Results (stored as structured JSON for flexibility)
-  resultsJson        Json?             // Assessment results data
-  resultsSummary     String?           @db.Text  // Human-readable summary
-
-  // File attachments for reports
-  reportFileUploadId String?
-
-  // Notes
-  notes              String?           @db.Text
-
-  createdByUserId    String
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-
-  // Relations
-  evaluationCase     EvaluationCase    @relation(fields: [evaluationCaseId], references: [id], onDelete: Cascade)
-  reportFile         FileUpload?       @relation("AssessmentReportFile", fields: [reportFileUploadId], references: [id])
-  createdBy          AppUser           @relation("EvaluationAssessmentCreatedBy", fields: [createdByUserId], references: [id])
-
-  @@index([evaluationCaseId])
-  @@index([assessmentType])
-  @@index([status])
-}
-
-// ============================================
-// EVALUATION PARTICIPANT MODEL
-// Team members involved in the evaluation process
-// ============================================
-
-model EvaluationParticipant {
-  id                String           @id @default(uuid())
-  evaluationCaseId  String
-
-  // Participant information
-  role              ParticipantRole
-  roleOther         String?          // If role is OTHER
-  name              String
-  title             String?
-  email             String?
-  phone             String?
-
-  // Meeting attendance
-  isRequired        Boolean          @default(false)  // Required for quorum
-  invitedAt         DateTime?
-  confirmedAt       DateTime?
-  attended          Boolean?         // null = not yet determined
-  attendanceNotes   String?
-
-  // If the participant is a registered user
-  userId            String?
-
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-
-  // Relations
-  evaluationCase    EvaluationCase   @relation(fields: [evaluationCaseId], references: [id], onDelete: Cascade)
-  user              AppUser?         @relation("EvaluationParticipantUser", fields: [userId], references: [id])
-
-  @@index([evaluationCaseId])
-  @@index([role])
-  @@index([userId])
-}
-
-// ============================================
-// ELIGIBILITY DETERMINATION MODEL
-// Final eligibility decision record
-// ============================================
-
-model EligibilityDetermination {
-  id                      String                 @id @default(uuid())
-  evaluationCaseId        String                 @unique
-
-  // Decision details
-  isEligible              Boolean
-  determinationDate       DateTime
-
-  // For eligible students
-  primaryDisabilityCategory IDEADisabilityCategory?
-  secondaryDisabilities   Json?                  // Array of additional categories
-  eligibilityCriteriaMet  Json?                  // Which specific criteria were met
-
-  // For non-eligible students
-  nonEligibilityReason    String?                @db.Text
-  alternativeRecommendations String?             @db.Text
-
-  // Rationale (required for both outcomes)
-  rationale               String                 @db.Text
-
-  // Parent response
-  parentNotifiedAt        DateTime?
-  parentAgreement         String?                // 'AGREE', 'DISAGREE', 'PENDING'
-  parentDisagreementReason String?               @db.Text
-
-  // Link to resulting plan (if eligible)
-  resultingPlanInstanceId String?
-
-  // Signatures
-  signatureRequestId      String?                // Link to signature collection
-
-  createdByUserId         String
-  createdAt               DateTime               @default(now())
-  updatedAt               DateTime               @updatedAt
-
-  // Relations
-  evaluationCase          EvaluationCase         @relation(fields: [evaluationCaseId], references: [id], onDelete: Cascade)
-  resultingPlan           PlanInstance?          @relation("EligibilityResultingPlan", fields: [resultingPlanInstanceId], references: [id])
-  createdBy               AppUser                @relation("EligibilityDeterminationCreatedBy", fields: [createdByUserId], references: [id])
-
-  @@index([evaluationCaseId])
-  @@index([isEligible])
-  @@index([determinationDate])
-}
-
-// ============================================
-// EVALUATION CASE TIMELINE EVENT MODEL
-// Immutable audit trail for evaluation case actions
-// ============================================
-
-model EvaluationCaseTimelineEvent {
-  id                String           @id @default(uuid())
-  evaluationCaseId  String
-  eventType         String           // e.g., "CREATED", "STATUS_CHANGE", "ASSESSMENT_SCHEDULED", "MEETING_HELD", "DETERMINATION_MADE"
-  eventData         Json?            // Event-specific data
-  description       String           // Human-readable description
-  performedByUserId String
-  createdAt         DateTime         @default(now())
-
-  // Relations
-  evaluationCase    EvaluationCase   @relation(fields: [evaluationCaseId], references: [id], onDelete: Cascade)
-  performedBy       AppUser          @relation("EvaluationCaseTimelinePerformedBy", fields: [performedByUserId], references: [id])
-
-  @@index([evaluationCaseId])
-  @@index([eventType])
-  @@index([createdAt])
-}
-
-// ============================================
-// REVIEW SCHEDULE ENUMS
-// ============================================
-
-enum ScheduleType {
-  IEP_ANNUAL_REVIEW
-  IEP_REEVALUATION
-  PLAN_AMENDMENT_REVIEW
-  SECTION504_PERIODIC_REVIEW
-  BIP_REVIEW
-}
-
-enum ReviewScheduleStatus {
-  OPEN
-  COMPLETE
-  OVERDUE
-}
-
-enum ComplianceTaskType {
-  REVIEW_DUE_SOON
-  REVIEW_OVERDUE
-  DOCUMENT_REQUIRED
-  SIGNATURE_NEEDED
-  MEETING_REQUIRED
-}
-
-enum ComplianceTaskStatus {
-  OPEN
-  IN_PROGRESS
-  COMPLETE
-  DISMISSED
-}
-
-enum AlertType {
-  REVIEW_DUE_SOON
-  REVIEW_OVERDUE
-  COMPLIANCE_TASK
-  SIGNATURE_REQUESTED
-  MEETING_SCHEDULED
-  DOCUMENT_UPLOADED
-  GENERAL
-}
-
-// ============================================
-// DISPUTE CASE ENUMS
-// ============================================
-
-enum DisputeCaseType {
-  SECTION504_COMPLAINT
-  IEP_DISPUTE
-  RECORDS_REQUEST
-  OTHER
-}
-
-enum DisputeCaseStatus {
-  OPEN
-  IN_REVIEW
-  RESOLVED
-  CLOSED
-}
-
-enum DisputeEventType {
-  INTAKE
-  MEETING
-  RESPONSE_SENT
-  DOCUMENT_RECEIVED
-  RESOLUTION
-  STATUS_CHANGE
-  NOTE
-}
-
-// ============================================
-// REVIEW SCHEDULE MODEL
-// Tracks required review dates for plans
-// ============================================
-
-model ReviewSchedule {
-  id               String               @id @default(uuid())
-  planInstanceId   String
-  scheduleType     ScheduleType
-  dueDate          DateTime
-  leadDays         Int                  @default(30)
-  status           ReviewScheduleStatus @default(OPEN)
-  notes            String?              @db.Text
-  completedAt      DateTime?
-  completedByUserId String?
-  assignedToUserId String?
-  createdByUserId  String
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-
-  // Relations
-  planInstance     PlanInstance         @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  completedBy      AppUser?             @relation("ReviewScheduleCompletedBy", fields: [completedByUserId], references: [id])
-  assignedTo       AppUser?             @relation("ReviewScheduleAssignedTo", fields: [assignedToUserId], references: [id])
-  createdBy        AppUser              @relation("ReviewScheduleCreatedBy", fields: [createdByUserId], references: [id])
-  complianceTasks  ComplianceTask[]
-
-  @@index([planInstanceId])
-  @@index([scheduleType])
-  @@index([status])
-  @@index([dueDate])
-  @@index([assignedToUserId])
-}
-
-// ============================================
-// COMPLIANCE TASK MODEL
-// Auto-generated tasks for compliance tracking
-// ============================================
-
-model ComplianceTask {
-  id                String               @id @default(uuid())
-  taskType          ComplianceTaskType
-  status            ComplianceTaskStatus @default(OPEN)
-  title             String
-  description       String?              @db.Text
-  dueDate           DateTime?
-  priority          Int                  @default(1)  // 1=low, 2=medium, 3=high
-  assignedToUserId  String?
-  reviewScheduleId  String?
-  planInstanceId    String?
-  studentId         String?
-  createdByUserId   String?              // Who created the task
-  completedAt       DateTime?
-  completedByUserId String?
-  dismissedAt       DateTime?
-  dismissedByUserId String?
-  dismissReason     String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-
-  // Relations
-  assignedTo        AppUser?             @relation("ComplianceTaskAssignedTo", fields: [assignedToUserId], references: [id])
-  reviewSchedule    ReviewSchedule?      @relation(fields: [reviewScheduleId], references: [id], onDelete: Cascade)
-  planInstance      PlanInstance?        @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
-  student           Student?             @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdBy         AppUser?             @relation("ComplianceTaskCreatedBy", fields: [createdByUserId], references: [id])
-  completedBy       AppUser?             @relation("ComplianceTaskCompletedBy", fields: [completedByUserId], references: [id])
-  dismissedBy       AppUser?             @relation("ComplianceTaskDismissedBy", fields: [dismissedByUserId], references: [id])
-  alerts            InAppAlert[]
-
-  @@index([taskType])
-  @@index([status])
-  @@index([dueDate])
-  @@index([assignedToUserId])
-  @@index([reviewScheduleId])
-  @@index([planInstanceId])
-  @@index([studentId])
-}
-
-// ============================================
-// IN-APP ALERT MODEL
-// Notifications for users
-// ============================================
-
-model InAppAlert {
-  id               String       @id @default(uuid())
-  userId           String
-  alertType        AlertType
-  title            String
-  message          String       @db.Text
-  linkUrl          String?
-  isRead           Boolean      @default(false)
-  readAt           DateTime?
-  isDismissed      Boolean      @default(false)
-  dismissedAt      DateTime?
-  relatedEntityType String?     // e.g., "COMPLIANCE_TASK", "REVIEW_SCHEDULE", "DISPUTE_CASE"
-  relatedEntityId  String?      // ID of the related entity
-  complianceTaskId String?
-  reviewScheduleId String?
-  disputeCaseId    String?
-  createdAt        DateTime     @default(now())
-
-  // Relations
-  user             AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  complianceTask   ComplianceTask? @relation(fields: [complianceTaskId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([isRead])
-  @@index([alertType])
-  @@index([createdAt])
-}
-
-// ============================================
-// DISPUTE CASE MODEL
-// Tracks complaints, disputes, and resolution
-// ============================================
-
-model DisputeCase {
-  id               String             @id @default(uuid())
-  caseNumber       String             @unique
-  studentId        String
-  planInstanceId   String?
-  caseType         DisputeCaseType
-  status           DisputeCaseStatus  @default(OPEN)
-  summary          String             @db.Text
-  filedDate        DateTime           @default(now())
-  resolvedDate     DateTime?
-  resolutionNotes  String?            @db.Text
-  externalReference String?           // External case reference number
-  assignedToUserId String?            // Assigned case manager
-  createdByUserId  String
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-
-  // Relations
-  student          Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  planInstance     PlanInstance?      @relation(fields: [planInstanceId], references: [id], onDelete: SetNull)
-  assignedTo       AppUser?           @relation("DisputeCaseOwner", fields: [assignedToUserId], references: [id])
-  createdBy        AppUser            @relation("DisputeCaseCreatedBy", fields: [createdByUserId], references: [id])
-  events           DisputeEvent[]
-  attachments      DisputeAttachment[]
-
-  @@index([studentId])
-  @@index([planInstanceId])
-  @@index([caseType])
-  @@index([status])
-  @@index([assignedToUserId])
-  @@index([filedDate])
-}
-
-// ============================================
-// DISPUTE EVENT MODEL
-// Timeline events for dispute cases
-// ============================================
-
-model DisputeEvent {
-  id               String           @id @default(uuid())
-  disputeCaseId    String
-  eventType        DisputeEventType
-  eventDate        DateTime         @default(now())
-  summary          String           @db.Text      // Short summary of the event
-  details          String?          @db.Text      // Detailed notes
-  createdByUserId  String
-  createdAt        DateTime         @default(now())
-
-  // Relations
-  disputeCase      DisputeCase      @relation(fields: [disputeCaseId], references: [id], onDelete: Cascade)
-  createdBy        AppUser          @relation("DisputeEventPerformedBy", fields: [createdByUserId], references: [id])
-
-  @@index([disputeCaseId])
-  @@index([eventType])
-  @@index([eventDate])
-}
-
-// ============================================
-// DISPUTE ATTACHMENT MODEL
-// Attachments for dispute cases
-// ============================================
-
-model DisputeAttachment {
-  id               String       @id @default(uuid())
-  disputeCaseId    String
-  fileName         String
-  fileType         String
-  fileUrl          String       // URL or path to file
-  fileSize         Int
-  description      String?
-  uploadedByUserId String
-  uploadedAt       DateTime     @default(now())
-  createdAt        DateTime     @default(now())
-
-  // Relations
-  disputeCase      DisputeCase  @relation(fields: [disputeCaseId], references: [id], onDelete: Cascade)
-  uploadedBy       AppUser      @relation("DisputeAttachmentUploadedBy", fields: [uploadedByUserId], references: [id])
-
-  @@index([disputeCaseId])
-}
-
-// ============================================
-// AUDIT LOG ENUMS
-// ============================================
-
-enum AuditActionType {
-  PLAN_VIEWED
-  PLAN_UPDATED
-  PLAN_FINALIZED
-  PDF_EXPORTED
-  PDF_DOWNLOADED
-  SIGNATURE_ADDED
-  REVIEW_SCHEDULE_CREATED
-  CASE_VIEWED
-  CASE_EXPORTED
-  PERMISSION_DENIED
-}
-
-enum AuditEntityType {
-  PLAN
-  PLAN_VERSION
-  PLAN_EXPORT
-  STUDENT
-  GOAL
-  SERVICE
-  REVIEW_SCHEDULE
-  COMPLIANCE_TASK
-  DISPUTE_CASE
-  SIGNATURE_PACKET
-  MEETING
-}
-
-// ============================================
-// AUDIT LOG MODEL
-// Immutable record of sensitive record access and exports
-// ============================================
-
-model AuditLog {
-  id               String          @id @default(uuid())
-  actorUserId      String
-  actionType       AuditActionType
-  entityType       AuditEntityType
-  entityId         String
-  studentId        String?
-  planId           String?
-  planVersionId    String?
-  timestamp        DateTime        @default(now())
-  metadataJson     Json?           @db.JsonB
-  ipAddress        String?
-  userAgent        String?
-
-  // Relations
-  actor            AppUser         @relation("AuditLogActor", fields: [actorUserId], references: [id])
-
-  @@index([timestamp])
-  @@index([actorUserId, timestamp])
-  @@index([studentId, timestamp])
-  @@index([entityType, entityId])
 }
