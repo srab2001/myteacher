@@ -1682,7 +1682,8 @@ router.post('/students', requireManageUsersPermission, async (req, res) => {
       return res.status(400).json({ error: 'Invalid data', details: error.errors });
     }
     console.error('Student create error:', error);
-    res.status(500).json({ error: 'Failed to create student' });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create student';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
