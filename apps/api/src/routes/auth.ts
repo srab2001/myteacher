@@ -58,12 +58,12 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
       if (err) {
         console.error('Google OAuth error:', err.message);
         const errorCode = (err as { code?: string }).code || 'unknown';
-        return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_error&code=${errorCode}`);
+        return res.redirect(`${env.FRONTEND_URL}/?error=oauth_error&code=${errorCode}`);
       }
 
       if (!user) {
         console.error('Google OAuth - no user returned, info:', info);
-        return res.redirect(`${env.FRONTEND_URL}/login?error=auth_failed`);
+        return res.redirect(`${env.FRONTEND_URL}/?error=auth_failed`);
       }
 
       try {
@@ -80,7 +80,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL)
         res.redirect(`${env.FRONTEND_URL}/auth/callback?code=${authCode}&redirect=${encodeURIComponent(redirectPath)}`);
       } catch (error) {
         console.error('OAuth callback error:', error);
-        res.redirect(`${env.FRONTEND_URL}/login?error=auth_failed`);
+        res.redirect(`${env.FRONTEND_URL}/?error=auth_failed`);
       }
     })(req, res, next);
   });
