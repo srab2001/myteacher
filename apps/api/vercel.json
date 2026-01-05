@@ -2,19 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "installCommand": "npm install && npx prisma@5.22.0 generate --force && npx prisma@5.22.0 migrate deploy && npx tsx prisma/seed-if-empty.ts || true",
-  "builds": [
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@3"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/api"
+      "source": "/(.*)",
+      "destination": "/api/index.ts"
     }
   ]
 }
