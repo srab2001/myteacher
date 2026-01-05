@@ -170,11 +170,19 @@ CREATE TABLE IF NOT EXISTS "ComplianceTask" (
     "dismissedAt" TIMESTAMP(3),
     "dismissedByUserId" TEXT,
     "dismissReason" TEXT,
+    "createdByUserId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "ComplianceTask_pkey" PRIMARY KEY ("id")
 );
+
+-- Add createdByUserId column if not exists (for existing tables)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ComplianceTask' AND column_name = 'createdByUserId') THEN
+        ALTER TABLE "ComplianceTask" ADD COLUMN "createdByUserId" TEXT;
+    END IF;
+END $$;
 
 -- CreateTable InAppAlert (idempotent)
 CREATE TABLE IF NOT EXISTS "InAppAlert" (
@@ -529,6 +537,12 @@ END $$;
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ComplianceTask_dismissedByUserId_fkey') THEN
         ALTER TABLE "ComplianceTask" ADD CONSTRAINT "ComplianceTask_dismissedByUserId_fkey" FOREIGN KEY ("dismissedByUserId") REFERENCES "AppUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ComplianceTask_createdByUserId_fkey') THEN
+        ALTER TABLE "ComplianceTask" ADD CONSTRAINT "ComplianceTask_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "AppUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
     END IF;
 END $$;
 

@@ -217,6 +217,7 @@ model AppUser {
   reviewSchedulesAssigned   ReviewSchedule[] @relation("ReviewScheduleAssignedTo")
   reviewSchedulesCreated    ReviewSchedule[] @relation("ReviewScheduleCreatedBy")
   complianceTasksAssigned   ComplianceTask[] @relation("ComplianceTaskAssignedTo")
+  complianceTasksCreated    ComplianceTask[] @relation("ComplianceTaskCreatedBy")
   complianceTasksCompleted  ComplianceTask[] @relation("ComplianceTaskCompletedBy")
   complianceTasksDismissed  ComplianceTask[] @relation("ComplianceTaskDismissedBy")
   inAppAlerts               InAppAlert[]
@@ -2589,6 +2590,7 @@ model ComplianceTask {
   dismissedAt       DateTime?
   dismissedByUserId String?
   dismissReason     String?
+  createdByUserId   String?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
@@ -2597,6 +2599,7 @@ model ComplianceTask {
   reviewSchedule    ReviewSchedule?      @relation(fields: [reviewScheduleId], references: [id], onDelete: Cascade)
   planInstance      PlanInstance?        @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
   student           Student?             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdBy         AppUser?             @relation("ComplianceTaskCreatedBy", fields: [createdByUserId], references: [id])
   completedBy       AppUser?             @relation("ComplianceTaskCompletedBy", fields: [completedByUserId], references: [id])
   dismissedBy       AppUser?             @relation("ComplianceTaskDismissedBy", fields: [dismissedByUserId], references: [id])
   alerts            InAppAlert[]
