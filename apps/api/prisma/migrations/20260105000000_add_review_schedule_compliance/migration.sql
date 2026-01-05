@@ -1,6 +1,6 @@
--- Add Review Schedule and Compliance Tracking Models
+-- Add Review Schedule, Compliance Tracking, and Related Models
 -- This migration adds tables for tracking review schedules, compliance tasks,
--- in-app alerts, and dispute cases
+-- in-app alerts, dispute cases, scheduled services, audit logs, and geographic hierarchy
 
 -- ============================================
 -- ENUMS
@@ -62,9 +62,69 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "ScheduledServiceStatus" AS ENUM ('ACTIVE', 'INACTIVE');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "AuditActionType" AS ENUM ('PLAN_VIEWED', 'PLAN_UPDATED', 'PLAN_FINALIZED', 'PDF_EXPORTED', 'PDF_DOWNLOADED', 'SIGNATURE_ADDED', 'REVIEW_SCHEDULE_CREATED', 'CASE_VIEWED', 'CASE_EXPORTED', 'PERMISSION_DENIED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "AuditEntityType" AS ENUM ('PLAN', 'PLAN_VERSION', 'PLAN_EXPORT', 'STUDENT', 'GOAL', 'SERVICE', 'REVIEW_SCHEDULE', 'COMPLIANCE_TASK', 'DISPUTE_CASE', 'SIGNATURE_PACKET', 'MEETING');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Add BIP to FormType enum (idempotent)
+DO $$ BEGIN
+    ALTER TYPE "FormType" ADD VALUE IF NOT EXISTS 'BIP';
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Add CHECKBOX_GROUP to ControlType enum (idempotent)
+DO $$ BEGIN
+    ALTER TYPE "ControlType" ADD VALUE IF NOT EXISTS 'CHECKBOX_GROUP';
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 -- ============================================
 -- TABLES
 -- ============================================
+
+-- CreateTable State (idempotent)
+CREATE TABLE IF NOT EXISTS "State" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "State_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable District (idempotent)
+CREATE TABLE IF NOT EXISTS "District" (
+    "id" TEXT NOT NULL,
+    "stateId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "District_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable ReviewSchedule (idempotent)
 CREATE TABLE IF NOT EXISTS "ReviewSchedule" (
@@ -178,9 +238,145 @@ CREATE TABLE IF NOT EXISTS "DisputeAttachment" (
     CONSTRAINT "DisputeAttachment_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable ScheduledServicePlan (idempotent)
+CREATE TABLE IF NOT EXISTS "ScheduledServicePlan" (
+    "id" TEXT NOT NULL,
+    "status" "ScheduledServiceStatus" NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "planInstanceId" TEXT NOT NULL,
+    "createdById" TEXT NOT NULL,
+    "updatedById" TEXT,
+
+    CONSTRAINT "ScheduledServicePlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable ScheduledServiceItem (idempotent)
+CREATE TABLE IF NOT EXISTS "ScheduledServiceItem" (
+    "id" TEXT NOT NULL,
+    "serviceType" "ServiceType" NOT NULL,
+    "expectedMinutesPerWeek" INTEGER NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3),
+    "providerRole" TEXT,
+    "location" TEXT,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "scheduledPlanId" TEXT NOT NULL,
+
+    CONSTRAINT "ScheduledServiceItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable AuditLog (idempotent)
+CREATE TABLE IF NOT EXISTS "AuditLog" (
+    "id" TEXT NOT NULL,
+    "actorUserId" TEXT NOT NULL,
+    "actionType" "AuditActionType" NOT NULL,
+    "entityType" "AuditEntityType" NOT NULL,
+    "entityId" TEXT NOT NULL,
+    "studentId" TEXT,
+    "planId" TEXT,
+    "planVersionId" TEXT,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "metadataJson" JSONB,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+
+    CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- ============================================
+-- ADD COLUMNS TO EXISTING TABLES
+-- ============================================
+
+-- Add schoolType to School (idempotent)
+DO $$ BEGIN
+    ALTER TABLE "School" ADD COLUMN "schoolType" "SchoolType";
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add districtId to School if not exists (already exists, but ensure FK)
+DO $$ BEGIN
+    ALTER TABLE "School" ADD COLUMN "districtId" TEXT;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add baselineValue and targetValue to Goal (idempotent)
+DO $$ BEGIN
+    ALTER TABLE "Goal" ADD COLUMN "baselineValue" DOUBLE PRECISION;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE "Goal" ADD COLUMN "targetValue" DOUBLE PRECISION;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add percentCorrect, trials, notes to GoalProgress (idempotent)
+DO $$ BEGIN
+    ALTER TABLE "GoalProgress" ADD COLUMN "percentCorrect" DOUBLE PRECISION;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE "GoalProgress" ADD COLUMN "trials" INTEGER;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE "GoalProgress" ADD COLUMN "notes" TEXT;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add missedReason and makeupPlanned to ServiceLog (idempotent)
+DO $$ BEGIN
+    ALTER TABLE "ServiceLog" ADD COLUMN "missedReason" TEXT;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE "ServiceLog" ADD COLUMN "makeupPlanned" BOOLEAN DEFAULT false;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add evaluator to IEPIndependentAssessmentReview (idempotent)
+DO $$ BEGIN
+    ALTER TABLE "IEPIndependentAssessmentReview" ADD COLUMN "evaluator" TEXT;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add schoolId to Student (idempotent)
+DO $$ BEGIN
+    ALTER TABLE "Student" ADD COLUMN "schoolId" TEXT;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
 -- ============================================
 -- INDEXES
 -- ============================================
+
+-- State indexes
+CREATE UNIQUE INDEX IF NOT EXISTS "State_code_key" ON "State"("code");
+CREATE INDEX IF NOT EXISTS "State_code_idx" ON "State"("code");
+CREATE INDEX IF NOT EXISTS "State_isActive_idx" ON "State"("isActive");
+
+-- District indexes
+CREATE UNIQUE INDEX IF NOT EXISTS "District_stateId_code_key" ON "District"("stateId", "code");
+CREATE INDEX IF NOT EXISTS "District_stateId_idx" ON "District"("stateId");
+CREATE INDEX IF NOT EXISTS "District_code_idx" ON "District"("code");
+CREATE INDEX IF NOT EXISTS "District_isActive_idx" ON "District"("isActive");
 
 -- ReviewSchedule indexes
 CREATE INDEX IF NOT EXISTS "ReviewSchedule_planInstanceId_idx" ON "ReviewSchedule"("planInstanceId");
@@ -221,9 +417,51 @@ CREATE INDEX IF NOT EXISTS "DisputeEvent_eventDate_idx" ON "DisputeEvent"("event
 -- DisputeAttachment indexes
 CREATE INDEX IF NOT EXISTS "DisputeAttachment_disputeCaseId_idx" ON "DisputeAttachment"("disputeCaseId");
 
+-- ScheduledServicePlan indexes
+CREATE UNIQUE INDEX IF NOT EXISTS "ScheduledServicePlan_planInstanceId_key" ON "ScheduledServicePlan"("planInstanceId");
+CREATE INDEX IF NOT EXISTS "ScheduledServicePlan_planInstanceId_idx" ON "ScheduledServicePlan"("planInstanceId");
+CREATE INDEX IF NOT EXISTS "ScheduledServicePlan_status_idx" ON "ScheduledServicePlan"("status");
+
+-- ScheduledServiceItem indexes
+CREATE INDEX IF NOT EXISTS "ScheduledServiceItem_scheduledPlanId_idx" ON "ScheduledServiceItem"("scheduledPlanId");
+CREATE INDEX IF NOT EXISTS "ScheduledServiceItem_serviceType_idx" ON "ScheduledServiceItem"("serviceType");
+
+-- AuditLog indexes
+CREATE INDEX IF NOT EXISTS "AuditLog_timestamp_idx" ON "AuditLog"("timestamp");
+CREATE INDEX IF NOT EXISTS "AuditLog_actorUserId_timestamp_idx" ON "AuditLog"("actorUserId", "timestamp");
+CREATE INDEX IF NOT EXISTS "AuditLog_studentId_timestamp_idx" ON "AuditLog"("studentId", "timestamp");
+CREATE INDEX IF NOT EXISTS "AuditLog_entityType_entityId_idx" ON "AuditLog"("entityType", "entityId");
+
+-- School indexes
+CREATE INDEX IF NOT EXISTS "School_schoolType_idx" ON "School"("schoolType");
+
+-- Student schoolId index
+CREATE INDEX IF NOT EXISTS "Student_schoolId_idx" ON "Student"("schoolId");
+
 -- ============================================
 -- FOREIGN KEYS
 -- ============================================
+
+-- District foreign keys
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'District_stateId_fkey') THEN
+        ALTER TABLE "District" ADD CONSTRAINT "District_stateId_fkey" FOREIGN KEY ("stateId") REFERENCES "State"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+-- School foreign keys
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'School_districtId_fkey') THEN
+        ALTER TABLE "School" ADD CONSTRAINT "School_districtId_fkey" FOREIGN KEY ("districtId") REFERENCES "District"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+-- Student foreign keys
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Student_schoolId_fkey') THEN
+        ALTER TABLE "Student" ADD CONSTRAINT "Student_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "School"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- ReviewSchedule foreign keys
 DO $$ BEGIN
@@ -348,5 +586,38 @@ END $$;
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'DisputeAttachment_uploadedByUserId_fkey') THEN
         ALTER TABLE "DisputeAttachment" ADD CONSTRAINT "DisputeAttachment_uploadedByUserId_fkey" FOREIGN KEY ("uploadedByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+-- ScheduledServicePlan foreign keys
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ScheduledServicePlan_planInstanceId_fkey') THEN
+        ALTER TABLE "ScheduledServicePlan" ADD CONSTRAINT "ScheduledServicePlan_planInstanceId_fkey" FOREIGN KEY ("planInstanceId") REFERENCES "PlanInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ScheduledServicePlan_createdById_fkey') THEN
+        ALTER TABLE "ScheduledServicePlan" ADD CONSTRAINT "ScheduledServicePlan_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ScheduledServicePlan_updatedById_fkey') THEN
+        ALTER TABLE "ScheduledServicePlan" ADD CONSTRAINT "ScheduledServicePlan_updatedById_fkey" FOREIGN KEY ("updatedById") REFERENCES "AppUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+-- ScheduledServiceItem foreign keys
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ScheduledServiceItem_scheduledPlanId_fkey') THEN
+        ALTER TABLE "ScheduledServiceItem" ADD CONSTRAINT "ScheduledServiceItem_scheduledPlanId_fkey" FOREIGN KEY ("scheduledPlanId") REFERENCES "ScheduledServicePlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+-- AuditLog foreign keys
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'AuditLog_actorUserId_fkey') THEN
+        ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
     END IF;
 END $$;

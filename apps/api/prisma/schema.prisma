@@ -30,6 +30,7 @@ enum FormType {
   IEP
   IEP_REPORT
   FIVE_OH_FOUR
+  BIP
 }
 
 enum ControlType {
@@ -39,6 +40,7 @@ enum ControlType {
   RADIO
   SIGNATURE
   CHECKBOX
+  CHECKBOX_GROUP
   DATE
 }
 
@@ -216,6 +218,13 @@ model AppUser {
   disputeEventsPerformed    DisputeEvent[] @relation("DisputeEventPerformedBy")
   disputeAttachmentsUploaded DisputeAttachment[] @relation("DisputeAttachmentUploadedBy")
 
+  // Scheduled services
+  scheduledPlansCreatedBy  ScheduledServicePlan[] @relation("ScheduledPlanCreatedBy")
+  scheduledPlansUpdatedBy  ScheduledServicePlan[] @relation("ScheduledPlanUpdatedBy")
+
+  // Audit logs
+  auditLogs                 AuditLog[] @relation("AuditLogActor")
+
   @@index([googleId])
   @@index([email])
   @@index([username])
@@ -257,6 +266,48 @@ model Jurisdiction {
 }
 
 // ============================================
+// STATE MODEL (Geographic Hierarchy)
+// ============================================
+
+model State {
+  id        String     @id @default(uuid())
+  code      String     @unique  // e.g., "MD", "VA", "DC"
+  name      String     // e.g., "Maryland", "Virginia"
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  districts District[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+// ============================================
+// DISTRICT MODEL (School Districts)
+// ============================================
+
+model District {
+  id        String   @id @default(uuid())
+  stateId   String
+  code      String   // e.g., "HCPSS", "MCPS"
+  name      String   // e.g., "Howard County Public School System"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  state     State    @relation(fields: [stateId], references: [id])
+  schools   School[]
+
+  @@unique([stateId, code])
+  @@index([stateId])
+  @@index([code])
+  @@index([isActive])
+}
+
+// ============================================
 // STUDENT MODEL
 // ============================================
 
@@ -270,6 +321,7 @@ model Student {
   grade         String
   schoolName    String
   districtName  String?
+  schoolId      String?             // Optional link to School model
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -279,6 +331,7 @@ model Student {
   jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
   teacherId      String
   teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
+  school         School?         @relation("StudentSchool", fields: [schoolId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
@@ -295,6 +348,7 @@ model Student {
   @@index([externalId])
   @@index([lastName, firstName])
   @@index([teacherId])
+  @@index([schoolId])
 }
 
 // ============================================
@@ -437,6 +491,9 @@ model PlanInstance {
   reviewSchedules          ReviewSchedule[]
   complianceTasks          ComplianceTask[]
   disputeCases             DisputeCase[]
+
+  // Scheduled services
+  scheduledServicePlan     ScheduledServicePlan?
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -711,6 +768,8 @@ model Goal {
   goalCode         String    // e.g., "GOAL-1", "GOAL-2"
   area             GoalArea
   baselineJson     Json?     // Baseline data (e.g., current level, assessment scores)
+  baselineValue    Float?    // Numeric baseline value for progress tracking
+  targetValue      Float?    // Numeric target value for goal completion
   annualGoalText   String    @db.Text
   shortTermObjectives Json?  // Array of short-term objectives (legacy, use GoalObjective relation)
   progressSchedule String?   // e.g., "weekly", "monthly", "quarterly"
@@ -815,13 +874,16 @@ model GoalTemplate {
 // ============================================
 
 model GoalProgress {
-  id           String        @id @default(uuid())
-  date         DateTime      @default(now())
-  quickSelect  ProgressLevel // One-tap progress level
-  measureJson  Json?         // Detailed measurement data
-  comment      String?       @db.Text
-  isDictated   Boolean       @default(false) // True if entered via voice
-  createdAt    DateTime      @default(now())
+  id             String        @id @default(uuid())
+  date           DateTime      @default(now())
+  quickSelect    ProgressLevel // One-tap progress level
+  measureJson    Json?         // Detailed measurement data
+  percentCorrect Float?        // Percentage correct (0-100)
+  trials         Int?          // Number of trials/attempts
+  notes          String?       @db.Text  // Additional notes
+  comment        String?       @db.Text
+  isDictated     Boolean       @default(false) // True if entered via voice
+  createdAt      DateTime      @default(now())
 
   // Relations
   goalId     String
@@ -863,14 +925,16 @@ model WorkSample {
 // ============================================
 
 model ServiceLog {
-  id          String        @id @default(uuid())
-  date        DateTime
-  minutes     Int
-  serviceType ServiceType
-  setting     ServiceSetting
-  notes       String?       @db.Text
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  date          DateTime
+  minutes       Int
+  serviceType   ServiceType
+  setting       ServiceSetting
+  notes         String?       @db.Text
+  missedReason  String?       @db.Text   // Reason if session was missed (minutes=0)
+  makeupPlanned Boolean       @default(false)  // Whether makeup session is planned
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   // Relations
   planInstanceId String
@@ -881,6 +945,54 @@ model ServiceLog {
   @@index([planInstanceId, date])
   @@index([planInstanceId, serviceType])
   @@index([providerId])
+}
+
+// ============================================
+// SCHEDULED SERVICE MODELS (Expected Service Delivery)
+// ============================================
+
+enum ScheduledServiceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model ScheduledServicePlan {
+  id             String                 @id @default(uuid())
+  status         ScheduledServiceStatus @default(ACTIVE)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  // Relations
+  planInstanceId String                @unique
+  planInstance   PlanInstance          @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      AppUser               @relation("ScheduledPlanCreatedBy", fields: [createdById], references: [id])
+  updatedById    String?
+  updatedBy      AppUser?              @relation("ScheduledPlanUpdatedBy", fields: [updatedById], references: [id])
+  items          ScheduledServiceItem[]
+
+  @@index([planInstanceId])
+  @@index([status])
+}
+
+model ScheduledServiceItem {
+  id                     String      @id @default(uuid())
+  serviceType            ServiceType
+  expectedMinutesPerWeek Int
+  startDate              DateTime
+  endDate                DateTime?
+  providerRole           String?     // e.g., "Speech Therapist", "OT"
+  location               String?     // e.g., "Resource Room", "Classroom"
+  notes                  String?     @db.Text
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  // Relations
+  scheduledPlanId String
+  scheduledPlan   ScheduledServicePlan @relation(fields: [scheduledPlanId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledPlanId])
+  @@index([serviceType])
 }
 
 // ============================================
@@ -1402,6 +1514,7 @@ model IEPIndependentAssessmentReview {
   dateOfTeamReview            DateTime?      // Date IEP team reviewed the assessment
   assessmentType              AssessmentType
   assessmentTypeOther         String?        // If assessmentType is OTHER
+  evaluator                   String?        // Name of the evaluator who conducted the assessment
 
   // Part I: Review by Qualified School Personnel
   // Reviewer information
@@ -1490,20 +1603,26 @@ model IEPIndependentAssessmentReview {
 // ============================================
 
 model School {
-  id           String   @id @default(uuid())
+  id           String      @id @default(uuid())
   stateCode    String?
-  districtId   String?
+  districtId   String
   name         String
-  code         String?  // Optional school code (e.g., "HCPSS-001")
+  code         String?     // Optional school code (e.g., "HCPSS-001")
   address      String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  schoolType   SchoolType?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
-  @@unique([stateCode, code])
+  // Relations
+  district     District    @relation(fields: [districtId], references: [id])
+  students     Student[]   @relation("StudentSchool")
+
+  @@unique([districtId, name])
   @@index([stateCode])
   @@index([districtId])
   @@index([isActive])
+  @@index([schoolType])
 }
 
 // ============================================
@@ -2595,4 +2714,63 @@ model DisputeAttachment {
   uploadedBy       AppUser      @relation("DisputeAttachmentUploadedBy", fields: [uploadedByUserId], references: [id])
 
   @@index([disputeCaseId])
+}
+
+// ============================================
+// AUDIT LOG ENUMS
+// ============================================
+
+enum AuditActionType {
+  PLAN_VIEWED
+  PLAN_UPDATED
+  PLAN_FINALIZED
+  PDF_EXPORTED
+  PDF_DOWNLOADED
+  SIGNATURE_ADDED
+  REVIEW_SCHEDULE_CREATED
+  CASE_VIEWED
+  CASE_EXPORTED
+  PERMISSION_DENIED
+}
+
+enum AuditEntityType {
+  PLAN
+  PLAN_VERSION
+  PLAN_EXPORT
+  STUDENT
+  GOAL
+  SERVICE
+  REVIEW_SCHEDULE
+  COMPLIANCE_TASK
+  DISPUTE_CASE
+  SIGNATURE_PACKET
+  MEETING
+}
+
+// ============================================
+// AUDIT LOG MODEL
+// Immutable record of sensitive record access and exports
+// ============================================
+
+model AuditLog {
+  id               String          @id @default(uuid())
+  actorUserId      String
+  actionType       AuditActionType
+  entityType       AuditEntityType
+  entityId         String
+  studentId        String?
+  planId           String?
+  planVersionId    String?
+  timestamp        DateTime        @default(now())
+  metadataJson     Json?           @db.JsonB
+  ipAddress        String?
+  userAgent        String?
+
+  // Relations
+  actor            AppUser         @relation("AuditLogActor", fields: [actorUserId], references: [id])
+
+  @@index([timestamp])
+  @@index([actorUserId, timestamp])
+  @@index([studentId, timestamp])
+  @@index([entityType, entityId])
 }
