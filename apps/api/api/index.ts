@@ -1,6 +1,6 @@
 // Vercel Serverless Function Entry Point
 // @ts-nocheck - Skip type checking for this entry point
-// Force rebuild: 2026-01-02T19:00 - Route ordering fixes MUST be deployed
+// Force rebuild: 2026-01-06T20:10 - InAppAlert model must be in Prisma client
 // Prisma client location: node_modules/@prisma/client (NOT prisma/generated)
 import { createApp } from '../src/app.js';
 
