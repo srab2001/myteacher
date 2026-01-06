@@ -133,11 +133,7 @@ router.get('/context', requireAuth, async (req: Request, res: Response) => {
     const student = await prisma.student.findUnique({
       where: { id: studentId },
       include: {
-        school: {
-          include: {
-            district: true,
-          },
-        },
+        jurisdiction: true,
       },
     });
 
@@ -145,14 +141,16 @@ router.get('/context', requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Student not found' });
     }
 
-    // Build precedence search order
+    // Build precedence search order using jurisdiction
     const precedenceSearched: { scopeType: string; scopeId: string }[] = [];
 
-    if (student.school) {
-      precedenceSearched.push({ scopeType: 'SCHOOL', scopeId: student.school.id });
-      if (student.school.district) {
-        precedenceSearched.push({ scopeType: 'DISTRICT', scopeId: student.school.district.id });
-        precedenceSearched.push({ scopeType: 'STATE', scopeId: student.school.district.stateCode });
+    if (student.jurisdiction) {
+      // Use jurisdiction data for scope resolution
+      if (student.jurisdiction.districtCode) {
+        precedenceSearched.push({ scopeType: 'DISTRICT', scopeId: student.jurisdiction.id });
+      }
+      if (student.jurisdiction.stateCode) {
+        precedenceSearched.push({ scopeType: 'STATE', scopeId: student.jurisdiction.stateCode });
       }
     }
 
