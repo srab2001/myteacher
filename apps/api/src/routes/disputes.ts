@@ -259,7 +259,7 @@ router.get('/disputes/:caseId', requireAuth, async (req: Request, res: Response,
     const disputeCase = await prisma.disputeCase.findUnique({
       where: { id: caseId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, stateStudentId: true } },
+        student: { select: { id: true, firstName: true, lastName: true, recordId: true } },
         planInstance: {
           select: {
             id: true,
@@ -270,7 +270,6 @@ router.get('/disputes/:caseId', requireAuth, async (req: Request, res: Response,
         },
         assignedTo: { select: { id: true, displayName: true, email: true } },
         createdBy: { select: { id: true, displayName: true } },
-        resolvedBy: { select: { id: true, displayName: true } },
         events: {
           orderBy: { eventDate: 'desc' },
           include: {
@@ -357,8 +356,7 @@ router.patch('/disputes/:caseId', requireAuth, async (req: Request, res: Respons
 
       // Set resolution fields if resolving/closing
       if (validatedData.status === DisputeCaseStatus.RESOLVED || validatedData.status === DisputeCaseStatus.CLOSED) {
-        updateData.resolvedAt = new Date();
-        updateData.resolvedByUserId = req.user!.id;
+        updateData.resolvedDate = new Date();
       }
     }
 
@@ -377,7 +375,6 @@ router.patch('/disputes/:caseId', requireAuth, async (req: Request, res: Respons
           },
           assignedTo: { select: { id: true, displayName: true, email: true } },
           createdBy: { select: { id: true, displayName: true } },
-          resolvedBy: { select: { id: true, displayName: true } },
         },
       });
 
@@ -539,7 +536,7 @@ router.post('/disputes/:caseId/attachments', requireAuth, async (req: Request, r
           disputeCaseId: caseId,
           fileName: validatedData.fileName,
           fileUrl: validatedData.fileUrl,
-          mimeType: validatedData.mimeType,
+          fileType: validatedData.mimeType,
           fileSize: validatedData.fileSize,
           description: validatedData.description,
           uploadedByUserId: req.user!.id,
@@ -655,7 +652,7 @@ router.get('/disputes/:caseId/export-pdf', requireAuth, async (req: Request, res
     const disputeCase = await prisma.disputeCase.findUnique({
       where: { id: caseId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, stateStudentId: true } },
+        student: { select: { id: true, firstName: true, lastName: true, recordId: true } },
         planInstance: {
           select: {
             id: true,
@@ -664,7 +661,6 @@ router.get('/disputes/:caseId/export-pdf', requireAuth, async (req: Request, res
         },
         assignedTo: { select: { id: true, displayName: true } },
         createdBy: { select: { id: true, displayName: true } },
-        resolvedBy: { select: { id: true, displayName: true } },
         events: {
           orderBy: { eventDate: 'asc' },
           include: {

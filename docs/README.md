@@ -1,12 +1,22 @@
 # MyTeacher Documentation
 
-## Quick Start
+## User Guides
+
+| Document | Purpose |
+|----------|---------|
+| [USER-GUIDE-OVERVIEW.md](./USER-GUIDE-OVERVIEW.md) | Quick start guide - get up and running fast |
+| [USER-GUIDE-DETAILED.md](./USER-GUIDE-DETAILED.md) | Comprehensive guide to all features |
+
+---
+
+## Technical Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [BLUEPRINT.md](./BLUEPRINT.md) | Complete system overview - features, architecture, APIs |
 | [error-catalog.md](./error-catalog.md) | Error codes, troubleshooting, lessons learned |
 | [deployment-troubleshooting.md](./deployment-troubleshooting.md) | Deployment issues and fixes |
+| [cases-audit-guide.md](./cases-audit-guide.md) | Audit logging and compliance tracking |
 
 ---
 
@@ -91,8 +101,10 @@ Redeploy without build cache when debugging Prisma issues:
 
 | Document | Last Updated | Status |
 |----------|--------------|--------|
+| USER-GUIDE-OVERVIEW.md | 2026-01 | Current |
+| USER-GUIDE-DETAILED.md | 2026-01 | Current |
 | BLUEPRINT.md | 2024-12 | Current |
-| error-catalog.md | 2024-12 | Current |
+| error-catalog.md | 2026-01 | Current |
+| deployment-troubleshooting.md | 2026-01 | Current |
 | rules-user-guide.md | 2024-12 | Current |
-| deployment-troubleshooting.md | 2024-12 | Current |
 | looker-queries.sql | 2024-12 | Current |

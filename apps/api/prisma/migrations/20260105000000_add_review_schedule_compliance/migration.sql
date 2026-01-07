@@ -231,7 +231,8 @@ CREATE TABLE IF NOT EXISTS "DisputeCase" (
     "filedDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "resolvedDate" TIMESTAMP(3),
     "resolutionNotes" TEXT,
-    "ownerUserId" TEXT,
+    "assignedToUserId" TEXT,
+    "externalReference" TEXT,
     "createdByUserId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -245,9 +246,9 @@ CREATE TABLE IF NOT EXISTS "DisputeEvent" (
     "disputeCaseId" TEXT NOT NULL,
     "eventType" "DisputeEventType" NOT NULL,
     "eventDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "description" TEXT NOT NULL,
-    "notes" TEXT,
-    "performedByUserId" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
+    "details" TEXT,
+    "createdByUserId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "DisputeEvent_pkey" PRIMARY KEY ("id")
@@ -259,10 +260,11 @@ CREATE TABLE IF NOT EXISTS "DisputeAttachment" (
     "disputeCaseId" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
     "fileType" TEXT NOT NULL,
-    "filePath" TEXT NOT NULL,
+    "fileUrl" TEXT NOT NULL,
     "fileSize" INTEGER NOT NULL,
     "description" TEXT,
     "uploadedByUserId" TEXT NOT NULL,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "DisputeAttachment_pkey" PRIMARY KEY ("id")
@@ -436,7 +438,7 @@ CREATE INDEX IF NOT EXISTS "DisputeCase_studentId_idx" ON "DisputeCase"("student
 CREATE INDEX IF NOT EXISTS "DisputeCase_planInstanceId_idx" ON "DisputeCase"("planInstanceId");
 CREATE INDEX IF NOT EXISTS "DisputeCase_caseType_idx" ON "DisputeCase"("caseType");
 CREATE INDEX IF NOT EXISTS "DisputeCase_status_idx" ON "DisputeCase"("status");
-CREATE INDEX IF NOT EXISTS "DisputeCase_ownerUserId_idx" ON "DisputeCase"("ownerUserId");
+CREATE INDEX IF NOT EXISTS "DisputeCase_assignedToUserId_idx" ON "DisputeCase"("assignedToUserId");
 CREATE INDEX IF NOT EXISTS "DisputeCase_filedDate_idx" ON "DisputeCase"("filedDate");
 
 -- DisputeEvent indexes
@@ -588,8 +590,8 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'DisputeCase_ownerUserId_fkey') THEN
-        ALTER TABLE "DisputeCase" ADD CONSTRAINT "DisputeCase_ownerUserId_fkey" FOREIGN KEY ("ownerUserId") REFERENCES "AppUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'DisputeCase_assignedToUserId_fkey') THEN
+        ALTER TABLE "DisputeCase" ADD CONSTRAINT "DisputeCase_assignedToUserId_fkey" FOREIGN KEY ("assignedToUserId") REFERENCES "AppUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
     END IF;
 END $$;
 
@@ -607,8 +609,8 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'DisputeEvent_performedByUserId_fkey') THEN
-        ALTER TABLE "DisputeEvent" ADD CONSTRAINT "DisputeEvent_performedByUserId_fkey" FOREIGN KEY ("performedByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'DisputeEvent_createdByUserId_fkey') THEN
+        ALTER TABLE "DisputeEvent" ADD CONSTRAINT "DisputeEvent_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "AppUser"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
     END IF;
 END $$;
 
