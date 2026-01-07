@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, StudentStatusSummary, BestPracticeDocument, FormTemplate } from '@/lib/api';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ComplianceDashboardCards } from '@/components/compliance/ComplianceDashboardCards';
+// import { ComplianceDashboardCards } from '@/components/compliance/ComplianceDashboardCards';
 import { AlertsBell } from '@/components/alerts/AlertsBell';
 import styles from './page.module.css';
 
@@ -36,7 +36,7 @@ export default function DashboardPage() {
   });
 
   const isAdmin = user?.role === 'ADMIN';
-  const canManageCompliance = user?.role === 'ADMIN' || user?.role === 'CASE_MANAGER';
+  // const canManageCompliance = user?.role === 'ADMIN' || user?.role === 'CASE_MANAGER';
 
   useEffect(() => {
     if (!loading) {

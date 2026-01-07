@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
-import { api, Goal, ProgressLevel, GoalArea, WorkSampleRating } from '@/lib/api';
+import { api, Goal, ProgressLevel, GoalArea, WorkSampleRating, ArtifactComparison } from '@/lib/api';
 import { QuickProgressButtons } from '@/components/QuickProgressButtons';
 import { DictationModal } from '@/components/DictationModal';
 import { WorkSampleUpload } from '@/components/WorkSampleUpload';
+import { GoalWizardPanel } from '@/components/goals/GoalWizardPanel';
 import styles from './page.module.css';
 
 const GOAL_AREA_LABELS: Record<GoalArea, string> = {
@@ -44,6 +45,9 @@ export default function GoalsPage() {
   const [showDictation, setShowDictation] = useState(false);
   const [showWorkSample, setShowWorkSample] = useState(false);
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
+  const [goalWizardOpen, setGoalWizardOpen] = useState(false);
+  const [availableArtifacts, setAvailableArtifacts] = useState<ArtifactComparison[]>([]);
+  const [studentGrade, setStudentGrade] = useState<string | undefined>();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -67,6 +71,38 @@ export default function GoalsPage() {
       loadGoals();
     }
   }, [user, planId, loadGoals]);
+
+  // Load available artifacts for goal wizard
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        const result = await api.getStudentArtifactCompares(studentId);
+        setAvailableArtifacts(result.comparisons || []);
+      } catch {
+        console.error('Failed to load artifacts');
+      }
+    };
+
+    if (studentId) {
+      loadArtifacts();
+    }
+  }, [studentId]);
+
+  // Load student info for grade
+  useEffect(() => {
+    const loadStudentInfo = async () => {
+      try {
+        const { plan } = await api.getPlan(planId);
+        setStudentGrade(plan.student?.grade);
+      } catch {
+        console.error('Failed to load student info');
+      }
+    };
+
+    if (planId) {
+      loadStudentInfo();
+    }
+  }, [planId]);
 
   const handleQuickProgress = async (goalId: string, quickSelect: ProgressLevel, comment?: string) => {
     try {
@@ -128,14 +164,21 @@ export default function GoalsPage() {
           ← Back to IEP
         </button>
         <h1>Goals & Progress</h1>
+        <button
+          className="btn btn-primary"
+          onClick={() => setGoalWizardOpen(true)}
+          style={{ marginLeft: 'auto' }}
+        >
+          + New Goal
+        </button>
       </header>
 
       <main className={styles.main}>
         {goals.length === 0 ? (
           <div className={styles.empty}>
             <p>No goals have been created yet.</p>
-            <button className="btn btn-primary" onClick={() => router.push(`/students/${studentId}/plans/${planId}/iep`)}>
-              Add Goals in IEP
+            <button className="btn btn-primary" onClick={() => setGoalWizardOpen(true)}>
+              Create First Goal
             </button>
           </div>
         ) : (
@@ -262,6 +305,27 @@ export default function GoalsPage() {
           }}
           onUpload={(file, rating, comment) => handleWorkSampleUpload(selectedGoal.id, file, rating, comment)}
         />
+      )}
+
+      {/* Goal Wizard Panel */}
+      {goalWizardOpen && (
+        <div className={styles.goalWizardOverlay} onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setGoalWizardOpen(false);
+          }
+        }}>
+          <GoalWizardPanel
+            planId={planId}
+            studentId={studentId}
+            studentGrade={studentGrade}
+            availableArtifacts={availableArtifacts}
+            onClose={() => setGoalWizardOpen(false)}
+            onGoalCreated={() => {
+              setGoalWizardOpen(false);
+              loadGoals();
+            }}
+          />
+        </div>
       )}
     </div>
   );
