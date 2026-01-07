@@ -24,14 +24,18 @@ export function ComplianceDashboardCards() {
     const loadData = async () => {
       try {
         const [reviewRes, complianceRes] = await Promise.all([
-          api.getReviewDashboard(30),
-          api.getComplianceDashboard(),
+          api.getReviewDashboard(30).catch(() => null),
+          api.getComplianceDashboard().catch(() => null),
         ]);
-        setReviewData(reviewRes);
-        setComplianceData(complianceRes);
+        if (reviewRes) setReviewData(reviewRes);
+        if (complianceRes) setComplianceData(complianceRes);
+        // If both failed, show error; otherwise show partial data
+        if (!reviewRes && !complianceRes) {
+          setError('Compliance features are currently unavailable');
+        }
       } catch (err) {
         console.error('Failed to load compliance data:', err);
-        setError('Failed to load compliance data');
+        setError('Compliance features are currently unavailable');
       } finally {
         setLoading(false);
       }
