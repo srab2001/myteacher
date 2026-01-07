@@ -371,6 +371,75 @@ END $$;
 
 **When to apply:** When `prisma migrate deploy` fails with P3018 errors like "type already exists" or "relation already exists".
 
+### 10. Prisma 7.x Has Critical Config File Issues in Monorepos
+
+**Problem:** Prisma 7.x requires a `prisma.config.ts` file for migrations, but it has module resolution bugs that cause failures in pnpm monorepos:
+
+```
+Failed to load config file "/path/to/project" as a TypeScript/JavaScript module.
+Error: Cannot find module '/path/to/node_modules/prisma/build/types.js'
+```
+
+**Attempted Solutions That Failed:**
+- `prisma.config.ts` with `defineConfig` import - "Cannot find module types.js"
+- `prisma.config.mjs` with ESM syntax - "Failed to parse syntax"
+- `prisma.config.js` with CommonJS - "Failed to parse syntax"
+- `prisma.config.cjs` with CommonJS - "Failed to parse syntax"
+
+**Working Solution:** Downgrade to Prisma 6.x which:
+- Supports `url = env("DATABASE_URL")` in datasource block
+- Does not require `prisma.config.ts` for migrations
+- Uses simple PrismaClient without adapter pattern
+
+```json
+// package.json
+"@prisma/client": "^6.0.0",
+"prisma": "^6.0.0"
+```
+
+```prisma
+// schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+```typescript
+// db.ts - Simple instantiation
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+```
+
+**Note:** Prisma 7.x may work in non-monorepo projects or with npm instead of pnpm. Re-evaluate when Prisma 7.1+ is released.
+
+### 11. Failed Migration Recovery with "Already Exists" Errors
+
+**Problem:** When a migration fails partway through (P3018 error), marking it as rolled back and retrying fails because objects already exist:
+
+```
+Error: P3018 - relation "State" already exists
+```
+
+**Solution:** Mark the migration as applied instead of rolled back:
+
+```bash
+# DON'T do this for partial migrations:
+prisma migrate resolve --rolled-back <migration_name>
+
+# DO this when objects already exist:
+prisma migrate resolve --applied <migration_name>
+```
+
+**When to use `--applied`:**
+- Some objects from the migration already exist in DB
+- You've manually run missing SQL statements
+- Migration was partially successful
+
+**When to use `--rolled-back`:**
+- No objects from the migration exist
+- You want to re-run the migration from scratch
+
 ---
 
 ### 9. Express Route Ordering Causes 404 Errors

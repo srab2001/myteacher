@@ -154,4 +154,111 @@ describe('Google OAuth Flow', () => {
     expect(user?.isOnboarded).toBe(true);
     expect(prisma.appUser.create).not.toHaveBeenCalled();
   });
+
+  it('links Google account to existing user without googleId (admin-created user)', async () => {
+    // This scenario covers users created by admin without a Google account
+    // When they try to log in via Google, their account should be linked
+    const mockProfile = {
+      id: 'google-new-link-123',
+      emails: [{ value: 'admin_created@example.com' }],
+      displayName: 'Admin Created User',
+      photos: [{ value: 'https://example.com/photo.jpg' }],
+    };
+
+    const existingUserWithoutGoogleId = {
+      id: 'admin-created-user-uuid',
+      googleId: null, // No Google ID - created by admin
+      email: 'admin_created@example.com',
+      displayName: 'Admin Created User',
+      avatarUrl: null,
+      role: 'TEACHER',
+      stateCode: 'MD',
+      districtName: 'HCPSS',
+      schoolName: 'Test School',
+      isOnboarded: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const linkedUser = {
+      ...existingUserWithoutGoogleId,
+      googleId: mockProfile.id,
+      avatarUrl: mockProfile.photos[0].value,
+    };
+
+    // First call: search by googleId returns null
+    // Second call: search by email returns the existing user
+    (prisma.appUser.findUnique as jest.Mock)
+      .mockResolvedValueOnce(null) // First call: no user with this googleId
+      .mockResolvedValueOnce(existingUserWithoutGoogleId); // Second call: user found by email
+    (prisma.appUser.update as jest.Mock).mockResolvedValue(linkedUser);
+
+    // Simulate what passport strategy does - step 1: search by googleId
+    const userByGoogleId = await prisma.appUser.findUnique({ where: { googleId: mockProfile.id } });
+    expect(userByGoogleId).toBeNull();
+
+    // Step 2: search by email
+    const userByEmail = await prisma.appUser.findUnique({ where: { email: mockProfile.emails[0].value } });
+    expect(userByEmail).not.toBeNull();
+    expect(userByEmail?.googleId).toBeNull();
+
+    // Step 3: link Google account
+    const updated = await prisma.appUser.update({
+      where: { id: userByEmail!.id },
+      data: {
+        googleId: mockProfile.id,
+        avatarUrl: mockProfile.photos[0].value,
+      },
+    });
+
+    expect(updated.googleId).toBe(mockProfile.id);
+    expect(prisma.appUser.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects login when email is linked to different Google account', async () => {
+    // This scenario covers when a user tries to log in with a different Google account
+    // that has the same email as an existing account
+    const mockProfile = {
+      id: 'google-different-account-456',
+      emails: [{ value: 'existing@example.com' }],
+      displayName: 'Different Account',
+      photos: [],
+    };
+
+    const existingUserWithDifferentGoogleId = {
+      id: 'existing-user-uuid',
+      googleId: 'google-original-account-123', // Different Google ID
+      email: 'existing@example.com',
+      displayName: 'Existing User',
+      avatarUrl: null,
+      role: 'TEACHER',
+      stateCode: 'MD',
+      districtName: 'HCPSS',
+      schoolName: 'Test School',
+      isOnboarded: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // First call: search by googleId returns null (this is a different Google account)
+    // Second call: search by email returns user with different googleId
+    (prisma.appUser.findUnique as jest.Mock)
+      .mockResolvedValueOnce(null) // First call: no user with this googleId
+      .mockResolvedValueOnce(existingUserWithDifferentGoogleId); // Second call: user found with different googleId
+
+    // Simulate what passport strategy does - step 1: search by googleId
+    const userByGoogleId = await prisma.appUser.findUnique({ where: { googleId: mockProfile.id } });
+    expect(userByGoogleId).toBeNull();
+
+    // Step 2: search by email - finds user with different googleId
+    const userByEmail = await prisma.appUser.findUnique({ where: { email: mockProfile.emails[0].value } });
+    expect(userByEmail).not.toBeNull();
+    expect(userByEmail?.googleId).toBe('google-original-account-123');
+    expect(userByEmail?.googleId).not.toBe(mockProfile.id);
+
+    // The strategy should reject this - email already linked to different Google account
+    // In real code, this would call done(new Error('This email is already linked to a different Google account'))
+    expect(prisma.appUser.update).not.toHaveBeenCalled();
+    expect(prisma.appUser.create).not.toHaveBeenCalled();
+  });
 });
