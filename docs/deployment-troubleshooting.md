@@ -371,6 +371,174 @@ END $$;
 
 **When to apply:** When `prisma migrate deploy` fails with P3018 errors like "type already exists" or "relation already exists".
 
+### 10. Prisma 7.x Has Critical Config File Issues in Monorepos
+
+**Problem:** Prisma 7.x requires a `prisma.config.ts` file for migrations, but it has module resolution bugs that cause failures in pnpm monorepos:
+
+```
+Failed to load config file "/path/to/project" as a TypeScript/JavaScript module.
+Error: Cannot find module '/path/to/node_modules/prisma/build/types.js'
+```
+
+**Attempted Solutions That Failed:**
+- `prisma.config.ts` with `defineConfig` import - "Cannot find module types.js"
+- `prisma.config.mjs` with ESM syntax - "Failed to parse syntax"
+- `prisma.config.js` with CommonJS - "Failed to parse syntax"
+- `prisma.config.cjs` with CommonJS - "Failed to parse syntax"
+
+**Working Solution:** Downgrade to Prisma 6.x which:
+- Supports `url = env("DATABASE_URL")` in datasource block
+- Does not require `prisma.config.ts` for migrations
+- Uses simple PrismaClient without adapter pattern
+
+```json
+// package.json
+"@prisma/client": "^6.0.0",
+"prisma": "^6.0.0"
+```
+
+```prisma
+// schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+```typescript
+// db.ts - Simple instantiation
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+```
+
+**Note:** Prisma 7.x may work in non-monorepo projects or with npm instead of pnpm. Re-evaluate when Prisma 7.1+ is released.
+
+### 11. Failed Migration Recovery with "Already Exists" Errors
+
+**Problem:** When a migration fails partway through (P3018 error), marking it as rolled back and retrying fails because objects already exist:
+
+```
+Error: P3018 - relation "State" already exists
+```
+
+**Solution:** Mark the migration as applied instead of rolled back:
+
+```bash
+# DON'T do this for partial migrations:
+prisma migrate resolve --rolled-back <migration_name>
+
+# DO this when objects already exist:
+prisma migrate resolve --applied <migration_name>
+```
+
+**When to use `--applied`:**
+- Some objects from the migration already exist in DB
+- You've manually run missing SQL statements
+- Migration was partially successful
+
+**When to use `--rolled-back`:**
+- No objects from the migration exist
+- You want to re-run the migration from scratch
+
+---
+
+### 9. Express Route Ordering Causes 404 Errors
+
+**Problem:** Dashboard endpoints returned "not found" errors with the URL segment captured as a parameter ID.
+
+**Error:**
+```
+{ taskId: 'dashboard' }
+{ scheduleId: 'dashboard' }
+```
+
+**Cause:** Express matches routes in definition order. Parameterized routes (`:id`) before specific routes (`/dashboard`) capture everything.
+
+**Solution:** Always define specific routes BEFORE parameterized routes:
+```typescript
+// CORRECT ORDER
+router.get('/items/dashboard', ...);  // Specific - checked first
+router.get('/items/:itemId', ...);    // Parameterized - checked last
+```
+
+**Files that needed this fix:**
+- `apps/api/src/routes/complianceTasks.ts`
+- `apps/api/src/routes/reviewSchedules.ts`
+- `apps/api/src/routes/disputes.ts` (may need similar fix)
+- `apps/api/src/routes/alerts.ts` (may need similar fix)
+
+---
+
+### 10. Vercel Build Cache Prevents Code Updates
+
+**Problem:** Code changes pushed to Git but Vercel still serves old code.
+
+**Evidence:** Build log shows "Restored build cache from previous deployment"
+
+**Solution:**
+1. Go to Vercel Dashboard → Deployments
+2. Click ⋮ menu on latest deployment
+3. Click "Redeploy"
+4. **UNCHECK** "Use existing Build Cache"
+5. Click Redeploy
+
+**Alternative:** Project Settings → General → Build Cache → Clear
+
+---
+
+### 11. Environment Variables Not Applied to Production
+
+**Problem:** Login works in Preview but fails in Production with 500 errors.
+
+**Cause:** Environment variables set only for Preview environment, not Production.
+
+**Solution:**
+1. Go to Vercel Dashboard → Settings → Environment Variables
+2. For each variable, ensure "Production" checkbox is checked
+3. Required variables for API:
+   - `DATABASE_URL`
+   - `SESSION_SECRET` (min 32 chars)
+   - `FRONTEND_URL`
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+4. Redeploy after adding variables
+
+---
+
+### 12. Wrong Root Directory in Vercel
+
+**Problem:** API returns DEPLOYMENT_NOT_FOUND or 404 for all routes.
+
+**Cause:** Vercel Root Directory set to wrong path (e.g., `apps/web` for API project).
+
+**Solution:**
+1. Go to Vercel Project → Settings → General
+2. Set Root Directory:
+   - API project: `apps/api`
+   - Web project: `apps/web`
+3. Redeploy without cache
+
+---
+
+### 13. Missing Database Tables in Production
+
+**Problem:** API returns errors like "table does not exist".
+
+**Cause:** Schema has models but migrations weren't created/deployed.
+
+**Solution:**
+1. Create migration file: `prisma/migrations/YYYYMMDDHHMMSS_name/migration.sql`
+2. Use idempotent SQL:
+```sql
+CREATE TABLE IF NOT EXISTS "TableName" (...);
+CREATE INDEX IF NOT EXISTS "idx_name" ON "TableName"("column");
+DO $$ BEGIN
+    ALTER TABLE "TableName" ADD CONSTRAINT "fk_name" ...;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+```
+3. Commit, push, and verify Vercel runs `prisma migrate deploy`
+
 ---
 
 ## Quick Diagnosis Checklist
@@ -385,3 +553,18 @@ When deployment fails with Prisma/database errors:
 - [ ] Clear Vercel build cache and redeploy
 - [ ] Check vercel.json uses `migrate deploy` not `db push`
 - [ ] Verify `includeFiles` has migrations folder
+
+When routes return unexpected 404 errors:
+
+- [ ] Check if specific routes are defined BEFORE parameterized routes
+- [ ] Look at error details - is a URL segment being captured as an ID?
+- [ ] Verify route order in the router file
+- [ ] Redeploy without cache after fixing
+
+When authentication fails in production:
+
+- [ ] Verify Root Directory is correct for the project type
+- [ ] Check all environment variables are set for Production
+- [ ] Verify FRONTEND_URL matches the actual frontend domain
+- [ ] Check Google OAuth credentials are for production domain
+- [ ] Clear cookies and try logging in again

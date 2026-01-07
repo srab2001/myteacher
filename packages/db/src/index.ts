@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+// Prisma 6.x - standard client (no adapter required)
+import { PrismaClient, Prisma } from '@prisma/client';
 
 // Global prisma client for development hot-reload
 const globalForPrisma = globalThis as unknown as {
@@ -20,3 +21,8 @@ export * from '@prisma/client';
 
 // Export the client type for use in other packages
 export type { PrismaClient };
+
+// Helper function to create a new PrismaClient (for seed scripts)
+export function createPrismaClient(): PrismaClient {
+  return new PrismaClient();
+}

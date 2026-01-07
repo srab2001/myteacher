@@ -1,4 +1,4 @@
-// Import from @prisma/client (standard Vercel-compatible approach)
+// Prisma 6.x - standard client (no adapter required)
 import { PrismaClient, Prisma } from '@prisma/client';
 
 // Global prisma client for serverless

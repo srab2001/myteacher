@@ -152,7 +152,7 @@ router.patch('/scheduled-services/:scheduledPlanId', requireAuth, requireOnboard
     const updatedPlan = await prisma.$transaction(async (tx) => {
       // Update status if provided
       const updateData: Prisma.ScheduledServicePlanUpdateInput = {
-        updatedById: userId,
+        updatedBy: { connect: { id: userId } },
       };
       if (validatedData.status) {
         updateData.status = validatedData.status;

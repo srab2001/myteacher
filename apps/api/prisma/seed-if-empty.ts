@@ -1,25 +1,23 @@
-import { PrismaClient, SchoolType } from './generated/client';
+import { PrismaClient } from '@prisma/client';
 
+// Prisma 6.x - standard client
 const prisma = new PrismaClient();
 
 async function main() {
   // Check if reference data already exists
-  const schoolCount = await prisma.school.count();
   const planTypeCount = await prisma.planType.count();
   const jurisdictionCount = await prisma.jurisdiction.count();
 
   // Determine what needs seeding
-  const needsSchools = schoolCount === 0;
   const needsPlanTypes = planTypeCount === 0;
   const needsJurisdictions = jurisdictionCount === 0;
 
-  if (!needsSchools && !needsPlanTypes && !needsJurisdictions) {
+  if (!needsPlanTypes && !needsJurisdictions) {
     console.log('Reference data already exists, skipping seed.');
     return;
   }
 
   console.log('Seeding missing data...');
-  console.log(`  Schools: ${schoolCount > 0 ? 'exist' : 'MISSING'}`);
   console.log(`  Jurisdictions: ${jurisdictionCount > 0 ? 'exist' : 'MISSING'}`);
   console.log(`  PlanTypes: ${planTypeCount > 0 ? 'exist' : 'MISSING'}\n`);
 
@@ -50,66 +48,6 @@ async function main() {
         create: jurisdiction,
       });
       console.log(`  Jurisdiction: ${jurisdiction.districtName} (${jurisdiction.stateCode})`);
-    }
-  }
-
-  // ============================================
-  // SEED SCHOOLS (Sample for HCPSS)
-  // ============================================
-  if (needsSchools) {
-    console.log('\nSeeding schools (Howard County)...');
-
-    // Find HCPSS jurisdiction
-    const hcpss = await prisma.jurisdiction.findFirst({
-      where: { districtCode: 'HCPSS' },
-    });
-
-    if (!hcpss) {
-      console.log('  HCPSS jurisdiction not found, skipping schools');
-    } else {
-      const hcpssSchools: Array<{ name: string; code: string; schoolType: SchoolType }> = [
-        // High Schools
-        { name: 'Atholton High School', code: 'AHS', schoolType: 'HIGH' },
-        { name: 'Centennial High School', code: 'CHS', schoolType: 'HIGH' },
-        { name: 'Howard High School', code: 'HHS', schoolType: 'HIGH' },
-        { name: 'Long Reach High School', code: 'LRHS', schoolType: 'HIGH' },
-        { name: 'Marriotts Ridge High School', code: 'MRHS', schoolType: 'HIGH' },
-        { name: 'Mt. Hebron High School', code: 'MHHS', schoolType: 'HIGH' },
-        { name: 'Oakland Mills High School', code: 'OMHS', schoolType: 'HIGH' },
-        { name: 'Reservoir High School', code: 'RHS', schoolType: 'HIGH' },
-        { name: 'River Hill High School', code: 'RHHS', schoolType: 'HIGH' },
-        { name: 'Wilde Lake High School', code: 'WLHS', schoolType: 'HIGH' },
-        // Middle Schools
-        { name: 'Bonnie Branch Middle School', code: 'BBMS', schoolType: 'MIDDLE' },
-        { name: 'Burleigh Manor Middle School', code: 'BMMS', schoolType: 'MIDDLE' },
-        { name: 'Clarksville Middle School', code: 'CMS', schoolType: 'MIDDLE' },
-        { name: 'Dunloggin Middle School', code: 'DMS', schoolType: 'MIDDLE' },
-        // Elementary Schools
-        { name: 'Atholton Elementary School', code: 'AES', schoolType: 'ELEMENTARY' },
-        { name: 'Bellows Spring Elementary School', code: 'BSES', schoolType: 'ELEMENTARY' },
-        { name: 'Bollman Bridge Elementary School', code: 'BBES', schoolType: 'ELEMENTARY' },
-        { name: 'Bryant Woods Elementary School', code: 'BWES', schoolType: 'ELEMENTARY' },
-      ];
-
-      for (const school of hcpssSchools) {
-        await prisma.school.upsert({
-          where: {
-            jurisdictionId_code: {
-              jurisdictionId: hcpss.id,
-              code: school.code,
-            },
-          },
-          update: {},
-          create: {
-            jurisdictionId: hcpss.id,
-            code: school.code,
-            name: school.name,
-            schoolType: school.schoolType,
-            isActive: true,
-          },
-        });
-        console.log(`  School: ${school.name}`);
-      }
     }
   }
 
@@ -165,13 +103,6 @@ async function main() {
                   { key: 'grade_level', label: 'Grade Level', type: 'text', required: true },
                 ],
               },
-              {
-                name: 'Present Levels',
-                fields: [
-                  { key: 'plaa_academic_performance', label: 'Academic Performance', type: 'textarea', required: false },
-                  { key: 'plaa_functional_performance', label: 'Functional Performance', type: 'textarea', required: false },
-                ],
-              },
             ],
           },
         },
@@ -193,14 +124,6 @@ async function main() {
                 fields: [
                   { key: 'student_name', label: 'Student Name', type: 'text', required: true },
                   { key: 'date_of_birth', label: 'Date of Birth', type: 'date', required: true },
-                  { key: 'grade_level', label: 'Grade Level', type: 'text', required: true },
-                ],
-              },
-              {
-                name: 'Disability Information',
-                fields: [
-                  { key: 'disability_description', label: 'Description of Disability', type: 'textarea', required: true },
-                  { key: 'major_life_activities', label: 'Major Life Activities Affected', type: 'textarea', required: true },
                 ],
               },
             ],

@@ -232,7 +232,7 @@ router.get('/compliance-tasks/my-tasks', requireAuth, async (req: Request, res: 
 // ============================================
 // GET COMPLIANCE DASHBOARD SUMMARY
 // GET /api/compliance-tasks/dashboard
-// NOTE: This MUST be defined before /:taskId routes!
+// This route MUST be defined BEFORE /:taskId to prevent "dashboard" from being captured as taskId
 // ============================================
 
 router.get('/compliance-tasks/dashboard', requireAuth, async (req: Request, res: Response, next: NextFunction) => {

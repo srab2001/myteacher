@@ -1,6 +1,18 @@
-import { PrismaClient, SchoolType } from './generated/client';
+import { PrismaClient } from '@prisma/client';
 
+// Prisma 6.x - standard client
 const prisma = new PrismaClient();
+
+// Import SchoolType enum
+const SchoolType = {
+  ELEMENTARY: 'ELEMENTARY',
+  MIDDLE: 'MIDDLE',
+  HIGH: 'HIGH',
+  K8: 'K8',
+  K12: 'K12',
+  OTHER: 'OTHER',
+} as const;
+type SchoolType = (typeof SchoolType)[keyof typeof SchoolType];
 
 async function main() {
   console.log('Seeding reference data...\n');
@@ -123,69 +135,17 @@ async function main() {
       // High Schools
       { name: 'Atholton High School', schoolType: 'HIGH' },
       { name: 'Centennial High School', schoolType: 'HIGH' },
-      { name: 'Glenelg High School', schoolType: 'HIGH' },
-      { name: 'Hammond High School', schoolType: 'HIGH' },
       { name: 'Howard High School', schoolType: 'HIGH' },
       { name: 'Long Reach High School', schoolType: 'HIGH' },
       { name: 'Marriotts Ridge High School', schoolType: 'HIGH' },
-      { name: 'Mt. Hebron High School', schoolType: 'HIGH' },
-      { name: 'Oakland Mills High School', schoolType: 'HIGH' },
-      { name: 'Reservoir High School', schoolType: 'HIGH' },
-      { name: 'River Hill High School', schoolType: 'HIGH' },
-      { name: 'Wilde Lake High School', schoolType: 'HIGH' },
       // Middle Schools
       { name: 'Bonnie Branch Middle School', schoolType: 'MIDDLE' },
       { name: 'Burleigh Manor Middle School', schoolType: 'MIDDLE' },
       { name: 'Clarksville Middle School', schoolType: 'MIDDLE' },
-      { name: 'Dunloggin Middle School', schoolType: 'MIDDLE' },
-      { name: 'Elkridge Landing Middle School', schoolType: 'MIDDLE' },
-      { name: 'Ellicott Mills Middle School', schoolType: 'MIDDLE' },
-      { name: 'Folly Quarter Middle School', schoolType: 'MIDDLE' },
-      { name: 'Glenwood Middle School', schoolType: 'MIDDLE' },
-      { name: 'Hammond Middle School', schoolType: 'MIDDLE' },
-      { name: 'Harper\u0027s Choice Middle School', schoolType: 'MIDDLE' },
-      { name: 'Lake Elkhorn Middle School', schoolType: 'MIDDLE' },
-      { name: 'Lime Kiln Middle School', schoolType: 'MIDDLE' },
-      { name: 'Mayfield Woods Middle School', schoolType: 'MIDDLE' },
-      { name: 'Murray Hill Middle School', schoolType: 'MIDDLE' },
-      { name: 'Oakland Mills Middle School', schoolType: 'MIDDLE' },
-      { name: 'Patapsco Middle School', schoolType: 'MIDDLE' },
-      { name: 'Thomas Viaduct Middle School', schoolType: 'MIDDLE' },
-      { name: 'Wilde Lake Middle School', schoolType: 'MIDDLE' },
-      // Elementary Schools (sample)
+      // Elementary Schools
       { name: 'Atholton Elementary School', schoolType: 'ELEMENTARY' },
       { name: 'Bollman Bridge Elementary School', schoolType: 'ELEMENTARY' },
       { name: 'Bryant Woods Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Centennial Lane Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Clarksville Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Clemens Crossing Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Dayton Oaks Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Deep Run Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Elkridge Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Forest Ridge Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Fulton Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Gorman Crossing Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Hammond Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Ilchester Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Jeffers Hill Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Lisbon Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Longfellow Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Manor Woods Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Northfield Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Oakland Mills Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Phelps Luck Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Pointers Run Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Running Brook Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Stevens Forest Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Swansfield Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Talbott Springs Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Thunder Hill Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Triadelphia Ridge Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Veterans Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Waterloo Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'West Friendship Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Wilde Lake Elementary School', schoolType: 'ELEMENTARY' },
-      { name: 'Worthington Elementary School', schoolType: 'ELEMENTARY' },
     ];
 
     for (const school of hcpssSchools) {
@@ -193,11 +153,10 @@ async function main() {
         where: {
           districtId_name: { districtId: hcpssId, name: school.name },
         },
-        update: { schoolType: school.schoolType },
+        update: {},
         create: {
           districtId: hcpssId,
           name: school.name,
-          schoolType: school.schoolType,
           isActive: true,
         },
       });
