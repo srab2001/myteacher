@@ -145,9 +145,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Compliance Dashboard Cards - ADMIN and CASE_MANAGER */}
-        {canManageCompliance && (
+        {/* TODO: Re-enable when compliance models are added to schema */}
+        {/* canManageCompliance && (
           <ComplianceDashboardCards />
-        )}
+        ) */}
 
         {/* Admin Banner */}
         {isAdmin && (
