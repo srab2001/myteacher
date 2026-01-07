@@ -194,6 +194,16 @@ model AppUser {
   eligibilityDeterminationsCreatedBy EligibilityDetermination[] @relation("EligibilityDeterminationCreatedBy")
   evaluationCaseTimelineEvents EvaluationCaseTimelineEvent[] @relation("EvaluationCaseTimelinePerformedBy")
 
+  // Compliance relations
+  complianceTasksAssignedTo  ComplianceTask[] @relation("ComplianceTaskAssignedTo")
+  complianceTasksCreatedBy   ComplianceTask[] @relation("ComplianceTaskCreatedBy")
+  inAppAlerts                InAppAlert[]     @relation("InAppAlertRecipient")
+  disputeCasesCreatedBy      DisputeCase[]    @relation("DisputeCaseCreatedBy")
+  disputeEventsCreatedBy     DisputeEvent[]   @relation("DisputeEventCreatedBy")
+  auditLogs                  AuditLog[]       @relation("AuditLogActor")
+  scheduledServicePlansCreatedBy  ScheduledServicePlan[] @relation("ScheduledServicePlanCreatedBy")
+  scheduledServicePlansUpdatedBy  ScheduledServicePlan[] @relation("ScheduledServicePlanUpdatedBy")
+
   // Plan versioning, decisions, and signatures
   planVersionsFinalizedBy  PlanVersion[] @relation("PlanVersionFinalizedBy")
   planVersionsDistributedBy PlanVersion[] @relation("PlanVersionDistributedBy")
@@ -275,6 +285,10 @@ model Student {
   planMeetings   PlanMeeting[]
   referrals      Referral[]
   evaluationCases EvaluationCase[]
+
+  // Compliance relations
+  complianceTasks ComplianceTask[]
+  disputeCases    DisputeCase[]
 
   @@index([recordId])
   @@index([externalId])
@@ -417,6 +431,12 @@ model PlanInstance {
   // Versioning and decisions
   planVersions             PlanVersion[]
   decisions                DecisionLedgerEntry[]
+
+  // Compliance relations
+  reviewSchedules          ReviewSchedule[]
+  complianceTasks          ComplianceTask[]
+  disputeCases             DisputeCase[]
+  scheduledServicePlan     ScheduledServicePlan?
 
   @@index([studentId, planTypeId])
   @@index([status])
@@ -2365,4 +2385,330 @@ model EvaluationCaseTimelineEvent {
   @@index([evaluationCaseId])
   @@index([eventType])
   @@index([createdAt])
+}
+
+// ============================================
+// COMPLIANCE SCHEDULE ENUMS
+// ============================================
+
+enum ScheduleType {
+  IEP_ANNUAL_REVIEW
+  IEP_REEVALUATION
+  PLAN_AMENDMENT_REVIEW
+  SECTION504_PERIODIC_REVIEW
+  BIP_REVIEW
+}
+
+enum ReviewScheduleStatus {
+  OPEN
+  COMPLETE
+  OVERDUE
+}
+
+enum ComplianceTaskType {
+  REVIEW_DUE_SOON
+  REVIEW_OVERDUE
+  DOCUMENT_REQUIRED
+  SIGNATURE_NEEDED
+  MEETING_REQUIRED
+}
+
+enum ComplianceTaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETE
+  DISMISSED
+}
+
+enum AlertType {
+  REVIEW_DUE_SOON
+  REVIEW_OVERDUE
+  COMPLIANCE_TASK
+  SIGNATURE_REQUESTED
+  MEETING_SCHEDULED
+  DOCUMENT_UPLOADED
+  GENERAL
+}
+
+enum DisputeCaseType {
+  SECTION504_COMPLAINT
+  IEP_DISPUTE
+  RECORDS_REQUEST
+  OTHER
+}
+
+enum DisputeCaseStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum DisputeEventType {
+  INTAKE
+  MEETING
+  RESPONSE_SENT
+  DOCUMENT_RECEIVED
+  RESOLUTION
+  STATUS_CHANGE
+  NOTE
+}
+
+enum AuditActionType {
+  PLAN_VIEWED
+  PLAN_UPDATED
+  PLAN_FINALIZED
+  PDF_EXPORTED
+  PDF_DOWNLOADED
+  SIGNATURE_ADDED
+  REVIEW_SCHEDULE_CREATED
+  CASE_VIEWED
+  CASE_EXPORTED
+  PERMISSION_DENIED
+}
+
+enum AuditEntityType {
+  PLAN
+  PLAN_VERSION
+  PLAN_EXPORT
+  STUDENT
+  GOAL
+  SERVICE
+  REVIEW_SCHEDULE
+  COMPLIANCE_TASK
+  DISPUTE_CASE
+  SIGNATURE_PACKET
+  MEETING
+}
+
+enum ScheduledServiceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ============================================
+// REVIEW SCHEDULE MODEL
+// Tracks scheduled reviews for IEP/504/BIP plans
+// ============================================
+
+model ReviewSchedule {
+  id               String               @id @default(uuid())
+  planInstanceId   String
+  scheduleType     ScheduleType
+  status           ReviewScheduleStatus @default(OPEN)
+  dueDate          DateTime
+  completedDate    DateTime?
+  notes            String?              @db.Text
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  // Relations
+  planInstance     PlanInstance         @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  complianceTasks  ComplianceTask[]
+
+  @@index([planInstanceId])
+  @@index([scheduleType])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ============================================
+// COMPLIANCE TASK MODEL
+// Tasks generated for compliance tracking
+// ============================================
+
+model ComplianceTask {
+  id               String               @id @default(uuid())
+  title            String
+  description      String?              @db.Text
+  taskType         ComplianceTaskType
+  status           ComplianceTaskStatus @default(OPEN)
+  dueDate          DateTime?
+  completedDate    DateTime?
+
+  // Relations
+  studentId        String?
+  planInstanceId   String?
+  reviewScheduleId String?
+  assignedToId     String?
+  createdById      String
+
+  student          Student?             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planInstance     PlanInstance?        @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  reviewSchedule   ReviewSchedule?      @relation(fields: [reviewScheduleId], references: [id], onDelete: Cascade)
+  assignedTo       AppUser?             @relation("ComplianceTaskAssignedTo", fields: [assignedToId], references: [id])
+  createdBy        AppUser              @relation("ComplianceTaskCreatedBy", fields: [createdById], references: [id])
+
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([studentId])
+  @@index([planInstanceId])
+  @@index([reviewScheduleId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ============================================
+// IN-APP ALERT MODEL
+// Notifications for users
+// ============================================
+
+model InAppAlert {
+  id                String    @id @default(uuid())
+  userId            String
+  alertType         AlertType
+  title             String
+  message           String    @db.Text
+  metadataJson      Json?     @db.JsonB
+  isRead            Boolean   @default(false)
+  readAt            DateTime?
+  relatedEntityType String?   // e.g., "plan", "student", "compliance_task"
+  relatedEntityId   String?
+  createdAt         DateTime  @default(now())
+
+  // Relations
+  user              AppUser   @relation("InAppAlertRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([alertType])
+  @@index([createdAt])
+}
+
+// ============================================
+// DISPUTE CASE MODEL
+// Tracks dispute cases (504 complaints, IEP disputes, etc.)
+// ============================================
+
+model DisputeCase {
+  id               String            @id @default(uuid())
+  caseType         DisputeCaseType
+  status           DisputeCaseStatus @default(OPEN)
+  summary          String            @db.Text
+  resolutionNotes  String?           @db.Text
+
+  // Relations
+  studentId        String
+  planInstanceId   String?
+  createdById      String
+
+  student          Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planInstance     PlanInstance?     @relation(fields: [planInstanceId], references: [id])
+  createdBy        AppUser           @relation("DisputeCaseCreatedBy", fields: [createdById], references: [id])
+  events           DisputeEvent[]
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([studentId])
+  @@index([planInstanceId])
+  @@index([status])
+  @@index([caseType])
+  @@index([createdAt])
+}
+
+// ============================================
+// DISPUTE EVENT MODEL
+// Timeline events for dispute cases
+// ============================================
+
+model DisputeEvent {
+  id            String           @id @default(uuid())
+  disputeCaseId String
+  eventType     DisputeEventType
+  description   String           @db.Text
+  eventDate     DateTime         @default(now())
+  metadataJson  Json?            @db.JsonB
+  createdById   String
+
+  // Relations
+  disputeCase   DisputeCase      @relation(fields: [disputeCaseId], references: [id], onDelete: Cascade)
+  createdBy     AppUser          @relation("DisputeEventCreatedBy", fields: [createdById], references: [id])
+
+  createdAt     DateTime         @default(now())
+
+  @@index([disputeCaseId])
+  @@index([eventType])
+  @@index([eventDate])
+}
+
+// ============================================
+// AUDIT LOG MODEL
+// Immutable audit trail for FERPA/HIPAA compliance
+// ============================================
+
+model AuditLog {
+  id            String          @id @default(uuid())
+  timestamp     DateTime        @default(now())
+  actionType    AuditActionType
+  entityType    AuditEntityType
+  entityId      String
+  studentId     String?
+  planId        String?
+  planVersionId String?
+  metadataJson  Json?           @db.JsonB
+  ipAddress     String?
+  userAgent     String?         @db.Text
+  actorUserId   String
+
+  // Relations
+  actor         AppUser         @relation("AuditLogActor", fields: [actorUserId], references: [id])
+
+  @@index([timestamp])
+  @@index([actionType])
+  @@index([entityType])
+  @@index([studentId])
+  @@index([planId])
+  @@index([actorUserId])
+}
+
+// ============================================
+// SCHEDULED SERVICE PLAN MODEL
+// Tracks expected service delivery schedules
+// ============================================
+
+model ScheduledServicePlan {
+  id               String                 @id @default(uuid())
+  planInstanceId   String                 @unique
+  status           ScheduledServiceStatus @default(ACTIVE)
+  createdById      String
+  updatedById      String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  // Relations
+  planInstance     PlanInstance           @relation(fields: [planInstanceId], references: [id], onDelete: Cascade)
+  createdBy        AppUser                @relation("ScheduledServicePlanCreatedBy", fields: [createdById], references: [id])
+  updatedBy        AppUser?               @relation("ScheduledServicePlanUpdatedBy", fields: [updatedById], references: [id])
+  items            ScheduledServiceItem[]
+
+  @@index([planInstanceId])
+  @@index([status])
+}
+
+// ============================================
+// SCHEDULED SERVICE ITEM MODEL
+// Individual service items within a scheduled service plan
+// ============================================
+
+model ScheduledServiceItem {
+  id                     String               @id @default(uuid())
+  scheduledPlanId        String
+  serviceType            ServiceType
+  expectedMinutesPerWeek Int
+  startDate              DateTime
+  endDate                DateTime?
+  providerRole           String?
+  location               String?
+  notes                  String?              @db.Text
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  // Relations
+  scheduledPlan          ScheduledServicePlan @relation(fields: [scheduledPlanId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledPlanId])
+  @@index([serviceType])
 }
