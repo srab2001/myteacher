@@ -277,6 +277,7 @@ model Student {
   grade         String
   schoolName    String
   districtName  String?
+  schoolId      String?             // Optional link to School model for rules hierarchy
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -286,6 +287,7 @@ model Student {
   jurisdiction   Jurisdiction    @relation(fields: [jurisdictionId], references: [id])
   teacherId      String
   teacher        AppUser         @relation("TeacherStudents", fields: [teacherId], references: [id])
+  school         School?         @relation("SchoolStudents", fields: [schoolId], references: [id])
   statuses       StudentStatus[]
   planInstances  PlanInstance[]
   priorPlanDocuments PriorPlanDocument[]
@@ -302,6 +304,7 @@ model Student {
   @@index([externalId])
   @@index([lastName, firstName])
   @@index([teacherId])
+  @@index([schoolId])
 }
 
 // ============================================
@@ -1546,19 +1549,63 @@ model IEPIndependentAssessmentReview {
 }
 
 // ============================================
+// STATE MODEL (Admin-Managed State List)
+// ============================================
+
+model State {
+  id        String     @id @default(uuid())
+  code      String     @unique  // e.g., "MD", "VA", "DC"
+  name      String              // e.g., "Maryland", "Virginia"
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  districts District[]
+
+  @@index([isActive])
+}
+
+// ============================================
+// DISTRICT MODEL (Admin-Managed District List)
+// ============================================
+
+model District {
+  id        String   @id @default(uuid())
+  stateId   String
+  code      String            // e.g., "HCPSS", "BCPS"
+  name      String            // e.g., "Howard County Public Schools"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  state     State    @relation(fields: [stateId], references: [id])
+  schools   School[]
+
+  @@unique([stateId, code])
+  @@index([stateId])
+  @@index([isActive])
+}
+
+// ============================================
 // SCHOOL MODEL (Admin-Managed School List)
 // ============================================
 
 model School {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   stateCode    String?
   districtId   String?
   name         String
-  code         String?  // Optional school code (e.g., "HCPSS-001")
+  code         String?   // Optional school code (e.g., "HCPSS-001")
   address      String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  district     District? @relation(fields: [districtId], references: [id])
+  students     Student[] @relation("SchoolStudents")
 
   @@unique([stateCode, code])
   @@index([stateCode])
@@ -2491,6 +2538,7 @@ model ReviewSchedule {
   assignedTo       AppUser?             @relation("ReviewScheduleAssignedTo", fields: [assignedToUserId], references: [id])
   createdBy        AppUser              @relation("ReviewScheduleCreatedBy", fields: [createdByUserId], references: [id])
   complianceTasks  ComplianceTask[]
+  alerts           InAppAlert[]
 
   @@index([planInstanceId])
   @@index([scheduleType])
@@ -2558,19 +2606,26 @@ model InAppAlert {
   readAt           DateTime?
   isDismissed      Boolean      @default(false)
   dismissedAt      DateTime?
-  complianceTaskId String?
-  reviewScheduleId String?
-  disputeCaseId    String?
-  createdAt        DateTime     @default(now())
+  complianceTaskId   String?
+  reviewScheduleId   String?
+  disputeCaseId      String?
+  relatedEntityType  String?
+  relatedEntityId    String?
+  createdAt          DateTime     @default(now())
 
   // Relations
-  user             AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             AppUser         @relation(fields: [userId], references: [id], onDelete: Cascade)
   complianceTask   ComplianceTask? @relation(fields: [complianceTaskId], references: [id], onDelete: SetNull)
+  reviewSchedule   ReviewSchedule? @relation(fields: [reviewScheduleId], references: [id], onDelete: SetNull)
+  disputeCase      DisputeCase?    @relation(fields: [disputeCaseId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([isRead])
   @@index([alertType])
   @@index([createdAt])
+  @@index([reviewScheduleId])
+  @@index([disputeCaseId])
+  @@index([relatedEntityId])
 }
 
 // ============================================
@@ -2601,6 +2656,7 @@ model DisputeCase {
   createdBy        AppUser            @relation("DisputeCaseCreatedBy", fields: [createdByUserId], references: [id])
   events           DisputeEvent[]
   attachments      DisputeAttachment[]
+  alerts           InAppAlert[]
 
   @@index([studentId])
   @@index([planInstanceId])
