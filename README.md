@@ -312,7 +312,7 @@ The application is deployed to Vercel with separate projects for API and Web:
 **vercel.json** (apps/api):
 ```json
 {
-  "installCommand": "npm install && npx prisma@5.22.0 generate && npx prisma@5.22.0 migrate deploy && npx tsx prisma/seed-if-empty.ts",
+  "installCommand": "npm install && prisma generate && prisma migrate deploy && npx tsx prisma/seed-if-empty.ts",
   "builds": [{
     "config": {
       "includeFiles": [
@@ -324,6 +324,8 @@ The application is deployed to Vercel with separate projects for API and Web:
   }]
 }
 ```
+
+> **Note**: Prisma v7 uses WASM-based query engine, eliminating binary download issues.
 
 ### Important Deployment Rules
 
@@ -353,9 +355,24 @@ pnpm test:web
 
 - **Frontend**: Next.js 14, React 18, TypeScript
 - **Backend**: Express.js, Node.js, TypeScript
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM v6
 - **Authentication**: Passport.js (Google OAuth2 + Local)
 - **Testing**: Jest, React Testing Library, Supertest
+
+## Prisma Configuration
+
+This project uses **Prisma 6.x** with standard PrismaClient configuration.
+
+```typescript
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+```
+
+### Key Files
+
+- `apps/api/prisma/schema.prisma` - Database schema
+- `apps/api/src/lib/db.ts` - PrismaClient singleton
+- `apps/api/prisma/seed.ts` - Database seeding script
 
 ## License
 
