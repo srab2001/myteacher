@@ -14,9 +14,7 @@ Complete technical documentation of all features, functions, and system architec
 6. [Features](#features)
 7. [Rules Engine](#rules-engine)
 8. [Goal Wizard](#goal-wizard)
-9. [Meeting Preparation Builder](#meeting-preparation-builder)
-10. [Worker Service](#worker-service)
-11. [Deployment](#deployment)
+9. [Deployment](#deployment)
 
 ---
 
@@ -48,25 +46,17 @@ myteacher/
 │   │   │   ├── services/     # Business logic
 │   │   │   └── lib/          # Utilities
 │   │   └── prisma/           # Schema copy for deployment
-│   ├── web/                  # Next.js frontend
-│   │   └── src/
-│   │       ├── app/          # Pages (App Router)
-│   │       ├── components/   # React components
-│   │       └── lib/          # API client, utilities
-│   └── worker/               # Python FastAPI service
-│       ├── main.py           # Application entry
-│       ├── routers/          # API routes
-│       ├── services/         # PDF, OCR, embeddings
-│       └── requirements.txt  # Python dependencies
-├── packages/
-│   ├── db/                   # Shared Prisma schema
-│   │   └── prisma/
-│   │       ├── schema.prisma
-│   │       ├── migrations/
-│   │       └── seed.ts
-│   └── shared/               # Shared TypeScript types
+│   └── web/                  # Next.js frontend
 │       └── src/
-│           └── types/        # User, Case, Document, etc.
+│           ├── app/          # Pages (App Router)
+│           ├── components/   # React components
+│           └── lib/          # API client, utilities
+├── packages/
+│   └── db/                   # Shared Prisma schema
+│       └── prisma/
+│           ├── schema.prisma
+│           ├── migrations/
+│           └── seed.ts
 └── docs/                     # Documentation
 ```
 
@@ -674,136 +664,6 @@ interface PresentLevels {
 
 ---
 
-## Meeting Preparation Builder
-
-### Overview
-
-AI-powered meeting preparation tool that helps parents prepare for IEP meetings by generating customized materials based on their specific concerns and goals.
-
-### Meeting Types Supported
-
-| Type | Description |
-|------|-------------|
-| `initial` | Initial IEP Meeting - First IEP for newly identified student |
-| `annual` | Annual IEP Review - Yearly IEP review |
-| `triennial` | Triennial Reevaluation - Every 3 years |
-| `revision` | IEP Revision Meeting - Changes to current IEP |
-
-### Components
-
-| Component | File | Description |
-|-----------|------|-------------|
-| `GuideIntake` | `components/meeting-prep/GuideIntake.tsx` | 4-step form for gathering meeting info |
-| `GeneratedMaterials` | `components/meeting-prep/GeneratedMaterials.tsx` | Tabbed view with edit/copy/export |
-| `AgendaPreview` | `components/meeting-prep/AgendaPreview.tsx` | Timeline visualization |
-
-### Form Steps
-
-1. **Meeting Details** - Type, date, time, location, attendees
-2. **Concerns** - Areas of concern with descriptions
-3. **Desired Outcomes** - Checklist + custom outcomes
-4. **Current Status** - Evaluations, services, what's working/not working
-
-### Generated Materials
-
-| Material | Description |
-|----------|-------------|
-| Meeting Agenda | Time-allocated agenda (60-90 min) |
-| Questions | 10-15 specific questions for IEP team |
-| Parent Concerns Letter | Formal letter citing IDEA regulations |
-| Records Request Email | FERPA-compliant records request |
-| Follow-Up Email | Post-meeting confirmation template |
-
-### API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/meeting-prep/generate` | Generate materials (uses GPT-4o or fallback) |
-| POST | `/api/meeting-prep/[id]/export` | Export materials as HTML/PDF |
-
-### AI Integration
-
-- **Primary**: OpenAI GPT-4o for intelligent generation
-- **Fallback**: Template-based generation when API key unavailable
-- **Lazy Loading**: OpenAI client initialized only when needed (build-safe)
-
-### Template Functions
-
-```typescript
-generateMeetingPrepPrompt(input)     // Create GPT prompt
-getDefaultAgenda(meetingType)        // Default agenda by type
-getParentConcernsLetterTemplate()    // Letter template
-getRecordsRequestEmailTemplate()     // Records request template
-getFollowUpEmailTemplate()           // Follow-up template
-```
-
----
-
-## Worker Service
-
-### Overview
-
-Python FastAPI service for document processing, OCR, and embeddings. Runs as a separate microservice.
-
-### Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Framework | FastAPI |
-| PDF Processing | PyPDF2, pdfplumber |
-| OCR | Tesseract (pytesseract) |
-| Embeddings | OpenAI text-embedding-3-small |
-| Vector Storage | pgvector (PostgreSQL extension) |
-
-### Setup
-
-```bash
-cd apps/worker
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### Running
-
-```bash
-pnpm dev:worker  # Or: uvicorn main:app --reload --port 8000
-```
-
-### API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| POST | `/api/documents/upload` | Upload and process PDF |
-| POST | `/api/ocr/process` | OCR image processing |
-| POST | `/api/embeddings/generate` | Generate text embeddings |
-| POST | `/api/embeddings/search` | Semantic search |
-
-### PDF Processing Tiers
-
-1. **PyPDF2** - Fast text extraction for digital PDFs
-2. **pdfplumber** - Better layout handling for complex PDFs
-3. **Tesseract OCR** - Fallback for scanned documents
-
-### Document Type Detection
-
-Automatically identifies:
-- IEP documents
-- Evaluation reports
-- 504 Plans
-- Meeting notices
-- Progress reports
-
-### Embeddings
-
-- **Model**: OpenAI `text-embedding-3-small`
-- **Dimensions**: 1536
-- **Storage**: pgvector extension in PostgreSQL
-- **Search**: Cosine similarity for semantic matching
-
----
-
 ## Deployment
 
 ### Vercel Configuration
@@ -919,4 +779,4 @@ return [{
 | 1.2 | 2024-12 | Rules setup wizard, Looker integration |
 | 1.3 | 2024-12 | Review scheduling, Compliance tasks, In-app alerts |
 | 1.4 | 2024-12 | Dispute cases, Audit log system |
-| 1.5 | 2026-02 | Meeting Preparation Builder, Worker Service (Python) |
+| 1.5 | 2026-02 | Separated Meeting Prep Builder and Worker Service to advocate repo |

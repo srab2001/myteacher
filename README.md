@@ -16,11 +16,9 @@ A comprehensive web-based portal for special education teachers to manage studen
 myteacher/
 ├── apps/
 │   ├── api/          # Express.js backend (Node.js + TypeScript)
-│   ├── web/          # Next.js 14 frontend (React + TypeScript)
-│   └── worker/       # Python FastAPI service (PDF/OCR/Embeddings)
+│   └── web/          # Next.js 14 frontend (React + TypeScript)
 ├── packages/
-│   ├── db/           # Prisma ORM + PostgreSQL
-│   └── shared/       # Shared TypeScript types and interfaces
+│   └── db/           # Prisma ORM + PostgreSQL
 ├── package.json      # Root workspace config
 ├── pnpm-workspace.yaml
 └── tsconfig.base.json
@@ -101,18 +99,14 @@ After running the seed script, you can log in with:
 | `pnpm dev` | Run all apps in development mode |
 | `pnpm dev:web` | Run frontend only |
 | `pnpm dev:api` | Run backend only |
-| `pnpm dev:worker` | Run Python worker service |
 | `pnpm build` | Build all apps for production |
-| `pnpm build:shared` | Build shared types package |
 | `pnpm test` | Run all tests |
-| `pnpm test:worker` | Run Python worker tests |
 | `pnpm lint` | Lint all packages |
 | `pnpm format` | Format code with Prettier |
 | `pnpm db:generate` | Generate Prisma client |
 | `pnpm db:migrate` | Run database migrations |
 | `pnpm db:seed` | Seed the database |
 | `pnpm db:studio` | Open Prisma Studio |
-| `pnpm worker:install` | Install Python dependencies |
 
 ## API Endpoints
 
@@ -357,98 +351,13 @@ pnpm test:api
 pnpm test:web
 ```
 
-## Worker Service (Python)
-
-The worker service handles document processing, OCR, and AI-powered features.
-
-### Setup
-
-```bash
-cd apps/worker
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### Running
-
-```bash
-pnpm dev:worker  # Or: uvicorn main:app --reload --port 8000
-```
-
-### Features
-
-| Feature | Description |
-|---------|-------------|
-| PDF Extraction | Tiered approach: PyPDF2 → pdfplumber → Tesseract OCR |
-| Document Type ID | Auto-detect IEP, Evaluation, 504 Plan, Notice documents |
-| OCR Processing | Extract text from scanned documents and images |
-| Embeddings | Generate vector embeddings with OpenAI for semantic search |
-
-### API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| POST | `/api/documents/upload` | Upload and process PDF |
-| POST | `/api/ocr/process` | OCR image processing |
-| POST | `/api/embeddings/generate` | Generate text embeddings |
-| POST | `/api/embeddings/search` | Semantic search |
-
-## Meeting Preparation Builder
-
-Guided IEP meeting preparation with AI-generated materials.
-
-### Features
-
-- **Multi-step intake form**: Meeting details, concerns, outcomes, current status
-- **AI-generated materials**: Agenda, questions, parent letter, email templates
-- **Timeline visualization**: Interactive agenda editor
-- **Export options**: HTML, PDF, Word document
-
-### Components
-
-| Component | Description |
-|-----------|-------------|
-| `GuideIntake` | 4-step form for gathering meeting preparation info |
-| `GeneratedMaterials` | Tabbed view with edit/copy/export capabilities |
-| `AgendaPreview` | Timeline visualization with drag-to-reorder |
-
-### API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/meeting-prep/generate` | Generate meeting materials with GPT-4o |
-| POST | `/api/meeting-prep/[id]/export` | Export materials as HTML/PDF |
-
-### Meeting Types Supported
-
-- Initial IEP Meeting
-- Annual IEP Review
-- Triennial Reevaluation
-- IEP Revision Meeting
-
-## Shared Types Package
-
-TypeScript interfaces shared across the monorepo (`@myteacher/shared`).
-
-### Types Included
-
-- `User` - User profiles and sessions
-- `Case` - Student cases with relations
-- `Deadline` - Deadline tracking with priorities
-- `Document` - Document management and processing
-- `Review` - Document review workflow
-
 ## Tech Stack
 
 - **Frontend**: Next.js 14, React 18, TypeScript
 - **Backend**: Express.js, Node.js, TypeScript
-- **Worker**: Python 3.10+, FastAPI, OpenAI
-- **Database**: PostgreSQL with Prisma ORM, pgvector
+- **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: Passport.js (Google OAuth2 + Local)
-- **AI/ML**: OpenAI GPT-4o, text-embedding-3-small
-- **Testing**: Jest, React Testing Library, Supertest, pytest
+- **Testing**: Jest, React Testing Library, Supertest
 
 ## License
 
