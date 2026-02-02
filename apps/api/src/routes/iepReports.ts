@@ -292,11 +292,7 @@ router.post(
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : null,
           assessmentType: (data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType,
           assessmentTypeOther: data.assessmentTypeOther,
-          evaluator: data.evaluator,
-          summary: data.summary || "",
-          recommendations: data.recommendations || "",
-          attachmentUrl: data.attachmentUrl || "",
-
+          examinerName: data.evaluator,
         },
       });
 
@@ -378,12 +374,8 @@ router.put(
           dateOfTeamReview: data.dateOfTeamReview ? new Date(data.dateOfTeamReview) : undefined,
           assessmentType: data.assessmentType ? ((data.assessmentType === "OTHER" ? "INITIAL" : data.assessmentType) as unknown as AssessmentType) : undefined,
           assessmentTypeOther: data.assessmentTypeOther,
-          evaluator: data.evaluator,
-          summary: data.summary || "",
-          recommendations: data.recommendations || "",
-          attachmentUrl: data.attachmentUrl || "",
+          examinerName: data.evaluator,
           planInstanceId: data.planInstanceId,
-
         },
       });
 
