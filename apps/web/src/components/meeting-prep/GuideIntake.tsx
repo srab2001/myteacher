@@ -44,8 +44,8 @@ const initialFormData: MeetingPrepFormData = {
 };
 
 export function GuideIntake({
-  caseId,
-  studentAlias,
+  caseId: _caseId,
+  studentAlias: _studentAlias,
   onSubmit,
   onCancel,
   isLoading = false,

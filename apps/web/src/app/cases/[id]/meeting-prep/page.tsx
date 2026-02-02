@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { GuideIntake, GeneratedMaterials } from '@/components/meeting-prep';
 import { MeetingPrepFormData } from '@/lib/meeting-prep/types';
@@ -48,7 +48,8 @@ export default function MeetingPrepPage() {
   // TODO: Fetch case data and student alias
   const studentAlias = 'Student'; // Would come from case data
 
-  // TODO: Load previous preparations
+  // TODO: Load previous preparations from database
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [previousPreps, setPreviousPreps] = useState<MeetingPrepResult[]>([]);
 
   const handleSubmit = async (formData: MeetingPrepFormData) => {

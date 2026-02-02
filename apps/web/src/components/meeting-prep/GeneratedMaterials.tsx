@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MaterialType, MATERIAL_LABELS } from '@/lib/meeting-prep/types';
+import { MaterialType } from '@/lib/meeting-prep/types';
 import { AgendaPreview } from './AgendaPreview';
 import styles from './GeneratedMaterials.module.css';
 
@@ -43,7 +43,7 @@ const TABS: { id: MaterialType; label: string; icon: string }[] = [
 ];
 
 export function GeneratedMaterials({
-  prepId,
+  prepId: _prepId,
   materials,
   studentAlias,
   onMaterialsUpdate,

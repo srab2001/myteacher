@@ -8,12 +8,17 @@ import {
   getFollowUpEmailTemplate,
   type MeetingPrepInput,
   type GeneratedMaterials,
-  MEETING_TYPE_LABELS,
 } from '@/lib/meeting-prep/templates';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client to avoid build-time errors
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +65,8 @@ export async function POST(request: NextRequest) {
     let generatedMaterials: GeneratedMaterials;
 
     // Check if OpenAI API key is available
-    if (process.env.OPENAI_API_KEY) {
+    const openai = getOpenAIClient();
+    if (openai) {
       try {
         // Generate materials using GPT-4o
         const prompt = generateMeetingPrepPrompt(input);

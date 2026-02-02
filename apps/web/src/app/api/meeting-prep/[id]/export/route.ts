@@ -115,7 +115,7 @@ function generateHtmlDocument(
     .join('');
 
   const questionsHtml = materials.questions
-    .map((q, i) => `<li style="margin-bottom: 8px;">${q}</li>`)
+    .map((q) => `<li style="margin-bottom: 8px;">${q}</li>`)
     .join('');
 
   return `<!DOCTYPE html>
