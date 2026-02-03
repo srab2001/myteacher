@@ -780,3 +780,77 @@ return [{
 | 1.3 | 2024-12 | Review scheduling, Compliance tasks, In-app alerts |
 | 1.4 | 2024-12 | Dispute cases, Audit log system |
 | 1.5 | 2026-02 | Separated Meeting Prep Builder and Worker Service to advocate repo |
+| 1.6 | 2026-02 | Advocate app deployed: 4 tools (Timeline, Doc Review, Q&A, Meeting Prep) |
+
+---
+
+## Advocate App (Separate Repository)
+
+The Advocate app is a standalone application at https://github.com/srab2001/advocate with 4 parent-facing tools.
+
+### Advocate Overview
+
+| Property | Value |
+|----------|-------|
+| Repository | https://github.com/srab2001/advocate |
+| Deployment | Vercel (apps/web) |
+| Database | Neon PostgreSQL with pgvector |
+| AI | OpenAI GPT-4o, text-embedding-3-small |
+| Worker | Python FastAPI (Render/Railway) |
+
+### Advocate Tools
+
+| Tool | Route | Description |
+|------|-------|-------------|
+| Timeline & Compliance Tracker | `/cases` | Track MD COMAR deadlines (60-day eval, 30-day IEP, annual, triennial) |
+| IEP/Evaluation Document Review | `/cases/[id]` | AI-powered IEP compliance analysis with SMART goal checks |
+| Maryland Rules Q&A | `/qa` | RAG-powered legal Q&A with COMAR/MSDE/IDEA citations |
+| Meeting Preparation Builder | `/meeting-prep` | Generate agendas, concern letters, question lists, email templates |
+
+### Advocate API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/cases` | List/create student cases |
+| GET | `/api/cases/[id]` | Case detail with events and deadlines |
+| POST | `/api/cases/[id]/events` | Add timeline event (auto-calculates deadlines) |
+| GET | `/api/cases/[id]/deadlines` | Get deadlines with urgency levels |
+| POST | `/api/artifacts/upload` | Upload documents (Vercel Blob) |
+| POST | `/api/reviews/run` | Run AI document review |
+| POST | `/api/qa` | Ask question with RAG citations |
+| POST | `/api/meeting-prep/generate` | Generate meeting materials |
+
+### Advocate Data Model
+
+10 tables with pgvector embeddings. See `docs/ADVOCATE-DATA-MODEL.md` for full schema.
+
+| Table | Purpose |
+|-------|---------|
+| users | Parents/advocates with role and plan tier |
+| cases | Student cases with plan type (IEP/504) |
+| case_events | Timeline events (referral, consent, evaluation, etc.) |
+| deadlines | Auto-calculated deadlines with urgency tracking |
+| artifacts | Uploaded documents with text extraction status |
+| documents | Knowledge base sources (COMAR, MSDE, IDEA) |
+| chunks | Document chunks with vector(1536) embeddings for RAG |
+| conversations | Chat history for Q&A |
+| messages | Individual chat messages |
+| reviews | AI document review results with scores |
+| meeting_preps | Meeting preparation materials |
+
+### Advocate Worker Service
+
+Python FastAPI service for document processing:
+
+| Endpoint | Description |
+|----------|-------------|
+| POST `/extract` | PDF text extraction (PyPDF2, pdfplumber, OCR) |
+| POST `/api/ingest/source` | Ingest document into knowledge base |
+| POST `/api/ingest/search` | Semantic vector search |
+| POST `/api/review` | AI-powered document review |
+
+### Documentation
+
+- User Guide: `docs/ADVOCATE-USER-GUIDE.md`
+- Data Model: `docs/ADVOCATE-DATA-MODEL.md`
+- Worker README: `apps/worker/README.md` (in advocate repo)
