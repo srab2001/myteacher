@@ -1,0 +1,329 @@
+/* Artifacts Component Styles */
+
+/* Uploader */
+.uploaderContainer {
+  margin-bottom: 24px;
+}
+
+.typeSelector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.typeLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.typeSelect {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  background: white;
+  cursor: pointer;
+}
+
+.typeSelect:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.dropZone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f9fafb;
+}
+
+.dropZone:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.dropZoneDragging {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: scale(1.01);
+}
+
+.dropZoneUploading {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.fileInput {
+  display: none;
+}
+
+.dropZoneContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.uploadIcon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+.dropZoneText {
+  font-size: 1rem;
+  color: #374151;
+}
+
+.dropZoneHint {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.uploadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressBar {
+  width: 200px;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #2563eb;
+  transition: width 0.2s;
+}
+
+.progressText {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.uploadError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.9rem;
+}
+
+.dismissError {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 4px;
+}
+
+/* Artifact List */
+.artifactList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.artifactItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: box-shadow 0.2s;
+}
+
+.artifactItem:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.artifactClickable {
+  cursor: pointer;
+}
+
+.artifactIcon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.artifactInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.artifactHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.artifactName {
+  font-weight: 500;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifactType {
+  padding: 2px 8px;
+  background: #e0e7ff;
+  color: #4338ca;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.artifactMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.artifactError {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
+.artifactActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.actionButton {
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.actionButton:hover {
+  background: #e5e7eb;
+}
+
+.deleteButton:hover {
+  background: #fecaca;
+}
+
+/* Status Colors */
+.statusPending {
+  color: #6b7280;
+}
+
+.statusProcessing {
+  color: #2563eb;
+}
+
+.statusCompleted {
+  color: #16a34a;
+}
+
+.statusFailed {
+  color: #dc2626;
+}
+
+/* Summary */
+.summary {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryNumber {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.summaryLabel {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.summaryFailed .summaryNumber {
+  color: #dc2626;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 60px 24px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.emptyState p {
+  margin: 0 0 8px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.emptyHint {
+  color: #6b7280 !important;
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+@media (max-width: 640px) {
+  .artifactItem {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .artifactActions {
+    align-self: flex-end;
+  }
+
+  .summary {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
