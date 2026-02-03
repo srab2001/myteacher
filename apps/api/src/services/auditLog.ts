@@ -67,7 +67,7 @@ export async function logAudit({
         studentId: studentId || null,
         planId: planId || null,
         planVersionId: planVersionId || null,
-        metadataJson: metadata || null,
+        metadataJson: metadata ? JSON.parse(JSON.stringify(metadata)) : null,
         ipAddress,
         userAgent,
       },

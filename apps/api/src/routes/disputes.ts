@@ -44,8 +44,7 @@ const createDisputeSchema = z.object({
   planInstanceId: z.string().uuid().optional(),
   summary: z.string().min(1),
   filedDate: z.string().datetime().optional(),
-  externalReference: z.string().optional(),
-  assignedToUserId: z.string().uuid().optional(),
+  ownerUserId: z.string().uuid().optional(),
 });
 
 router.post('/students/:studentId/disputes', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -89,8 +88,7 @@ router.post('/students/:studentId/disputes', requireAuth, async (req: Request, r
           caseType: validatedData.caseType,
           summary: validatedData.summary,
           filedDate: validatedData.filedDate ? new Date(validatedData.filedDate) : new Date(),
-          externalReference: validatedData.externalReference,
-          assignedToUserId: validatedData.assignedToUserId,
+          ownerUserId: validatedData.ownerUserId,
           createdByUserId: req.user!.id,
         },
         include: {
@@ -101,8 +99,8 @@ router.post('/students/:studentId/disputes', requireAuth, async (req: Request, r
               planType: { select: { code: true, name: true } },
             },
           },
-          assignedTo: { select: { id: true, displayName: true, email: true } },
-          createdBy: { select: { id: true, displayName: true } },
+          owner: { select: { id: true, displayName: true, email: true } },
+          performedBy: { select: { id: true, displayName: true } },
         },
       });
 
@@ -112,9 +110,9 @@ router.post('/students/:studentId/disputes', requireAuth, async (req: Request, r
           disputeCaseId: newCase.id,
           eventType: DisputeEventType.INTAKE,
           eventDate: newCase.filedDate,
-          summary: 'Case filed',
-          details: validatedData.summary,
-          createdByUserId: req.user!.id,
+          description: 'Case filed',
+          notes: validatedData.summary,
+          performedByUserId: req.user!.id,
         },
       });
 
@@ -170,7 +168,7 @@ router.get('/students/:studentId/disputes', requireAuth, async (req: Request, re
             planType: { select: { code: true, name: true } },
           },
         },
-        assignedTo: { select: { id: true, displayName: true } },
+        owner: { select: { id: true, displayName: true } },
         _count: {
           select: { events: true, attachments: true },
         },
@@ -212,7 +210,7 @@ router.get('/disputes', requireAuth, async (req: Request, res: Response, next: N
     }
 
     if (assignedTo && typeof assignedTo === 'string') {
-      where.assignedToUserId = assignedTo;
+      where.ownerUserId = assignedTo;
     }
 
     const disputeCases = await prisma.disputeCase.findMany({
@@ -226,7 +224,7 @@ router.get('/disputes', requireAuth, async (req: Request, res: Response, next: N
             planType: { select: { code: true, name: true } },
           },
         },
-        assignedTo: { select: { id: true, displayName: true } },
+        owner: { select: { id: true, displayName: true } },
         _count: {
           select: { events: true, attachments: true },
         },
@@ -259,7 +257,7 @@ router.get('/disputes/:caseId', requireAuth, async (req: Request, res: Response,
     const disputeCase = await prisma.disputeCase.findUnique({
       where: { id: caseId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, stateStudentId: true } },
+        student: { select: { id: true, firstName: true, lastName: true, recordId: true } },
         planInstance: {
           select: {
             id: true,
@@ -268,17 +266,17 @@ router.get('/disputes/:caseId', requireAuth, async (req: Request, res: Response,
             endDate: true,
           },
         },
-        assignedTo: { select: { id: true, displayName: true, email: true } },
-        createdBy: { select: { id: true, displayName: true } },
+        owner: { select: { id: true, displayName: true, email: true } },
+        performedBy: { select: { id: true, displayName: true } },
         resolvedBy: { select: { id: true, displayName: true } },
         events: {
           orderBy: { eventDate: 'desc' },
           include: {
-            createdBy: { select: { id: true, displayName: true } },
+            performedBy: { select: { id: true, displayName: true } },
           },
         },
         attachments: {
-          orderBy: { uploadedAt: 'desc' },
+          orderBy: { createdAt: 'desc' },
           include: {
             uploadedBy: { select: { id: true, displayName: true } },
           },
@@ -313,9 +311,8 @@ router.get('/disputes/:caseId', requireAuth, async (req: Request, res: Response,
 const updateDisputeSchema = z.object({
   summary: z.string().min(1).optional(),
   status: z.nativeEnum(DisputeCaseStatus).optional(),
-  externalReference: z.string().optional(),
-  assignedToUserId: z.string().uuid().nullable().optional(),
-  resolutionSummary: z.string().optional(),
+  ownerUserId: z.string().uuid().nullable().optional(),
+  resolutionNotes: z.string().optional(),
 });
 
 router.patch('/disputes/:caseId', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -342,23 +339,19 @@ router.patch('/disputes/:caseId', requireAuth, async (req: Request, res: Respons
     if (validatedData.summary !== undefined) {
       updateData.summary = validatedData.summary;
     }
-    if (validatedData.externalReference !== undefined) {
-      updateData.externalReference = validatedData.externalReference;
+    if (validatedData.ownerUserId !== undefined) {
+      updateData.ownerUserId = validatedData.ownerUserId;
     }
-    if (validatedData.assignedToUserId !== undefined) {
-      updateData.assignedToUserId = validatedData.assignedToUserId;
-    }
-    if (validatedData.resolutionSummary !== undefined) {
-      updateData.resolutionSummary = validatedData.resolutionSummary;
+    if (validatedData.resolutionNotes !== undefined) {
+      updateData.resolutionNotes = validatedData.resolutionNotes;
     }
     if (validatedData.status !== undefined && validatedData.status !== existing.status) {
       updateData.status = validatedData.status;
       statusChanged = true;
 
-      // Set resolution fields if resolving/closing
+      // Set resolution date if resolving/closing
       if (validatedData.status === DisputeCaseStatus.RESOLVED || validatedData.status === DisputeCaseStatus.CLOSED) {
-        updateData.resolvedAt = new Date();
-        updateData.resolvedByUserId = req.user!.id;
+        updateData.resolvedDate = new Date();
       }
     }
 
@@ -375,9 +368,8 @@ router.patch('/disputes/:caseId', requireAuth, async (req: Request, res: Respons
               planType: { select: { code: true, name: true } },
             },
           },
-          assignedTo: { select: { id: true, displayName: true, email: true } },
-          createdBy: { select: { id: true, displayName: true } },
-          resolvedBy: { select: { id: true, displayName: true } },
+          owner: { select: { id: true, displayName: true, email: true } },
+          performedBy: { select: { id: true, displayName: true } },
         },
       });
 
@@ -390,9 +382,9 @@ router.patch('/disputes/:caseId', requireAuth, async (req: Request, res: Respons
               ? DisputeEventType.RESOLUTION
               : DisputeEventType.STATUS_CHANGE,
             eventDate: new Date(),
-            summary: `Status changed from ${existing.status} to ${validatedData.status}`,
-            details: validatedData.resolutionSummary,
-            createdByUserId: req.user!.id,
+            description: `Status changed from ${existing.status} to ${validatedData.status}`,
+            notes: validatedData.resolutionNotes,
+            performedByUserId: req.user!.id,
           },
         });
       }
@@ -421,8 +413,8 @@ router.patch('/disputes/:caseId', requireAuth, async (req: Request, res: Respons
 const createEventSchema = z.object({
   eventType: z.nativeEnum(DisputeEventType),
   eventDate: z.string().datetime().optional(),
-  summary: z.string().min(1),
-  details: z.string().optional(),
+  description: z.string().min(1),
+  notes: z.string().optional(),
 });
 
 router.post('/disputes/:caseId/events', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -448,12 +440,12 @@ router.post('/disputes/:caseId/events', requireAuth, async (req: Request, res: R
         disputeCaseId: caseId,
         eventType: validatedData.eventType,
         eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : new Date(),
-        summary: validatedData.summary,
-        details: validatedData.details,
-        createdByUserId: req.user!.id,
+        description: validatedData.description,
+        notes: validatedData.notes,
+        performedByUserId: req.user!.id,
       },
       include: {
-        createdBy: { select: { id: true, displayName: true } },
+        performedBy: { select: { id: true, displayName: true } },
       },
     });
 
@@ -487,7 +479,7 @@ router.get('/disputes/:caseId/events', requireAuth, async (req: Request, res: Re
       where: { disputeCaseId: caseId },
       orderBy: { eventDate: 'desc' },
       include: {
-        createdBy: { select: { id: true, displayName: true } },
+        performedBy: { select: { id: true, displayName: true } },
       },
     });
 
@@ -508,9 +500,9 @@ router.get('/disputes/:caseId/events', requireAuth, async (req: Request, res: Re
 
 const createAttachmentSchema = z.object({
   fileName: z.string().min(1),
-  fileUrl: z.string().url(),
-  mimeType: z.string().optional(),
-  fileSize: z.number().int().optional(),
+  filePath: z.string().min(1),
+  fileType: z.string().min(1),
+  fileSize: z.number().int(),
   description: z.string().optional(),
 });
 
@@ -538,8 +530,8 @@ router.post('/disputes/:caseId/attachments', requireAuth, async (req: Request, r
         data: {
           disputeCaseId: caseId,
           fileName: validatedData.fileName,
-          fileUrl: validatedData.fileUrl,
-          mimeType: validatedData.mimeType,
+          filePath: validatedData.filePath,
+          fileType: validatedData.fileType,
           fileSize: validatedData.fileSize,
           description: validatedData.description,
           uploadedByUserId: req.user!.id,
@@ -553,9 +545,9 @@ router.post('/disputes/:caseId/attachments', requireAuth, async (req: Request, r
           disputeCaseId: caseId,
           eventType: DisputeEventType.DOCUMENT_RECEIVED,
           eventDate: new Date(),
-          summary: `Document uploaded: ${validatedData.fileName}`,
-          details: validatedData.description,
-          createdByUserId: req.user!.id,
+          description: `Document uploaded: ${validatedData.fileName}`,
+          notes: validatedData.description,
+          performedByUserId: req.user!.id,
         },
       }),
     ]);
@@ -588,7 +580,7 @@ router.get('/disputes/:caseId/attachments', requireAuth, async (req: Request, re
 
     const attachments = await prisma.disputeAttachment.findMany({
       where: { disputeCaseId: caseId },
-      orderBy: { uploadedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       include: {
         uploadedBy: { select: { id: true, displayName: true } },
       },
@@ -655,24 +647,23 @@ router.get('/disputes/:caseId/export-pdf', requireAuth, async (req: Request, res
     const disputeCase = await prisma.disputeCase.findUnique({
       where: { id: caseId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, stateStudentId: true } },
+        student: { select: { id: true, firstName: true, lastName: true, recordId: true } },
         planInstance: {
           select: {
             id: true,
             planType: { select: { code: true, name: true } },
           },
         },
-        assignedTo: { select: { id: true, displayName: true } },
+        owner: { select: { id: true, displayName: true } },
         createdBy: { select: { id: true, displayName: true } },
-        resolvedBy: { select: { id: true, displayName: true } },
         events: {
           orderBy: { eventDate: 'asc' },
           include: {
-            createdBy: { select: { id: true, displayName: true } },
+            performedBy: { select: { id: true, displayName: true } },
           },
         },
         attachments: {
-          orderBy: { uploadedAt: 'desc' },
+          orderBy: { createdAt: 'desc' },
           include: {
             uploadedBy: { select: { id: true, displayName: true } },
           },
@@ -766,7 +757,7 @@ router.get('/disputes/dashboard', requireAuth, async (req: Request, res: Respons
       take: 10,
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
-        assignedTo: { select: { id: true, displayName: true } },
+        owner: { select: { id: true, displayName: true } },
       },
     });
 

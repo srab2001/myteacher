@@ -1,0 +1,165 @@
+/* Home Page Styles */
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+}
+
+.header {
+  text-align: center;
+  padding: 60px 24px 40px;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0 0 16px;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin: 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.main {
+  flex: 1;
+  padding: 0 24px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.toolsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.toolCard {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.toolIcon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.toolTitle {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 12px;
+}
+
+.toolDescription {
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 20px;
+  flex: 1;
+}
+
+.featuresList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+
+.featuresList li {
+  padding: 4px 12px;
+  background: #f3f4f6;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: #374151;
+}
+
+.toolLink {
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 0.95rem;
+}
+
+.toolCard:hover .toolLink {
+  color: #1d4ed8;
+}
+
+.footer {
+  text-align: center;
+  padding: 32px 24px;
+  background: rgba(255, 255, 255, 0.5);
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.adminLink {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.adminLink:hover {
+  color: #2563eb;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 40px 20px 30px;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .toolsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .toolCard {
+    padding: 24px;
+  }
+
+  .toolIcon {
+    font-size: 2.5rem;
+  }
+
+  .toolTitle {
+    font-size: 1.25rem;
+  }
+}

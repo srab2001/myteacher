@@ -2528,7 +2528,12 @@ router.post('/seed', requireAdmin, async (_req, res) => {
 
         for (const pt of planTypes) {
           await prisma.planType.upsert({
-            where: { code: pt.code },
+            where: {
+              jurisdictionId_code: {
+                jurisdictionId: firstJurisdiction.id,
+                code: pt.code,
+              }
+            },
             update: {},
             create: {
               code: pt.code,

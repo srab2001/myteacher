@@ -133,11 +133,7 @@ router.get('/context', requireAuth, async (req: Request, res: Response) => {
     const student = await prisma.student.findUnique({
       where: { id: studentId },
       include: {
-        school: {
-          include: {
-            district: true,
-          },
-        },
+        school: true,
       },
     });
 
@@ -150,9 +146,11 @@ router.get('/context', requireAuth, async (req: Request, res: Response) => {
 
     if (student.school) {
       precedenceSearched.push({ scopeType: 'SCHOOL', scopeId: student.school.id });
-      if (student.school.district) {
-        precedenceSearched.push({ scopeType: 'DISTRICT', scopeId: student.school.district.id });
-        precedenceSearched.push({ scopeType: 'STATE', scopeId: student.school.district.stateCode });
+      if (student.school.districtId) {
+        precedenceSearched.push({ scopeType: 'DISTRICT', scopeId: student.school.districtId });
+      }
+      if (student.school.stateCode) {
+        precedenceSearched.push({ scopeType: 'STATE', scopeId: student.school.stateCode });
       }
     }
 

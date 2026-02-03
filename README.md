@@ -97,6 +97,8 @@ After running the seed script, you can log in with:
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Run all apps in development mode |
+| `pnpm dev:web` | Run frontend only |
+| `pnpm dev:api` | Run backend only |
 | `pnpm build` | Build all apps for production |
 | `pnpm test` | Run all tests |
 | `pnpm lint` | Lint all packages |
