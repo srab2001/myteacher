@@ -3,9 +3,10 @@
 .chatContainer {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
+  height: 100%;
   max-width: 900px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .messagesContainer {
@@ -337,7 +338,7 @@
 
 @media (max-width: 768px) {
   .chatContainer {
-    height: calc(100vh - 80px);
+    height: 100%;
   }
 
   .message {

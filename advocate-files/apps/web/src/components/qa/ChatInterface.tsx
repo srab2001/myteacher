@@ -33,9 +33,37 @@ export function ChatInterface({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState(conversationId);
   const [expandedCitation, setExpandedCitation] = useState<Citation | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load conversation history when conversationId is provided
+  useEffect(() => {
+    if (!conversationId) return;
+    setIsLoadingHistory(true);
+    fetch(`/api/conversations/${conversationId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load conversation');
+        return res.json();
+      })
+      .then((data) => {
+        if (data.messages && Array.isArray(data.messages)) {
+          const loaded: Message[] = data.messages
+            .filter((msg: Record<string, unknown>) => msg.role === 'user' || msg.role === 'assistant')
+            .map((msg: Record<string, unknown>) => ({
+              id: msg.id as string,
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content as string,
+              citations: (msg.metadata as Record<string, unknown> | null)?.citations as Citation[] | undefined,
+            }));
+          setMessages(loaded);
+          setCurrentConversationId(conversationId);
+        }
+      })
+      .catch((err) => console.error('Error loading conversation:', err))
+      .finally(() => setIsLoadingHistory(false));
+  }, [conversationId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -109,9 +137,13 @@ export function ChatInterface({
   return (
     <div className={styles.chatContainer}>
       <div className={styles.messagesContainer}>
-        {messages.length === 0 ? (
+        {isLoadingHistory ? (
           <div className={styles.welcomeState}>
-            <h2>Maryland Special Education Q&A</h2>
+            <p>Loading conversation...</p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className={styles.welcomeState}>
+            <h2>Maryland Rules Q&A</h2>
             <p>
               Ask questions about Maryland special education law, IEP requirements,
               timelines, and more. All answers include citations from official sources.
