@@ -68,6 +68,10 @@ export default function Home() {
         <Link href="/admin/documents" className={styles.adminLink}>
           Admin: Knowledge Base
         </Link>
+        <span className={styles.adminSep}> | </span>
+        <Link href="/admin/parse" className={styles.adminLink}>
+          Admin: PDF Parser
+        </Link>
       </footer>
     </div>
   );

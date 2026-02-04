@@ -16,9 +16,15 @@ export default function AdminDocumentsPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link href="/" className={styles.backLink}>
-            ← Back to Home
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <Link href="/" className={styles.backLink}>
+              ← Home
+            </Link>
+            <span style={{ color: '#d1d5db', fontSize: '0.85rem' }}>|</span>
+            <Link href="/admin/parse" className={styles.backLink}>
+              PDF Parser
+            </Link>
+          </div>
           <h1 className={styles.title}>Knowledge Base Admin</h1>
           <p className={styles.subtitle}>
             Upload and manage documents for the Maryland Special Education Q&A knowledge base
