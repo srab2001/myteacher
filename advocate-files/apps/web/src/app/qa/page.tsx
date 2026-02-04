@@ -15,10 +15,14 @@ interface Conversation {
 export default function QAPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | undefined>();
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
     fetchConversations();
+    // Show sidebar by default on desktop
+    if (window.innerWidth > 768) {
+      setShowSidebar(true);
+    }
   }, []);
 
   const fetchConversations = async () => {
@@ -35,17 +39,35 @@ export default function QAPage() {
 
   const handleNewConversation = (conversationId: string) => {
     setSelectedConversation(conversationId);
-    fetchConversations(); // Refresh the list
+    fetchConversations();
   };
 
   const startNewConversation = () => {
     setSelectedConversation(undefined);
+    // Close sidebar on mobile after action
+    if (window.innerWidth <= 768) {
+      setShowSidebar(false);
+    }
+  };
+
+  const selectConversation = (convId: string) => {
+    setSelectedConversation(convId);
+    // Close sidebar on mobile after selection
+    if (window.innerWidth <= 768) {
+      setShowSidebar(false);
+    }
   };
 
   return (
     <div className={styles.container}>
+      {/* Backdrop for mobile */}
+      <div
+        className={`${styles.backdrop} ${!showSidebar ? styles.backdropHidden : ''}`}
+        onClick={() => setShowSidebar(false)}
+      />
+
       {/* Sidebar */}
-      <div className={`${styles.sidebar} ${showSidebar ? '' : styles.sidebarHidden}`}>
+      <div className={`${styles.sidebar} ${!showSidebar ? styles.sidebarHidden : ''}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.backLink}>
             ← Back to Home
@@ -65,7 +87,7 @@ export default function QAPage() {
             conversations.map((conv) => (
               <button
                 key={conv.id}
-                onClick={() => setSelectedConversation(conv.id)}
+                onClick={() => selectConversation(conv.id)}
                 className={`${styles.conversationItem} ${
                   selectedConversation === conv.id ? styles.conversationItemActive : ''
                 }`}
@@ -83,10 +105,10 @@ export default function QAPage() {
         </div>
       </div>
 
-      {/* Toggle Sidebar Button (mobile) */}
+      {/* Toggle Sidebar Button */}
       <button
         onClick={() => setShowSidebar(!showSidebar)}
-        className={styles.sidebarToggle}
+        className={`${styles.sidebarToggle} ${!showSidebar ? styles.sidebarToggleCollapsed : ''}`}
       >
         {showSidebar ? '←' : '→'}
       </button>
